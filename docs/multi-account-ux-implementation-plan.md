@@ -2350,10 +2350,10 @@ private async Task LoadChildrenAsync(
 - [x] **Step 2.1**: Create `AccountManagementViewModel` with ReactiveUI properties (account list, selected account, commands)
 - [x] **Step 2.2**: Add ViewModel tests for property notifications and command execution
 - [x] **Step 2.3**: Create `IAuthService` interface for MSAL authentication
-- [ ] **Step 2.4**: Implement `AuthService` with MSAL multi-account support + tests
-- [ ] **Step 2.5**: Create `AccountManagementView.axaml` with basic UI (list, add/remove buttons)
-- [ ] **Step 2.6**: Wire ViewModel to repositories and authentication service
-- [ ] **Step 2.7**: Integration testing (login/logout flows)
+- [x] **Step 2.4**: Implement `AuthService` with MSAL multi-account support + tests (also created `IAuthenticationClient`/`AuthenticationClient` wrappers and `MsalAuthResult` to enable testability around MSAL's sealed classes)
+- [x] **Step 2.5**: Create `AccountManagementView.axaml` with basic UI (list, add/remove buttons)
+- [x] **Step 2.6**: Wire ViewModel to repositories and authentication service (also added CancellationToken parameters to async methods)
+- [x] **Step 2.7**: Integration testing (login/logout flows with in-memory database)
 - [ ] **Step 2.8**: Register services in DI and update MainWindow to show account management
 
 ### Sprint 3 (Week 5-6): Folder Tree Service
