@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using AStarOneDriveClient.Views;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AStarOneDriveClient;
 
@@ -10,6 +11,11 @@ namespace AStarOneDriveClient;
 /// </summary>
 public sealed class App : Application
 {
+    /// <summary>
+    /// Gets the service provider for dependency injection.
+    /// </summary>
+    public static ServiceProvider? Services { get; private set; }
+
     /// <inheritdoc/>
     public override void Initialize()
     {
@@ -19,9 +25,19 @@ public sealed class App : Application
     /// <inheritdoc/>
     public override void OnFrameworkInitializationCompleted()
     {
+        // Configure dependency injection
+        Services = ServiceConfiguration.ConfigureServices();
+        ServiceConfiguration.EnsureDatabaseCreated(Services);
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
+
+            // Cleanup on exit
+            desktop.Exit += (_, _) =>
+            {
+                Services?.Dispose();
+            };
         }
 
         base.OnFrameworkInitializationCompleted();
