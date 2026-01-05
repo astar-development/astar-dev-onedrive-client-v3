@@ -2354,7 +2354,7 @@ private async Task LoadChildrenAsync(
 - [x] **Step 2.5**: Create `AccountManagementView.axaml` with basic UI (list, add/remove buttons)
 - [x] **Step 2.6**: Wire ViewModel to repositories and authentication service (also added CancellationToken parameters to async methods)
 - [x] **Step 2.7**: Integration testing (login/logout flows with in-memory database)
-- [ ] **Step 2.8**: Register services in DI and update MainWindow to show account management
+- [x] **Step 2.8**: Register services in DI and update MainWindow to show account management (AuthService registered as singleton with factory, MainWindow now displays AccountManagementView)
 
 ### Sprint 3 (Week 5-6): Folder Tree Service
 - [ ] Implement `IFolderTreeService` + Graph API integration

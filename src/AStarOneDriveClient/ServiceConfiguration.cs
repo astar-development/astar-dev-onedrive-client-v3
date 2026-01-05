@@ -1,3 +1,4 @@
+using AStarOneDriveClient.Authentication;
 using AStarOneDriveClient.Data;
 using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.Services;
@@ -29,6 +30,14 @@ public static class ServiceConfiguration
         services.AddScoped<ISyncConfigurationRepository, SyncConfigurationRepository>();
         services.AddScoped<ISyncStateRepository, SyncStateRepository>();
         services.AddScoped<IFileMetadataRepository, FileMetadataRepository>();
+
+        // Authentication - registered as singleton with factory
+        services.AddSingleton<IAuthService>(provider =>
+        {
+            // AuthService.CreateAsync must be called synchronously during startup
+            // This is acceptable as it's a one-time initialization cost
+            return AuthService.CreateAsync().GetAwaiter().GetResult();
+        });
 
         // Services
         services.AddScoped<IWindowPreferencesService, WindowPreferencesService>();
