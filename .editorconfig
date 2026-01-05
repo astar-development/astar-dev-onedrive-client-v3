@@ -74,6 +74,7 @@ csharp_preserve_single_line_blocks = true
 # Code style rules
 csharp_prefer_braces = true:suggestion
 csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
 
 # Expression-bodied members
 csharp_style_expression_bodied_methods = when_on_single_line:suggestion
