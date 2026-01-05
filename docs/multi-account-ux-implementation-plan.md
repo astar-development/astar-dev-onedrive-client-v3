@@ -2364,7 +2364,7 @@ private async Task LoadChildrenAsync(
 - [x] **Step 3.5**: Implement `FolderTreeService` with Graph API integration + unit tests (with mocked IGraphApiClient) - 11 tests covering authentication checks, folder filtering, child loading, argument validation
 - [x] **Step 3.6**: Add integration tests using real Graph API calls (requires authenticated IAuthService) - 5 skipped integration tests (GetRootFoldersFromRealOneDriveAccount, GetChildFoldersFromRealOneDriveFolder, GetFolderHierarchyWithLimitedDepth, HandleEmptyFoldersGracefully, GraphApiClientCanAccessDrive) - tests use TokenProvider helper class for authentication. Fixed ClientId configuration in appsettings.json - successful real OneDrive authentication and Graph API integration verified
 - [x] **Step 3.7**: Create helper method to build hierarchical tree from flat DriveItem list - Created FolderTreeBuilder static class with BuildTree() and MergeIntoTree() methods + 16 unit tests covering tree building, sorting, merging, path construction, null handling, and argument validation
-- [ ] **Step 3.8**: Manual testing against real OneDrive account (verify folder structure loads correctly)
+- [x] **Step 3.8**: Manual testing against real OneDrive account (verify folder structure loads correctly) - Verified working with real OneDrive account
 
 ### Sprint 4 (Week 7-8): Sync Tree UI (Tri-State Checkboxes)
 - [ ] Create `SyncTreeView.axaml` with TreeView and tri-state CheckBox
