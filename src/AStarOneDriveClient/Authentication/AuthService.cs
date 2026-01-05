@@ -9,28 +9,35 @@ namespace AStarOneDriveClient.Authentication;
 public sealed class AuthService : IAuthService
 {
     private readonly IAuthenticationClient _authClient;
+    private readonly AuthConfiguration _configuration;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthService"/> class.
     /// </summary>
     /// <param name="authClient">The authentication client wrapper.</param>
-    public AuthService(IAuthenticationClient authClient)
+    /// <param name="configuration">Authentication configuration.</param>
+    public AuthService(IAuthenticationClient authClient, AuthConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(authClient);
+        ArgumentNullException.ThrowIfNull(configuration);
         _authClient = authClient;
+        _configuration = configuration;
     }
 
     /// <summary>
     /// Creates a new AuthService with default MSAL configuration.
     /// </summary>
+    /// <param name="configuration">Authentication configuration.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>Configured AuthService instance.</returns>
-    public static async Task<AuthService> CreateAsync(CancellationToken cancellationToken = default)
+    public static async Task<AuthService> CreateAsync(AuthConfiguration configuration, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(configuration);
+
         var app = PublicClientApplicationBuilder
-            .Create(AuthConfiguration.ClientId)
-            .WithAuthority(AuthConfiguration.Authority)
-            .WithRedirectUri(AuthConfiguration.RedirectUri)
+            .Create(configuration.ClientId)
+            .WithAuthority(configuration.Authority)
+            .WithRedirectUri(configuration.RedirectUri)
             .Build();
 
         // Setup token cache persistence
@@ -42,7 +49,7 @@ public sealed class AuthService : IAuthService
         var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties);
         cacheHelper.RegisterCache(app.UserTokenCache);
 
-        return new AuthService(new AuthenticationClient(app));
+        return new AuthService(new AuthenticationClient(app), configuration);
     }
 
     /// <inheritdoc/>
@@ -51,7 +58,7 @@ public sealed class AuthService : IAuthService
         try
         {
             var result = await _authClient
-                .AcquireTokenInteractiveAsync(AuthConfiguration.Scopes, cancellationToken);
+                .AcquireTokenInteractiveAsync(_configuration.Scopes, cancellationToken);
 
             return new AuthenticationResult(
                 Success: true,
@@ -136,7 +143,7 @@ public sealed class AuthService : IAuthService
             }
 
             var result = await _authClient
-                .AcquireTokenSilentAsync(AuthConfiguration.Scopes, account, cancellationToken);
+                .AcquireTokenSilentAsync(_configuration.Scopes, account, cancellationToken);
 
             return result.AccessToken;
         }

@@ -5,11 +5,20 @@ namespace AStarOneDriveClient.Tests.Unit.Authentication;
 
 public class AuthServiceShould
 {
+    private static AuthConfiguration CreateTestConfiguration() =>
+        new()
+        {
+            ClientId = "test-client-id",
+            RedirectUri = "http://localhost",
+            Authority = "https://login.microsoftonline.com/common",
+            Scopes = ["test.scope"]
+        };
+
     [Fact]
     public void ThrowArgumentNullExceptionWhenAuthClientIsNull()
     {
         var exception = Should.Throw<ArgumentNullException>(
-            () => new AuthService(null!)
+            () => new AuthService(null!, CreateTestConfiguration())
         );
 
         exception.ParamName.ShouldBe("authClient");
@@ -25,7 +34,7 @@ public class AuthServiceShould
         mockClient.AcquireTokenInteractiveAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
             .Returns(mockAuthResult);
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.LoginAsync();
 
@@ -42,7 +51,7 @@ public class AuthServiceShould
         mockClient.AcquireTokenInteractiveAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<MsalAuthResult>(new MsalException("login_failed")));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.LoginAsync();
 
@@ -62,7 +71,7 @@ public class AuthServiceShould
         mockClient.AcquireTokenInteractiveAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<MsalAuthResult>(new OperationCanceledException()));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.LoginAsync(cts.Token);
 
@@ -79,7 +88,7 @@ public class AuthServiceShould
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { mockAccount }));
         mockClient.RemoveAsync(mockAccount).Returns(Task.CompletedTask);
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.LogoutAsync("acc1");
 
@@ -94,7 +103,7 @@ public class AuthServiceShould
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.LogoutAsync("nonexistent");
 
@@ -107,7 +116,7 @@ public class AuthServiceShould
         IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.GetAuthenticatedAccountsAsync();
 
@@ -123,7 +132,7 @@ public class AuthServiceShould
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { account1, account2 }));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.GetAuthenticatedAccountsAsync();
 
@@ -145,7 +154,7 @@ public class AuthServiceShould
         mockClient.AcquireTokenSilentAsync(Arg.Any<IEnumerable<string>>(), mockAccount, Arg.Any<CancellationToken>())
             .Returns(mockAuthResult);
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.GetAccessTokenAsync("acc1");
 
@@ -158,7 +167,7 @@ public class AuthServiceShould
         IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.GetAccessTokenAsync("nonexistent");
 
@@ -176,7 +185,7 @@ public class AuthServiceShould
             .Returns(Task.FromException<MsalAuthResult>(
                 new MsalUiRequiredException("error_code", "User interaction required")));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.GetAccessTokenAsync("acc1");
 
@@ -189,7 +198,7 @@ public class AuthServiceShould
         IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.IsAuthenticatedAsync("acc1");
 
@@ -204,7 +213,7 @@ public class AuthServiceShould
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { mockAccount }));
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.IsAuthenticatedAsync("acc1");
 
@@ -222,7 +231,7 @@ public class AuthServiceShould
         mockClient.AcquireTokenSilentAsync(Arg.Any<IEnumerable<string>>(), mockAccount, Arg.Any<CancellationToken>())
             .Returns(mockAuthResult);
 
-        var service = new AuthService(mockClient);
+        var service = new AuthService(mockClient, CreateTestConfiguration());
 
         var result = await service.AcquireTokenSilentAsync("acc1");
 

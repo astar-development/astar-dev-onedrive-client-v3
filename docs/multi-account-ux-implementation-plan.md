@@ -2362,7 +2362,7 @@ private async Task LoadChildrenAsync(
 - [x] **Step 3.3**: Create `IGraphApiClient` wrapper interface (similar to IAuthenticationClient pattern) with methods for testability
 - [x] **Step 3.4**: Implement `GraphApiClient` wrapper around Microsoft.Graph SDK
 - [x] **Step 3.5**: Implement `FolderTreeService` with Graph API integration + unit tests (with mocked IGraphApiClient) - 11 tests covering authentication checks, folder filtering, child loading, argument validation
-- [ ] **Step 3.6**: Add integration tests using real Graph API calls (requires authenticated IAuthService)
+- [x] **Step 3.6**: Add integration tests using real Graph API calls (requires authenticated IAuthService) - 5 skipped integration tests (GetRootFoldersFromRealOneDriveAccount, GetChildFoldersFromRealOneDriveFolder, GetFolderHierarchyWithLimitedDepth, HandleEmptyFoldersGracefully, GraphApiClientCanAccessDrive) - tests use TokenProvider helper class for authentication
 - [ ] **Step 3.7**: Create helper method to build hierarchical tree from flat DriveItem list
 - [ ] **Step 3.8**: Manual testing against real OneDrive account (verify folder structure loads correctly)
 
