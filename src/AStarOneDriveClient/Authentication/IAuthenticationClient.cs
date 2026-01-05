@@ -32,12 +32,14 @@ public interface IAuthenticationClient
     /// <summary>
     /// Gets all accounts currently in the token cache.
     /// </summary>
+    /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>Collection of cached accounts.</returns>
-    Task<IEnumerable<IAccount>> GetAccountsAsync();
+    Task<IEnumerable<IAccount>> GetAccountsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Removes an account from the token cache.
     /// </summary>
     /// <param name="account">The account to remove.</param>
-    Task RemoveAsync(IAccount account);
+    /// <param name="cancellationToken">Optional cancellation token.</param>
+    Task RemoveAsync(IAccount account, CancellationToken cancellationToken = default);
 }

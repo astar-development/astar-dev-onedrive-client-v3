@@ -23,8 +23,9 @@ public sealed class AuthService : IAuthService
     /// <summary>
     /// Creates a new AuthService with default MSAL configuration.
     /// </summary>
+    /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>Configured AuthService instance.</returns>
-    public static async Task<AuthService> CreateAsync()
+    public static async Task<AuthService> CreateAsync(CancellationToken cancellationToken = default)
     {
         var app = PublicClientApplicationBuilder
             .Create(AuthConfiguration.ClientId)
@@ -86,12 +87,12 @@ public sealed class AuthService : IAuthService
 
         try
         {
-            var accounts = await _authClient.GetAccountsAsync();
+            var accounts = await _authClient.GetAccountsAsync(cancellationToken);
             var account = accounts.FirstOrDefault(a => a.HomeAccountId.Identifier == accountId);
 
             if (account is not null)
             {
-                await _authClient.RemoveAsync(account);
+                await _authClient.RemoveAsync(account, cancellationToken);
                 return true;
             }
 
@@ -108,7 +109,7 @@ public sealed class AuthService : IAuthService
     {
         try
         {
-            var accounts = await _authClient.GetAccountsAsync();
+            var accounts = await _authClient.GetAccountsAsync(cancellationToken);
             return accounts
                 .Select(a => (a.HomeAccountId.Identifier, a.Username))
                 .ToList();
@@ -126,7 +127,7 @@ public sealed class AuthService : IAuthService
 
         try
         {
-            var accounts = await _authClient.GetAccountsAsync();
+            var accounts = await _authClient.GetAccountsAsync(cancellationToken);
             var account = accounts.FirstOrDefault(a => a.HomeAccountId.Identifier == accountId);
 
             if (account is null)
@@ -156,7 +157,7 @@ public sealed class AuthService : IAuthService
 
         try
         {
-            var accounts = await _authClient.GetAccountsAsync();
+            var accounts = await _authClient.GetAccountsAsync(cancellationToken);
             return accounts.Any(a => a.HomeAccountId.Identifier == accountId);
         }
         catch (MsalException)

@@ -45,13 +45,13 @@ public sealed class AuthenticationClient : IAuthenticationClient
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<IAccount>> GetAccountsAsync()
+    public async Task<IEnumerable<IAccount>> GetAccountsAsync(CancellationToken cancellationToken = default)
     {
         return await _publicClientApp.GetAccountsAsync();
     }
 
     /// <inheritdoc/>
-    public async Task RemoveAsync(IAccount account)
+    public async Task RemoveAsync(IAccount account, CancellationToken cancellationToken = default)
     {
         await _publicClientApp.RemoveAsync(account);
     }

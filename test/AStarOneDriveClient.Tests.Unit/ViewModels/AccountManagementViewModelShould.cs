@@ -1,5 +1,7 @@
 using System.Reactive.Linq;
+using AStarOneDriveClient.Authentication;
 using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.ViewModels;
 
 namespace AStarOneDriveClient.Tests.Unit.ViewModels;
@@ -7,33 +9,57 @@ namespace AStarOneDriveClient.Tests.Unit.ViewModels;
 public class AccountManagementViewModelShould
 {
     [Fact]
-    public void InitializeWithEmptyAccountCollection()
+    public async Task InitializeWithEmptyAccountCollectionWhenRepositoryIsEmpty()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50); // Allow async initialization
 
         viewModel.Accounts.ShouldBeEmpty();
     }
 
     [Fact]
-    public void InitializeWithNullSelectedAccount()
+    public async Task InitializeWithNullSelectedAccount()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         viewModel.SelectedAccount.ShouldBeNull();
     }
 
     [Fact]
-    public void InitializeWithIsLoadingFalse()
+    public async Task LoadAccountsFromRepositoryOnInitialization()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        var accounts = new[] { CreateAccount("acc1", "User 1"), CreateAccount("acc2", "User 2") };
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(accounts));
 
-        viewModel.IsLoading.ShouldBeFalse();
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
+        viewModel.Accounts.Count.ShouldBe(2);
+        viewModel.Accounts[0].AccountId.ShouldBe("acc1");
+        viewModel.Accounts[1].AccountId.ShouldBe("acc2");
     }
 
     [Fact]
-    public void RaisePropertyChangedWhenSelectedAccountChanges()
+    public async Task RaisePropertyChangedWhenSelectedAccountChanges()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
         var propertyChanged = false;
 
@@ -52,9 +78,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void NotRaisePropertyChangedWhenSettingSameSelectedAccount()
+    public async Task NotRaisePropertyChangedWhenSettingSameSelectedAccount()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
         viewModel.SelectedAccount = account;
 
@@ -67,9 +99,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void RaisePropertyChangedWhenIsLoadingChanges()
+    public async Task RaisePropertyChangedWhenIsLoadingChanges()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var propertyChanged = false;
 
         viewModel.PropertyChanged += (_, args) =>
@@ -87,9 +125,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void NotRaisePropertyChangedWhenSettingSameIsLoadingValue()
+    public async Task NotRaisePropertyChangedWhenSettingSameIsLoadingValue()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         viewModel.IsLoading = true;
 
         var propertyChangedCount = 0;
@@ -101,9 +145,14 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void HaveAddAccountCommandAlwaysEnabled()
+    public async Task HaveAddAccountCommandAlwaysEnabled()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         var canExecute = viewModel.AddAccountCommand.CanExecute.FirstAsync().Wait();
 
@@ -111,17 +160,33 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void ExecuteAddAccountCommandSuccessfully()
+    public async Task ExecuteAddAccountCommandSuccessfully()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
 
-        Should.NotThrow(() => viewModel.AddAccountCommand.Execute().Subscribe());
+        var authResult = new AuthenticationResult(true, "acc1", "user@example.com", null);
+        mockAuth.LoginAsync(Arg.Any<CancellationToken>()).Returns(authResult);
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
+        await viewModel.AddAccountCommand.Execute();
+
+        await mockAuth.Received(1).LoginAsync(Arg.Any<CancellationToken>());
+        await mockRepo.Received(1).AddAsync(Arg.Any<AccountInfo>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void HaveRemoveAccountCommandDisabledWhenNoAccountSelected()
+    public async Task HaveRemoveAccountCommandDisabledWhenNoAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         var canExecute = viewModel.RemoveAccountCommand.CanExecute.FirstAsync().Wait();
 
@@ -129,9 +194,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void EnableRemoveAccountCommandWhenAccountSelected()
+    public async Task EnableRemoveAccountCommandWhenAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
 
         viewModel.SelectedAccount = account;
@@ -141,9 +212,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void DisableRemoveAccountCommandWhenAccountDeselected()
+    public async Task DisableRemoveAccountCommandWhenAccountDeselected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
         viewModel.SelectedAccount = account;
 
@@ -154,19 +231,32 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void ExecuteRemoveAccountCommandWhenAccountSelected()
+    public async Task ExecuteRemoveAccountCommandWhenAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
         viewModel.SelectedAccount = account;
 
-        Should.NotThrow(() => viewModel.RemoveAccountCommand.Execute().Subscribe());
+        await viewModel.RemoveAccountCommand.Execute();
+
+        await mockRepo.Received(1).DeleteAsync("acc1", Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void HaveLoginCommandDisabledWhenNoAccountSelected()
+    public async Task HaveLoginCommandDisabledWhenNoAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         var canExecute = viewModel.LoginCommand.CanExecute.FirstAsync().Wait();
 
@@ -174,9 +264,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void EnableLoginCommandWhenUnauthenticatedAccountSelected()
+    public async Task EnableLoginCommandWhenUnauthenticatedAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: false);
 
         viewModel.SelectedAccount = account;
@@ -186,9 +282,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void DisableLoginCommandWhenAuthenticatedAccountSelected()
+    public async Task DisableLoginCommandWhenAuthenticatedAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: true);
 
         viewModel.SelectedAccount = account;
@@ -200,17 +302,34 @@ public class AccountManagementViewModelShould
     [Fact]
     public async Task ExecuteLoginCommandSuccessfully()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        var authResult = new AuthenticationResult(true, "acc1", "User 1", null);
+        mockAuth.LoginAsync(Arg.Any<CancellationToken>()).Returns(authResult);
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: false);
         viewModel.SelectedAccount = account;
 
-        await Should.NotThrowAsync(async () => await viewModel.LoginCommand.Execute());
+        await viewModel.LoginCommand.Execute();
+
+        await mockAuth.Received(1).LoginAsync(Arg.Any<CancellationToken>());
+        await mockRepo.Received(1).UpdateAsync(Arg.Any<AccountInfo>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void HaveLogoutCommandDisabledWhenNoAccountSelected()
+    public async Task HaveLogoutCommandDisabledWhenNoAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         var canExecute = viewModel.LogoutCommand.CanExecute.FirstAsync().Wait();
 
@@ -218,9 +337,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void EnableLogoutCommandWhenAuthenticatedAccountSelected()
+    public async Task EnableLogoutCommandWhenAuthenticatedAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: true);
 
         viewModel.SelectedAccount = account;
@@ -230,9 +355,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void DisableLogoutCommandWhenUnauthenticatedAccountSelected()
+    public async Task DisableLogoutCommandWhenUnauthenticatedAccountSelected()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: false);
 
         viewModel.SelectedAccount = account;
@@ -244,17 +375,34 @@ public class AccountManagementViewModelShould
     [Fact]
     public async Task ExecuteLogoutCommandSuccessfully()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        mockAuth.LogoutAsync("acc1", Arg.Any<CancellationToken>()).Returns(true);
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1", isAuthenticated: true);
         viewModel.SelectedAccount = account;
 
-        await Should.NotThrowAsync(async () => await viewModel.LogoutCommand.Execute());
+        await viewModel.LogoutCommand.Execute();
+
+        await mockAuth.Received(1).LogoutAsync("acc1", Arg.Any<CancellationToken>());
+        await mockRepo.Received(1).UpdateAsync(Arg.Any<AccountInfo>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void AllowAddingAccountsToCollection()
+    public async Task AllowAddingAccountsToCollection()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account1 = CreateAccount("acc1", "User 1");
         var account2 = CreateAccount("acc2", "User 2");
 
@@ -267,9 +415,15 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void AllowRemovingAccountsFromCollection()
+    public async Task AllowRemovingAccountsFromCollection()
     {
-        using var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        using var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
+
         var account = CreateAccount("acc1", "User 1");
         viewModel.Accounts.Add(account);
 
@@ -279,9 +433,14 @@ public class AccountManagementViewModelShould
     }
 
     [Fact]
-    public void DisposeSuccessfullyWithoutErrors()
+    public async Task DisposeSuccessfullyWithoutErrors()
     {
-        var viewModel = new AccountManagementViewModel();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+        mockRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<AccountInfo>>(Array.Empty<AccountInfo>()));
+
+        var viewModel = new AccountManagementViewModel(mockAuth, mockRepo);
+        await Task.Delay(50);
 
         Should.NotThrow(() => viewModel.Dispose());
     }
