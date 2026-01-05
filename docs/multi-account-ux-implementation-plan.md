@@ -2349,7 +2349,7 @@ private async Task LoadChildrenAsync(
 ### Sprint 2 (Week 3-4): Account Management UI
 - [x] **Step 2.1**: Create `AccountManagementViewModel` with ReactiveUI properties (account list, selected account, commands)
 - [x] **Step 2.2**: Add ViewModel tests for property notifications and command execution
-- [ ] **Step 2.3**: Create `IAuthService` interface for MSAL authentication
+- [x] **Step 2.3**: Create `IAuthService` interface for MSAL authentication
 - [ ] **Step 2.4**: Implement `AuthService` with MSAL multi-account support + tests
 - [ ] **Step 2.5**: Create `AccountManagementView.axaml` with basic UI (list, add/remove buttons)
 - [ ] **Step 2.6**: Wire ViewModel to repositories and authentication service
