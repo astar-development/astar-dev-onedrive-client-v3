@@ -398,7 +398,7 @@ public sealed class AccountViewModel : ReactiveObject
 
 ```csharp
 /// <summary>
-/// Represents a node in the OneDrive folder tree.
+/// Represents a node in the OneDrive folder tree with tri-state checkbox support.
 /// </summary>
 public sealed class OneDriveFolderNode : ReactiveObject
 {
@@ -406,13 +406,50 @@ public sealed class OneDriveFolderNode : ReactiveObject
     public required string Name { get; init; }
     public required string Path { get; init; }            // Full path (e.g., /Documents/Projects)
     
-    private bool _isSelected = true;                      // Default checked
-    public bool IsSelected
+    private bool? _isSelected = true;                     // Default checked (tri-state: true/false/null)
+    /// <summary>
+    /// Gets or sets the selection state.
+    /// - true: All children selected (or leaf node selected)
+    /// - false: All children unselected (or leaf node unselected)
+    /// - null: Some children selected (indeterminate state)
+    /// </summary>
+    public bool? IsSelected
     {
-        get => _isSelected;
+        get
+        {
+            // If no children (leaf node), return explicit selection state
+            if (!HasChildren)
+                return _isSelected;
+            
+            // For parent nodes, compute tri-state based on children
+            var childStates = Children.Select(c => c.IsSelected).Distinct().ToList();
+            
+            if (childStates.Count == 1)
+            {
+                // All children have same state
+                return childStates[0];
+            }
+            
+            // Mixed states or contains null (indeterminate)
+            return null;
+        }
         set
         {
-            this.RaiseAndSetIfChanged(ref _isSelected, value);
+            if (_isSelected == value)
+                return;
+            
+            _isSelected = value;
+            this.RaisePropertyChanged(nameof(IsSelected));
+            
+            // Cascade to children when explicitly set (not computed)
+            if (value.HasValue && HasChildren)
+            {
+                foreach (var child in Children)
+                {
+                    child.IsSelected = value;
+                }
+            }
+            
             SelectionChanged?.Invoke();  // Notify parent ViewModel for auto-save
         }
     }
@@ -429,6 +466,15 @@ public sealed class OneDriveFolderNode : ReactiveObject
     
     // Event for notifying ViewModel of selection changes
     public Action? SelectionChanged { get; set; }
+    
+    /// <summary>
+    /// Updates parent node's tri-state after child selection changes.
+    /// </summary>
+    public void NotifyChildSelectionChanged()
+    {
+        this.RaisePropertyChanged(nameof(IsSelected));
+        SelectionChanged?.Invoke();
+    }
 }
 
 /// <summary>
@@ -713,14 +759,34 @@ public sealed class SyncTreeViewModel : ReactiveObject
         
         foreach (var node in nodes)
         {
-            selections[node.Path] = node.IsSelected;
-            
-            if (node.HasChildren)
+            // For tri-state: only store explicitly selected/unselected leaf nodes
+            // Parent states are computed, not stored
+            if (!node.HasChildren && node.IsSelected.HasValue)
             {
-                var childSelections = CollectSelectedPaths(node.Children);
-                foreach (var kvp in childSelections)
+                selections[node.Path] = node.IsSelected.Value;
+            }
+            else if (node.HasChildren)
+            {
+                // For parent nodes with explicit state (not computed), store it
+                // This handles cases where entire branch is selected/unselected
+                if (node.IsSelected == true)
                 {
-                    selections[kvp.Key] = kvp.Value;
+                    // All children selected - store parent selection
+                    selections[node.Path] = true;
+                }
+                else if (node.IsSelected == false)
+                {
+                    // All children unselected - store parent unselection
+                    selections[node.Path] = false;
+                }
+                else
+                {
+                    // Indeterminate - recurse to get individual child selections
+                    var childSelections = CollectSelectedPaths(node.Children);
+                    foreach (var kvp in childSelections)
+                    {
+                        selections[kvp.Key] = kvp.Value;
+                    }
                 }
             }
         }
@@ -749,17 +815,28 @@ public sealed class SyncTreeViewModel : ReactiveObject
 }
 ```
 
-**Checkbox Behavior**:
-- **Tri-state consideration**: Should parent checkboxes show indeterminate state when some children are unchecked?
-- **Cascade behavior**: Should unchecking parent automatically uncheck all children?
+**Checkbox Behavior** (Tri-State Implemented):
+- **Checked (✓)**: All children selected (or leaf node explicitly checked)
+- **Unchecked (☐)**: All children unselected (or leaf node explicitly unchecked)
+- **Indeterminate (⊟)**: Some children selected, some unselected (mixed state)
+- **Cascade behavior**: Checking/unchecking parent automatically cascades to all children
+- **Propagation**: Child changes automatically update parent's tri-state
+- **User Experience**: Users can quickly select/deselect entire branches or individual folders
 
 **Testing Priority**: HIGH (tree traversal logic, selection state management)
 
 **Specific Tests**:
 - Verify lazy loading doesn't load children until expanded
-- Test `CollectSelectedPaths` includes all nested selections
+- Test `CollectSelectedPaths` includes all nested selections correctly
 - Verify saved configuration is restored correctly
-- Test checkbox state propagation (if cascading)
+- Test tri-state checkbox cascading:
+  - Parent checked → all children checked
+  - Parent unchecked → all children unchecked
+  - Some children checked → parent indeterminate
+  - All children checked → parent checked
+- Test tri-state propagation through multiple levels (grandchildren)
+- Verify indeterminate state visual display
+- Test checkbox state after tree expansion (lazy-loaded children inherit parent state)
 
 ---
 
@@ -2032,45 +2109,80 @@ private static string GenerateSyncPath(string email, string rootPath)
 
 ### Checkbox Tree Patterns
 
-**Tri-State Checkbox** (Optional Enhancement):
-- **Checked**: All children selected
-- **Unchecked**: No children selected
-- **Indeterminate**: Some children selected
+**Tri-State Checkbox Implementation**:
+- **Checked (✓)**: All children selected
+- **Unchecked (☐)**: No children selected
+- **Indeterminate (⊟)**: Some children selected (mixed state)
 
-**Implementation**:
+**Complete Implementation** (see `OneDriveFolderNode` above):
+
+**Key Features**:
+1. **Automatic Tri-State Computation**: Parent nodes compute state from children
+2. **Cascading Selection**: Setting parent to true/false cascades to all descendants
+3. **Upward Propagation**: Child changes trigger parent state recalculation
+4. **Indeterminate Handling**: Null state indicates mixed selection
+
+**Usage in ViewModel**:
 ```csharp
-public bool? IsSelected
+private void AttachExpandHandler(OneDriveFolderNode node)
 {
-    get
+    // Hook up child-to-parent notification
+    foreach (var child in node.Children)
     {
-        if (!HasChildren)
-            return _isSelected;
-        
-        var selectedChildren = Children.Count(c => c.IsSelected == true);
-        var uncheckedChildren = Children.Count(c => c.IsSelected == false);
-        
-        if (selectedChildren == Children.Count)
-            return true;
-        if (uncheckedChildren == Children.Count)
-            return false;
-        
-        return null; // Indeterminate
+        child.SelectionChanged += () => node.NotifyChildSelectionChanged();
+        AttachExpandHandler(child);  // Recursive for all descendants
     }
-    set
+}
+
+// When loading tree nodes
+private async Task LoadChildrenAsync(
+    OneDriveFolderNode parentNode, 
+    CancellationToken cancellationToken)
+{
+    if (parentNode.Children.Count > 0)
+        return; // Already loaded
+    
+    var children = await _folderTreeService.GetChildFoldersAsync(
+        _accountId, 
+        parentNode.Id, 
+        cancellationToken);
+    
+    foreach (var child in children)
     {
-        if (value.HasValue)
-        {
-            _isSelected = value.Value;
-            
-            // Cascade to children
-            foreach (var child in Children)
-            {
-                child.IsSelected = value;
-            }
-        }
+        parentNode.Children.Add(child);
+        
+        // Wire up parent notification
+        child.SelectionChanged += () => parentNode.NotifyChildSelectionChanged();
+        AttachExpandHandler(child);
     }
 }
 ```
+
+**Avalonia XAML Binding**:
+```xml
+<TreeView ItemsSource="{Binding RootFolders}">
+    <TreeView.ItemTemplate>
+        <TreeDataTemplate ItemsSource="{Binding Children}">
+            <StackPanel Orientation="Horizontal">
+                <!-- Avalonia CheckBox supports tri-state via IsThreeState and IsChecked (bool?) -->
+                <CheckBox IsThreeState="True" 
+                          IsChecked="{Binding IsSelected}" 
+                          VerticalAlignment="Center" />
+                <TextBlock Text="{Binding Name}" 
+                           Margin="5,0,0,0" 
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </TreeDataTemplate>
+    </TreeView.ItemTemplate>
+</TreeView>
+```
+
+**Testing Scenarios**:
+1. Check parent → all children become checked
+2. Uncheck parent → all children become unchecked
+3. Check some children → parent becomes indeterminate
+4. Check remaining children → parent becomes checked
+5. Deep nesting → tri-state propagates correctly through all levels
 
 ---
 
@@ -2096,31 +2208,39 @@ public bool? IsSelected
 └──────────────────────────────────────────────────────┘
 ```
 
-### Sync Tree View Mockup
+### Sync Tree View Mockup (Tri-State Checkboxes)
 
 ```
 ┌──────────────────────────────────────────────────────┐
 │  Sync Folders - john.doe@example.com                 │
 ├──────────────────────────────────────────────────────┤
+│  Legend: [☑] Checked  [☐] Unchecked  [⊟] Indeterminate│
 │                                                       │
-│  [☑] Documents                                        │
-│  │   [☑] Work Projects                               │
+│  [⊟] Documents (some items selected)                 │
+│  │   [⊟] Work Projects                               │
 │  │   │   [☑] Project A                               │
 │  │   │   [☐] Project B (Archived)                    │
-│  │   [☑] Personal                                     │
+│  │   [☑] Personal (all items selected)               │
 │  │                                                    │
-│  [☑] Pictures                                         │
+│  [☑] Pictures (all items selected)                   │
 │  │   [☑] Vacation 2025                               │
 │  │   [☑] Family                                       │
 │  │                                                    │
-│  [☐] Videos (large files - skip)                     │
+│  [☐] Videos (large files - skip all)                 │
 │  [☑] Music                                            │
 │  [☑] Desktop                                          │
 │                                                       │
-│  [Save Configuration]  [Start Sync]  [Back]          │
-│                                                       │
+│  [Start Sync]  [Back]                                │
+│  (Selections auto-saved)                              │
 └──────────────────────────────────────────────────────┘
 ```
+
+**Tri-State Behavior Examples**:
+- Clicking **Documents** (currently indeterminate) → toggles to checked → all children checked
+- Clicking **Documents** again → toggles to unchecked → all children unchecked
+- Clicking **Documents** again → toggles back to checked
+- Unchecking **Project A** manually → **Work Projects** becomes indeterminate → **Documents** stays indeterminate
+- Checking **Project B** → **Work Projects** becomes checked → **Documents** becomes checked (all children now selected)
 
 ---
 
@@ -2222,11 +2342,15 @@ public bool? IsSelected
 - [ ] Add unit tests for folder fetching
 - [ ] Test against real OneDrive account (sandbox)
 
-### Sprint 4 (Week 7-8): Sync Tree UI
-- [ ] Create `SyncTreeView.axaml` with TreeView
+### Sprint 4 (Week 7-8): Sync Tree UI (Tri-State Checkboxes)
+- [ ] Create `SyncTreeView.axaml` with TreeView and tri-state CheckBox
 - [ ] Implement `SyncTreeViewModel` + tests
-- [ ] Add lazy loading for child folders
-- [ ] Implement selection persistence
+- [ ] Implement tri-state checkbox logic in `OneDriveFolderNode`
+- [ ] Test cascading selection (parent → children)
+- [ ] Test upward propagation (children → parent)
+- [ ] Test indeterminate state calculation
+- [ ] Add lazy loading for child folders (inherit parent selection state)
+- [ ] Implement auto-save selection persistence
 
 ### Sprint 5 (Week 9-10): Database & Persistence
 - [ ] Design SQLite database schema
