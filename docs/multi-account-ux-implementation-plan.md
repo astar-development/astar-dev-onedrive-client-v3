@@ -2370,8 +2370,8 @@ private async Task LoadChildrenAsync(
 - [x] **Step 4.1**: Add tri-state selection properties to OneDriveFolderNode (IsSelected nullable bool, SelectionState enum: Unchecked/Checked/Indeterminate) - Created SelectionState enum, updated OneDriveFolderNode to inherit from ReactiveObject with SelectionState and IsSelected properties using RaiseAndSetIfChanged + 14 unit tests covering property change notifications, all selection states, and observable collection behavior
 - [x] **Step 4.2**: Create ISyncSelectionService interface for managing folder selection state - Created interface with SetSelection, UpdateParentStates, GetSelectedFolders, ClearAllSelections, and CalculateStateFromChildren methods
 - [x] **Step 4.3**: Implement SyncSelectionService with cascading selection logic (parent→children) + unit tests - Implemented service with cascading logic, indeterminate state calculation + 22 unit tests covering selection cascading, parent state updates, upward propagation, state calculation, and argument validation
-- [ ] **Step 4.4**: Implement upward propagation logic (children→parent indeterminate state calculation) + unit tests
-- [ ] **Step 4.5**: Create SyncTreeViewModel with IFolderTreeService and ISyncSelectionService dependencies + unit tests
+- [x] **Step 4.4**: Implement upward propagation logic (children→parent indeterminate state calculation) + unit tests - Already implemented in Step 4.3's UpdateParentStates method
+- [x] **Step 4.5**: Create SyncTreeViewModel with IFolderTreeService and ISyncSelectionService dependencies + unit tests - Created ViewModel with LoadFoldersCommand, LoadChildrenCommand, ToggleSelectionCommand, ClearSelectionsCommand + 19 unit tests covering async folder loading, error handling, selection toggling, property change notifications, and argument validation
 - [ ] **Step 4.6**: Create SyncTreeView.axaml with TreeView, tri-state CheckBox, and hierarchical data template
 - [ ] **Step 4.7**: Wire ViewModel to View, register in DI, and integrate into MainWindow
 - [ ] **Step 4.8**: Integration tests with AccountManagementView and manual testing of selection behavior
