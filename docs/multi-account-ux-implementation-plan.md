@@ -2347,10 +2347,14 @@ private async Task LoadChildrenAsync(
 - [x] **Step 1.7**: Setup dependency injection
 
 ### Sprint 2 (Week 3-4): Account Management UI
-- [ ] Create `AccountManagementView.axaml`
-- [ ] Implement `AccountManagementViewModel` + tests
-- [ ] Wire up MSAL multi-account authentication
-- [ ] Test login/logout for multiple accounts
+- [x] **Step 2.1**: Create `AccountManagementViewModel` with ReactiveUI properties (account list, selected account, commands)
+- [x] **Step 2.2**: Add ViewModel tests for property notifications and command execution
+- [ ] **Step 2.3**: Create `IAuthService` interface for MSAL authentication
+- [ ] **Step 2.4**: Implement `AuthService` with MSAL multi-account support + tests
+- [ ] **Step 2.5**: Create `AccountManagementView.axaml` with basic UI (list, add/remove buttons)
+- [ ] **Step 2.6**: Wire ViewModel to repositories and authentication service
+- [ ] **Step 2.7**: Integration testing (login/logout flows)
+- [ ] **Step 2.8**: Register services in DI and update MainWindow to show account management
 
 ### Sprint 3 (Week 5-6): Folder Tree Service
 - [ ] Implement `IFolderTreeService` + Graph API integration
