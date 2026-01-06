@@ -2,6 +2,7 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Models.Enums;
 using AStarOneDriveClient.Services;
 using Microsoft.Extensions.Logging;
 using ReactiveUI;
@@ -174,6 +175,10 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
             .Subscribe(progress =>
             {
                 CurrentProgress = progress;
+
+                // Update IsSyncing based on sync status
+                IsSyncing = progress.Status == SyncStatus.Running;
+
                 UpdateStatusMessage();
                 this.RaisePropertyChanged(nameof(ProgressPercentage));
                 this.RaisePropertyChanged(nameof(FilesProgressText));
