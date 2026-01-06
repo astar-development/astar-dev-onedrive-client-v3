@@ -27,6 +27,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
     private readonly BehaviorSubject<SyncState> _progressSubject;
     private CancellationTokenSource? _syncCancellation;
     private string? _currentSessionId;
+    private int _syncInProgress; // 0 = not syncing, 1 = syncing
 
     public SyncEngine(
         ILocalFileScanner localFileScanner,
@@ -85,6 +86,13 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
     {
         ArgumentNullException.ThrowIfNull(accountId);
 
+        // Prevent concurrent syncs using Interlocked for thread-safety
+        if (Interlocked.CompareExchange(ref _syncInProgress, 1, 0) != 0)
+        {
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Sync already in progress for account {accountId}, ignoring duplicate request");
+            return;
+        }
+
         _syncCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         try
@@ -93,6 +101,12 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             // Get selected folders for this account
             var selectedFolders = await _syncConfigurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
+
+            // Deduplicate selected folders to prevent processing same folder multiple times
+            selectedFolders = selectedFolders.Distinct().ToList();
+
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Starting sync with {selectedFolders.Count} unique folders: {string.Join(", ", selectedFolders)}");
+
             if (selectedFolders.Count == 0)
             {
                 ReportProgress(accountId, SyncStatus.Idle, 0, 0, 0, 0);
@@ -155,8 +169,20 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     folder,
                     previousDeltaLink: null,
                     _syncCancellation.Token);
+                System.Diagnostics.Debug.WriteLine($"[SyncEngine] Folder '{folder}' returned {remoteFiles.Count} remote files");
                 allRemoteFiles.AddRange(remoteFiles);
             }
+
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files before deduplication: {allRemoteFiles.Count}");
+
+            // Deduplicate remote files by Path (in case overlapping folder selections return same files)
+            allRemoteFiles = allRemoteFiles
+                .GroupBy(f => f.Path)
+                .Select(g => g.First())
+                .ToList();
+
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files after deduplication: {allRemoteFiles.Count}");
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Remote file paths: {string.Join(", ", allRemoteFiles.Select(f => f.Path))}");
 
             // Create dictionaries for fast lookup
             var remoteFilesDict = allRemoteFiles.ToDictionary(f => f.Path, f => f);
@@ -439,6 +465,18 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             // Log file counts for debugging
             System.Diagnostics.Debug.WriteLine($"Sync summary: {filesToDownload.Count} to download, {filesToUpload.Count} to upload, {filesToDelete.Count} to delete");
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Files to download: {string.Join(", ", filesToDownload.Select(f => f.Path))}");
+
+            // Check for duplicates in download list
+            var duplicateDownloads = filesToDownload.GroupBy(f => f.Path).Where(g => g.Count() > 1).ToList();
+            if (duplicateDownloads.Count > 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SyncEngine] WARNING: Found {duplicateDownloads.Count} duplicate paths in download list!");
+                foreach (var dup in duplicateDownloads)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[SyncEngine]   Duplicate: {dup.Key} appears {dup.Count()} times");
+                }
+            }
 
             ReportProgress(accountId, SyncStatus.Running, totalFiles, 0, totalBytes, 0, filesDeleted: filesToDelete.Count, conflictsDetected: conflictCount);
 
@@ -490,6 +528,18 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         file.Path,
                         _syncCancellation.Token);
 
+                    // Synchronize local file timestamp to match OneDrive's timestamp
+                    // This prevents false "file changed" detection on next sync
+                    if (uploadedItem.LastModifiedDateTime.HasValue && File.Exists(file.LocalPath))
+                    {
+                        File.SetLastWriteTimeUtc(file.LocalPath, uploadedItem.LastModifiedDateTime.Value.UtcDateTime);
+                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] Synchronized local timestamp to OneDrive: {file.Name}, " +
+                            $"OldTime={file.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, NewTime={uploadedItem.LastModifiedDateTime.Value.UtcDateTime:yyyy-MM-dd HH:mm:ss}");
+                    }
+
+                    // Use OneDrive's timestamp in database to match the file system
+                    var oneDriveTimestamp = uploadedItem.LastModifiedDateTime?.UtcDateTime ?? file.LastModifiedUtc;
+
                     // Update file metadata with uploaded status and OneDrive metadata
                     FileMetadata uploadedFile;
                     if (isExistingFile)
@@ -503,7 +553,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                             LocalPath = file.LocalPath,
                             LocalHash = file.LocalHash,
                             Size = file.Size,
-                            LastModifiedUtc = file.LastModifiedUtc, // Keep local timestamp
+                            LastModifiedUtc = oneDriveTimestamp, // Use OneDrive's timestamp
                             SyncStatus = FileSyncStatus.Synced,
                             LastSyncDirection = SyncDirection.Upload
                         };
@@ -511,13 +561,12 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     else
                     {
                         // New file - use OneDrive ID and metadata from upload response
-                        // IMPORTANT: Keep local LastModifiedUtc, not OneDrive's (they may differ slightly)
                         uploadedFile = file with
                         {
                             Id = uploadedItem.Id ?? throw new InvalidOperationException($"Upload succeeded but no ID returned for {file.Name}"),
                             CTag = uploadedItem.CTag,
                             ETag = uploadedItem.ETag,
-                            // Keep file.LastModifiedUtc (local timestamp) for accurate comparison in next sync
+                            LastModifiedUtc = oneDriveTimestamp, // Use OneDrive's timestamp
                             SyncStatus = FileSyncStatus.Synced,
                             LastSyncDirection = SyncDirection.Upload
                         };
@@ -736,6 +785,11 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             }
             ReportProgress(accountId, SyncStatus.Failed, 0, 0, 0, 0);
             throw;
+        }
+        finally
+        {
+            // Always reset the sync-in-progress flag
+            Interlocked.Exchange(ref _syncInProgress, 0);
         }
     }
 
