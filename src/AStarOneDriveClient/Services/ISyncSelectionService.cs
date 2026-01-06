@@ -65,4 +65,28 @@ public interface ISyncSelectionService
     /// This is a helper method for determining parent states during upward propagation.
     /// </remarks>
     SelectionState CalculateStateFromChildren(OneDriveFolderNode folder);
+
+    /// <summary>
+    /// Saves the current selection state to the database for persistence.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="rootFolders">The root-level folders containing current selections.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// Only explicitly checked folders are persisted. Indeterminate states are recalculated on load.
+    /// </remarks>
+    Task SaveSelectionsToDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Loads saved selection state from the database and applies it to the folder tree.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="rootFolders">The root-level folders to apply selections to.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <remarks>
+    /// After loading, parent states are automatically recalculated to reflect indeterminate states.
+    /// </remarks>
+    Task LoadSelectionsFromDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default);
 }

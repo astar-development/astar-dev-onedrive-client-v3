@@ -120,6 +120,9 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             {
                 RootFolders.Add(folder);
             }
+
+            // Load saved selections from database
+            await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, [.. RootFolders], cancellationToken);
         }
         catch (Exception ex)
         {
@@ -185,6 +188,22 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
 
         _selectionService.SetSelection(folder, newState);
         _selectionService.UpdateParentStates(folder, [.. RootFolders]);
+
+        // Save selections to database (fire and forget for UI responsiveness)
+        if (!string.IsNullOrEmpty(SelectedAccountId))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _selectionService.SaveSelectionsToDatabaseAsync(SelectedAccountId, [.. RootFolders]);
+                }
+                catch
+                {
+                    // Silently ignore persistence errors to avoid disrupting UI
+                }
+            });
+        }
     }
 
     /// <summary>
@@ -193,6 +212,22 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     private void ClearSelections()
     {
         _selectionService.ClearAllSelections([.. RootFolders]);
+
+        // Clear selections from database (fire and forget for UI responsiveness)
+        if (!string.IsNullOrEmpty(SelectedAccountId))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _selectionService.SaveSelectionsToDatabaseAsync(SelectedAccountId, [.. RootFolders]);
+                }
+                catch
+                {
+                    // Silently ignore persistence errors to avoid disrupting UI
+                }
+            });
+        }
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Repositories;
 
 namespace AStarOneDriveClient.Services;
 
@@ -7,6 +8,24 @@ namespace AStarOneDriveClient.Services;
 /// </summary>
 public sealed class SyncSelectionService : ISyncSelectionService
 {
+    private readonly ISyncConfigurationRepository? _configurationRepository;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SyncSelectionService"/> class.
+    /// </summary>
+    public SyncSelectionService()
+    {
+        // Parameterless constructor for backward compatibility with existing tests
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SyncSelectionService"/> class with database persistence.
+    /// </summary>
+    /// <param name="configurationRepository">The sync configuration repository.</param>
+    public SyncSelectionService(ISyncConfigurationRepository configurationRepository)
+    {
+        _configurationRepository = configurationRepository;
+    }
     /// <inheritdoc/>
     public void SetSelection(OneDriveFolderNode folder, bool isSelected)
     {
@@ -154,5 +173,101 @@ public sealed class SyncSelectionService : ISyncSelectionService
         }
 
         return null;
+    }
+
+    /// <inheritdoc/>
+    public async Task SaveSelectionsToDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(rootFolders);
+
+        if (_configurationRepository is null)
+            return; // No persistence configured
+
+        // Get all checked folders
+        var selectedFolders = GetSelectedFolders(rootFolders);
+
+        // Convert to SyncConfiguration records
+        var configurations = selectedFolders.Select(folder => new SyncConfiguration(
+            Id: 0, // Will be auto-generated
+            AccountId: accountId,
+            FolderPath: folder.Path,
+            IsSelected: true,
+            LastModifiedUtc: DateTime.UtcNow
+        ));
+
+        // Save batch (replaces all existing selections for this account)
+        await _configurationRepository.SaveBatchAsync(accountId, configurations, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task LoadSelectionsFromDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        ArgumentNullException.ThrowIfNull(rootFolders);
+
+        if (_configurationRepository is null)
+            return; // No persistence configured
+
+        // Get saved folder paths
+        var savedFolderPaths = await _configurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
+        if (savedFolderPaths.Count == 0)
+            return;
+
+        // Build lookup dictionary for fast path-to-node resolution
+        var pathToNodeMap = new Dictionary<string, OneDriveFolderNode>(StringComparer.OrdinalIgnoreCase);
+        BuildPathLookup(rootFolders, pathToNodeMap);
+
+        // Apply selections
+        foreach (var folderPath in savedFolderPaths)
+        {
+            if (pathToNodeMap.TryGetValue(folderPath, out var folder))
+            {
+                SetSelection(folder, true);
+            }
+            // Silently ignore folders that no longer exist (deleted or renamed)
+        }
+
+        // Recalculate parent states to ensure indeterminate states are correct
+        foreach (var rootFolder in rootFolders)
+        {
+            RecalculateParentStates(rootFolder);
+        }
+    }
+
+    private static void BuildPathLookup(List<OneDriveFolderNode> folders, Dictionary<string, OneDriveFolderNode> pathMap)
+    {
+        foreach (var folder in folders)
+        {
+            pathMap[folder.Path] = folder;
+
+            if (folder.Children.Count > 0)
+            {
+                BuildPathLookup(folder.Children.ToList(), pathMap);
+            }
+        }
+    }
+
+    private void RecalculateParentStates(OneDriveFolderNode folder)
+    {
+        if (folder.Children.Count > 0)
+        {
+            // Recursively update children first
+            foreach (var child in folder.Children)
+            {
+                RecalculateParentStates(child);
+            }
+
+            // Then update this folder's state based on children
+            var calculatedState = CalculateStateFromChildren(folder);
+            folder.SelectionState = calculatedState;
+            folder.IsSelected = calculatedState switch
+            {
+                SelectionState.Checked => true,
+                SelectionState.Unchecked => false,
+                SelectionState.Indeterminate => null,
+                _ => null
+            };
+        }
     }
 }
