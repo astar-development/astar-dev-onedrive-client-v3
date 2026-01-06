@@ -1,0 +1,125 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:AStarOneDriveClient.ViewModels"
+             xmlns:models="using:AStarOneDriveClient.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="AStarOneDriveClient.Views.SyncTreeView"
+             x:DataType="vm:SyncTreeViewModel">
+
+  <Design.DataContext>
+    <vm:SyncTreeViewModel />
+  </Design.DataContext>
+
+  <Grid RowDefinitions="Auto,*,Auto">
+    <!-- Header -->
+    <Border Grid.Row="0"
+            Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+            Padding="16,12"
+            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0">
+          <TextBlock Text="Select Folders to Sync"
+                     FontSize="18"
+                     FontWeight="SemiBold"
+                     Margin="0,0,0,4"/>
+          <TextBlock Text="Choose which folders should be synced to your local drive"
+                     FontSize="12"
+                     Opacity="0.7"/>
+        </StackPanel>
+
+        <Button Grid.Column="1"
+                Content="Clear All"
+                Command="{Binding ClearSelectionsCommand}"
+                VerticalAlignment="Center"
+                Margin="8,0,0,0"/>
+      </Grid>
+    </Border>
+
+    <!-- Tree View -->
+    <ScrollViewer Grid.Row="1">
+      <TreeView ItemsSource="{Binding RootFolders}"
+                SelectionMode="Single"
+                Margin="8">
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate ItemsSource="{Binding Children}" x:DataType="models:OneDriveFolderNode">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <!-- Tri-state CheckBox -->
+              <CheckBox IsChecked="{Binding IsSelected}"
+                        IsThreeState="True"
+                        Command="{Binding $parent[UserControl].((vm:SyncTreeViewModel)DataContext).ToggleSelectionCommand}"
+                        CommandParameter="{Binding}"
+                        VerticalAlignment="Center"/>
+
+              <!-- Folder Icon -->
+              <PathIcon Data="M4 4h6l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"
+                        Width="16"
+                        Height="16"
+                        Foreground="{DynamicResource SystemAccentColor}"
+                        VerticalAlignment="Center"/>
+
+              <!-- Folder Name -->
+              <TextBlock Text="{Binding Name}"
+                         VerticalAlignment="Center"
+                         FontSize="14"/>
+
+              <!-- Path (subtle) -->
+              <TextBlock Text="{Binding Path}"
+                         VerticalAlignment="Center"
+                         FontSize="11"
+                         Opacity="0.6"
+                         Margin="8,0,0,0"/>
+            </StackPanel>
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+
+        <TreeView.Styles>
+          <!-- Bind IsExpanded from model to TreeViewItem -->
+          <Style Selector="TreeViewItem" x:DataType="models:OneDriveFolderNode">
+            <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+          </Style>
+        </TreeView.Styles>
+      </TreeView>
+    </ScrollViewer>
+
+    <!-- Loading Indicator & Error Message -->
+    <StackPanel Grid.Row="2"
+                Spacing="8"
+                Margin="16,8">
+      <!-- Loading -->
+      <StackPanel Orientation="Horizontal"
+                  Spacing="8"
+                  IsVisible="{Binding IsLoading}">
+        <ProgressBar IsIndeterminate="True"
+                     Width="200"
+                     Height="4"
+                     VerticalAlignment="Center"/>
+        <TextBlock Text="Loading folders..."
+                   VerticalAlignment="Center"
+                   FontSize="12"
+                   Opacity="0.7"/>
+      </StackPanel>
+
+      <!-- Error -->
+      <Border Background="#FFEBEE"
+              BorderBrush="#C62828"
+              BorderThickness="1"
+              CornerRadius="4"
+              Padding="12,8"
+              IsVisible="{Binding ErrorMessage, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <PathIcon Data="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                    Width="16"
+                    Height="16"
+                    Foreground="#C62828"/>
+          <TextBlock Text="{Binding ErrorMessage}"
+                     TextWrapping="Wrap"
+                     Foreground="#C62828"
+                     FontSize="12"/>
+        </StackPanel>
+      </Border>
+    </StackPanel>
+  </Grid>
+</UserControl>
