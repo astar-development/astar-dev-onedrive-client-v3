@@ -58,6 +58,7 @@ public static class ServiceConfiguration
         services.AddScoped<IFolderTreeService, FolderTreeService>();
         services.AddScoped<ISyncSelectionService, SyncSelectionService>();
         services.AddScoped<ILocalFileScanner, LocalFileScanner>();
+        services.AddScoped<IRemoteChangeDetector, RemoteChangeDetector>();
 
         // ViewModels
         services.AddTransient<AccountManagementViewModel>();
