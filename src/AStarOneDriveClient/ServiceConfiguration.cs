@@ -2,6 +2,8 @@ using AStarOneDriveClient.Authentication;
 using AStarOneDriveClient.Data;
 using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.Services;
+using AStarOneDriveClient.Services.OneDriveServices;
+using AStarOneDriveClient.ViewModels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,6 +52,14 @@ public static class ServiceConfiguration
 
         // Services
         services.AddScoped<IWindowPreferencesService, WindowPreferencesService>();
+        services.AddScoped<IGraphApiClient, GraphApiClient>();
+        services.AddScoped<IFolderTreeService, FolderTreeService>();
+        services.AddScoped<ISyncSelectionService, SyncSelectionService>();
+
+        // ViewModels
+        services.AddTransient<AccountManagementViewModel>();
+        services.AddTransient<SyncTreeViewModel>();
+        services.AddTransient<MainWindowViewModel>();
 
         // Logging
         services.AddLogging(builder =>

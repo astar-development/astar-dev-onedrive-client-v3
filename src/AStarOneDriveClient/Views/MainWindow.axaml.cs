@@ -1,6 +1,4 @@
 using Avalonia.Controls;
-using AStarOneDriveClient.Authentication;
-using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,14 +13,10 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Retrieve dependencies from DI container
+        // Retrieve the MainWindowViewModel from DI container
         if (App.Services is not null)
         {
-            var authService = App.Services.GetRequiredService<IAuthService>();
-            var accountRepository = App.Services.GetRequiredService<IAccountRepository>();
-
-            // Set the DataContext for the entire window
-            DataContext = new AccountManagementViewModel(authService, accountRepository);
+            DataContext = App.Services.GetRequiredService<MainWindowViewModel>();
         }
     }
 }

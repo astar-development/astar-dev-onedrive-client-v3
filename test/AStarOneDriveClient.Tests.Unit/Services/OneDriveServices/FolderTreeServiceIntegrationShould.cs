@@ -44,7 +44,7 @@ public class FolderTreeServiceIntegrationShould
         return AuthConfiguration.LoadFromConfiguration(configuration);
     }
 
-    [Fact]
+    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
     public async Task GetRootFoldersFromRealOneDriveAccount()
     {
         // Arrange
