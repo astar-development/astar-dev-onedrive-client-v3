@@ -69,6 +69,7 @@ public static class ServiceConfiguration
         services.AddTransient<SyncTreeViewModel>();
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<ConflictResolutionViewModel>();
+        services.AddTransient<SyncProgressViewModel>();
 
         // Logging
         services.AddLogging(builder =>

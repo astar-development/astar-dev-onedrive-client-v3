@@ -17,7 +17,7 @@ public class MainWindowViewModelShould
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
 
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         sut.AccountManagement.ShouldBe(accountVm);
         sut.SyncTree.ShouldBe(syncTreeVm);
@@ -29,7 +29,7 @@ public class MainWindowViewModelShould
         var syncTreeVm = CreateSyncTreeViewModel();
 
         var exception = Should.Throw<ArgumentNullException>(() =>
-            new MainWindowViewModel(null!, syncTreeVm));
+            new MainWindowViewModel(null!, syncTreeVm, Substitute.For<IServiceProvider>()));
 
         exception.ParamName.ShouldBe("accountManagementViewModel");
     }
@@ -40,7 +40,7 @@ public class MainWindowViewModelShould
         var accountVm = CreateAccountManagementViewModel();
 
         var exception = Should.Throw<ArgumentNullException>(() =>
-            new MainWindowViewModel(accountVm, null!));
+            new MainWindowViewModel(accountVm, null!, Substitute.For<IServiceProvider>()));
 
         exception.ParamName.ShouldBe("syncTreeViewModel");
     }
@@ -50,7 +50,7 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         var account = new AccountInfo(
             "account-123",
@@ -69,7 +69,7 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         var account = new AccountInfo(
             "account-123",
@@ -89,7 +89,7 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         Should.NotThrow(() => sut.Dispose());
     }

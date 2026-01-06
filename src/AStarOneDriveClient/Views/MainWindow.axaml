@@ -22,8 +22,15 @@
             <views:AccountManagementView DataContext="{Binding AccountManagement}" />
         </Border>
 
-        <!-- Right Panel: Sync Tree -->
-        <views:SyncTreeView Grid.Column="1"
-                            DataContext="{Binding SyncTree}" />
+        <!-- Right Panel: Content Area (Sync Tree or Progress) -->
+        <Panel Grid.Column="1">
+            <!-- Sync Tree View (base layer) -->
+            <views:SyncTreeView DataContext="{Binding SyncTree}" />
+
+            <!-- Sync Progress View (overlay when syncing) -->
+            <views:SyncProgressView DataContext="{Binding SyncProgress}"
+                                    IsVisible="{Binding #SyncProgressView.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                    x:Name="SyncProgressView" />
+        </Panel>
     </Grid>
 </Window>

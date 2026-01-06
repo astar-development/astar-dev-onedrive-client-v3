@@ -70,7 +70,7 @@ public class MainWindowViewModelIntegrationShould : IDisposable
 
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         // Allow initialization to complete
         await Task.Delay(100);
@@ -111,7 +111,7 @@ public class MainWindowViewModelIntegrationShould : IDisposable
 
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         await Task.Delay(100);
         accountVm.SelectedAccount = account;
@@ -157,7 +157,7 @@ public class MainWindowViewModelIntegrationShould : IDisposable
 
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         await Task.Delay(100);
 
@@ -190,7 +190,7 @@ public class MainWindowViewModelIntegrationShould : IDisposable
 
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         await Task.Delay(100);
 
@@ -224,7 +224,7 @@ public class MainWindowViewModelIntegrationShould : IDisposable
 
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm);
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>());
 
         await Task.Delay(100);
         accountVm.SelectedAccount = account;
