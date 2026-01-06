@@ -101,7 +101,9 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     public string ProgressText => SyncState.Status switch
     {
         SyncStatus.Idle => "Ready to sync",
+        SyncStatus.Running when SyncState.TotalFiles == 0 => "Scanning for changes...",
         SyncStatus.Running => $"Syncing {SyncState.CompletedFiles} of {SyncState.TotalFiles} files",
+        SyncStatus.Completed when SyncState.TotalFiles == 0 => "No changes to sync",
         SyncStatus.Completed => $"Sync completed - {SyncState.TotalFiles} files",
         SyncStatus.Paused => "Sync paused",
         SyncStatus.Failed => "Sync failed",
@@ -230,9 +232,12 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
 
         try
         {
-            var children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, cancellationToken);
+            folder.IsLoading = true;
 
+            // Clear placeholder dummy child
             folder.Children.Clear();
+
+            var children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, cancellationToken);
             foreach (var child in children)
             {
                 // Inherit parent's selection state for new children
@@ -250,6 +255,10 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         catch (Exception ex)
         {
             ErrorMessage = $"Failed to load child folders: {ex.Message}";
+        }
+        finally
+        {
+            folder.IsLoading = false;
         }
     }
 

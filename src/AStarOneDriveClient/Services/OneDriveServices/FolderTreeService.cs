@@ -52,6 +52,9 @@ public sealed class FolderTreeService : IFolderTreeService
                 parentId: null,
                 isFolder: true);
 
+            // Add placeholder child so expansion toggle appears
+            node.Children.Add(new OneDriveFolderNode());
+
             nodes.Add(node);
         }
 
@@ -91,6 +94,9 @@ public sealed class FolderTreeService : IFolderTreeService
                 path: $"{parentPath}/{item.Name}",
                 parentId: parentFolderId,
                 isFolder: true);
+
+            // Add placeholder child so expansion toggle appears
+            node.Children.Add(new OneDriveFolderNode());
 
             nodes.Add(node);
         }

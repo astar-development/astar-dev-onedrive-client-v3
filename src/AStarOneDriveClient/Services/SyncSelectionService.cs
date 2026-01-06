@@ -211,21 +211,29 @@ public sealed class SyncSelectionService : ISyncSelectionService
 
         // Get saved folder paths
         var savedFolderPaths = await _configurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
-        if (savedFolderPaths.Count == 0)
-            return;
 
         // Build lookup dictionary for fast path-to-node resolution
         var pathToNodeMap = new Dictionary<string, OneDriveFolderNode>(StringComparer.OrdinalIgnoreCase);
         BuildPathLookup(rootFolders, pathToNodeMap);
 
-        // Apply selections
-        foreach (var folderPath in savedFolderPaths)
+        // Initialize ALL folders to Unchecked first
+        foreach (var folder in pathToNodeMap.Values)
         {
-            if (pathToNodeMap.TryGetValue(folderPath, out var folder))
+            folder.SelectionState = SelectionState.Unchecked;
+            folder.IsSelected = false;
+        }
+
+        // Then set saved selections to Checked
+        if (savedFolderPaths.Count > 0)
+        {
+            foreach (var folderPath in savedFolderPaths)
             {
-                SetSelection(folder, true);
+                if (pathToNodeMap.TryGetValue(folderPath, out var folder))
+                {
+                    SetSelection(folder, true);
+                }
+                // Silently ignore folders that no longer exist (deleted or renamed)
             }
-            // Silently ignore folders that no longer exist (deleted or renamed)
         }
 
         // Recalculate parent states to ensure indeterminate states are correct

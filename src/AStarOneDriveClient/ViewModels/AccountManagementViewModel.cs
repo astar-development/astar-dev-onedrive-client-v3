@@ -144,7 +144,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                 // Create new account with default sync path
                 var defaultPath = Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                    "OneDrive",
+                    "AStarOneDrive",
                     result.DisplayName.Replace("@", "_").Replace(".", "_"));
 
                 var newAccount = new AccountInfo(

@@ -56,10 +56,25 @@ public sealed class OneDriveFolderNode : ReactiveObject
     /// </remarks>
     public bool ChildrenLoaded { get; set; }
 
+    private bool _isExpanded;
     /// <summary>
     /// Gets or sets a value indicating whether this node is expanded in the tree view.
     /// </summary>
-    public bool IsExpanded { get; set; }
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set => this.RaiseAndSetIfChanged(ref _isExpanded, value);
+    }
+
+    private bool _isLoading;
+    /// <summary>
+    /// Gets or sets a value indicating whether this node is currently loading its children.
+    /// </summary>
+    public bool IsLoading
+    {
+        get => _isLoading;
+        set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+    }
 
     private SelectionState _selectionState;
     /// <summary>

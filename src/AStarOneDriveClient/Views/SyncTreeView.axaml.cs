@@ -1,4 +1,7 @@
 using Avalonia.Controls;
+using AStarOneDriveClient.Models;
+using AStarOneDriveClient.ViewModels;
+using System.Collections.Specialized;
 
 namespace AStarOneDriveClient.Views;
 
@@ -13,5 +16,62 @@ public partial class SyncTreeView : UserControl
     public SyncTreeView()
     {
         InitializeComponent();
+
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (DataContext is SyncTreeViewModel viewModel)
+        {
+            // Subscribe to RootFolders collection changes to attach property change handlers
+            viewModel.RootFolders.CollectionChanged += OnRootFoldersChanged;
+
+            // Attach to existing items
+            foreach (var node in viewModel.RootFolders)
+            {
+                AttachNodeExpansionHandler(node, viewModel);
+            }
+        }
+    }
+
+    private void OnRootFoldersChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (DataContext is not SyncTreeViewModel viewModel)
+            return;
+
+        if (e.NewItems != null)
+        {
+            foreach (OneDriveFolderNode node in e.NewItems)
+            {
+                AttachNodeExpansionHandler(node, viewModel);
+            }
+        }
+    }
+
+    private static void AttachNodeExpansionHandler(OneDriveFolderNode node, SyncTreeViewModel viewModel)
+    {
+        node.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(OneDriveFolderNode.IsExpanded) &&
+                node.IsExpanded &&
+                !node.ChildrenLoaded)
+            {
+                // Trigger lazy loading when expanded for the first time
+                viewModel.LoadChildrenCommand.Execute(node).Subscribe();
+            }
+        };
+
+        // Recursively attach to children as they're added
+        node.Children.CollectionChanged += (s, e) =>
+        {
+            if (e.NewItems != null)
+            {
+                foreach (OneDriveFolderNode child in e.NewItems)
+                {
+                    AttachNodeExpansionHandler(child, viewModel);
+                }
+            }
+        };
     }
 }

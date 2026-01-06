@@ -36,13 +36,17 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         cancellationToken.ThrowIfCancellationRequested();
 
         // For initial implementation, scan the folder tree
+        // Note: For large OneDrive accounts (100k+ files), this can take several minutes
         // In future sprints, this will be enhanced with proper delta query support
         var changes = new List<FileMetadata>();
         var rootItem = await GetFolderItemAsync(folderPath, cancellationToken);
 
         if (rootItem is not null)
         {
-            await ScanFolderRecursiveAsync(accountId, rootItem, folderPath, changes, cancellationToken);
+            // Add a practical limit for initial scan to prevent timeout
+            // This will be removed when we implement proper delta query support
+            const int maxFiles = 10000; // Limit initial scan to 10k files
+            await ScanFolderRecursiveAsync(accountId, rootItem, folderPath, changes, cancellationToken, maxFiles);
         }
 
         // Generate a simple delta token based on timestamp
@@ -54,14 +58,37 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
 
     private async Task<DriveItem?> GetFolderItemAsync(string folderPath, CancellationToken cancellationToken)
     {
+        // For root or empty path, return the drive root
         if (folderPath == "/" || string.IsNullOrEmpty(folderPath))
         {
             return await _graphApiClient.GetDriveRootAsync(cancellationToken);
         }
 
-        // For now, this is a simplified version
-        // A full implementation would traverse the path to find the folder
-        return await _graphApiClient.GetDriveRootAsync(cancellationToken);
+        // Clean up the path
+        folderPath = folderPath.Trim('/');
+
+        // Get root and traverse path segments
+        var currentItem = await _graphApiClient.GetDriveRootAsync(cancellationToken);
+        if (currentItem?.Id is null)
+        {
+            return null;
+        }
+
+        var pathSegments = folderPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        foreach (var segment in pathSegments)
+        {
+            var children = await _graphApiClient.GetDriveItemChildrenAsync(currentItem.Id, cancellationToken);
+            currentItem = children.FirstOrDefault(c =>
+                c.Name?.Equals(segment, StringComparison.OrdinalIgnoreCase) == true &&
+                c.Folder is not null);
+
+            if (currentItem?.Id is null)
+            {
+                return null; // Path not found
+            }
+        }
+
+        return currentItem;
     }
 
     private async Task ScanFolderRecursiveAsync(
@@ -69,9 +96,15 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         DriveItem parentItem,
         string currentPath,
         List<FileMetadata> changes,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int maxFiles = int.MaxValue)
     {
         cancellationToken.ThrowIfCancellationRequested();
+
+        if (changes.Count >= maxFiles)
+        {
+            return; // Reached the limit
+        }
 
         if (parentItem.Id is null)
         {
@@ -84,6 +117,11 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         {
             cancellationToken.ThrowIfCancellationRequested();
 
+            if (changes.Count >= maxFiles)
+            {
+                return; // Reached the limit
+            }
+
             if (item.File is not null && item.Id is not null && item.Name is not null)
             {
                 // It's a file
@@ -95,7 +133,7 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
             {
                 // It's a folder - scan recursively
                 var itemPath = CombinePaths(currentPath, item.Name);
-                await ScanFolderRecursiveAsync(accountId, item, itemPath, changes, cancellationToken);
+                await ScanFolderRecursiveAsync(accountId, item, itemPath, changes, cancellationToken, maxFiles);
             }
         }
     }
