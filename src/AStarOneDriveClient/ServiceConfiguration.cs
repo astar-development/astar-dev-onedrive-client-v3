@@ -59,6 +59,7 @@ public static class ServiceConfiguration
         services.AddScoped<ISyncSelectionService, SyncSelectionService>();
         services.AddScoped<ILocalFileScanner, LocalFileScanner>();
         services.AddScoped<IRemoteChangeDetector, RemoteChangeDetector>();
+        services.AddScoped<ISyncEngine, SyncEngine>();
 
         // ViewModels
         services.AddTransient<AccountManagementViewModel>();
