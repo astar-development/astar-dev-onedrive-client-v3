@@ -134,6 +134,11 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> ViewConflictsCommand { get; }
 
     /// <summary>
+    /// Gets the command to close the sync progress view.
+    /// </summary>
+    public ReactiveCommand<Unit, Unit> CloseCommand { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="SyncProgressViewModel"/>.
     /// </summary>
     /// <param name="accountId">The account ID to sync.</param>
@@ -161,6 +166,7 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
         StartSyncCommand = ReactiveCommand.CreateFromTask(StartSyncAsync, canStart);
         PauseSyncCommand = ReactiveCommand.CreateFromTask(PauseSyncAsync, canPause);
         ViewConflictsCommand = ReactiveCommand.Create(OnViewConflicts, hasConflicts);
+        CloseCommand = ReactiveCommand.Create(() => { /* Handled by MainWindowViewModel */ });
 
         // Subscribe to sync progress updates
         _syncEngine.Progress

@@ -22,7 +22,7 @@
             <views:AccountManagementView DataContext="{Binding AccountManagement}" />
         </Border>
 
-        <!-- Right Panel: Content Area (Sync Tree or Progress) -->
+        <!-- Right Panel: Content Area (Sync Tree, Progress, or Conflicts) -->
         <Panel Grid.Column="1">
             <!-- Sync Tree View (base layer) -->
             <views:SyncTreeView DataContext="{Binding SyncTree}" />
@@ -31,6 +31,11 @@
             <views:SyncProgressView DataContext="{Binding SyncProgress}"
                                     IsVisible="{Binding #SyncProgressView.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
                                     x:Name="SyncProgressView" />
+
+            <!-- Conflict Resolution View (top overlay when viewing conflicts) -->
+            <views:ConflictResolutionView DataContext="{Binding ConflictResolution}"
+                                          IsVisible="{Binding #ConflictResolutionView.DataContext, Converter={x:Static ObjectConverters.IsNotNull}}"
+                                          x:Name="ConflictResolutionView" />
         </Panel>
     </Grid>
 </Window>

@@ -47,7 +47,7 @@
             </StackPanel>
 
             <!-- Conflicts Warning -->
-            <Border Background="#FFF4433630"
+            <Border Background="#30F44336"
                     BorderBrush="#FFCC3300"
                     BorderThickness="2"
                     CornerRadius="4"
@@ -70,7 +70,7 @@
                        HorizontalAlignment="Center"
                        FontSize="16"
                        Opacity="0.6"
-                       IsVisible="{Binding !CurrentProgress, Converter={x:Static ObjectConverters.IsNull}}" />
+                       IsVisible="{Binding CurrentProgress, Converter={x:Static ObjectConverters.IsNull}}" />
         </StackPanel>
 
         <!-- Control Buttons -->
@@ -91,6 +91,9 @@
             <Button Content="View Conflicts"
                     Command="{Binding ViewConflictsCommand}"
                     IsVisible="{Binding HasConflicts}"
+                    Width="120" />
+            <Button Content="Close"
+                    Command="{Binding CloseCommand}"
                     Width="120" />
         </StackPanel>
 

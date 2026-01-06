@@ -9,7 +9,9 @@
         <vm:ConflictResolutionViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+    <Grid RowDefinitions="Auto,*,Auto"
+          Margin="20"
+          Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
 
         <!-- Header -->
         <StackPanel Grid.Row="0" Spacing="10" Margin="0,0,0,20">

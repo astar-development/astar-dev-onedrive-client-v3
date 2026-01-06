@@ -1,3 +1,4 @@
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,10 +24,25 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
         private set => this.RaiseAndSetIfChanged(ref _syncProgress, value);
     }
 
+    private ConflictResolutionViewModel? _conflictResolution;
+    /// <summary>
+    /// Gets the conflict resolution view model (when viewing conflicts).
+    /// </summary>
+    public ConflictResolutionViewModel? ConflictResolution
+    {
+        get => _conflictResolution;
+        private set => this.RaiseAndSetIfChanged(ref _conflictResolution, value);
+    }
+
     /// <summary>
     /// Gets a value indicating whether sync progress view should be shown.
     /// </summary>
-    public bool ShowSyncProgress => SyncProgress is not null;
+    public bool ShowSyncProgress => SyncProgress is not null && ConflictResolution is null;
+
+    /// <summary>
+    /// Gets a value indicating whether conflict resolution view should be shown.
+    /// </summary>
+    public bool ShowConflictResolution => ConflictResolution is not null;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
@@ -66,9 +82,21 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
                     if (SyncProgress is null || SyncProgress.AccountId != state.AccountId)
                     {
                         SyncProgress?.Dispose();
-                        SyncProgress = ActivatorUtilities.CreateInstance<SyncProgressViewModel>(
+                        var syncProgressVm = ActivatorUtilities.CreateInstance<SyncProgressViewModel>(
                             _serviceProvider,
                             state.AccountId);
+
+                        // Wire up ViewConflictsCommand to show conflict resolution
+                        syncProgressVm.ViewConflictsCommand
+                            .Subscribe(_ => ShowConflictResolutionView(state.AccountId))
+                            .DisposeWith(_disposables);
+
+                        // Wire up CloseCommand to dismiss sync progress view
+                        syncProgressVm.CloseCommand
+                            .Subscribe(_ => CloseSyncProgressView())
+                            .DisposeWith(_disposables);
+
+                        SyncProgress = syncProgressVm;
                     }
                 }
                 else if (!state.IsSyncing && SyncProgress is not null)
@@ -78,6 +106,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
                 }
 
                 this.RaisePropertyChanged(nameof(ShowSyncProgress));
+                this.RaisePropertyChanged(nameof(ShowConflictResolution));
             })
             .DisposeWith(_disposables);
     }
@@ -92,10 +121,68 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     /// </summary>
     public SyncTreeViewModel SyncTree { get; }
 
+    /// <summary>
+    /// Shows the conflict resolution view for the specified account.
+    /// </summary>
+    /// <param name="accountId">The account ID to show conflicts for.</param>
+    private void ShowConflictResolutionView(string accountId)
+    {
+        ConflictResolution?.Dispose();
+        var conflictResolutionVm = ActivatorUtilities.CreateInstance<ConflictResolutionViewModel>(
+            _serviceProvider,
+            accountId);
+
+        // Wire up CancelCommand to return to sync progress
+        conflictResolutionVm.CancelCommand
+            .Subscribe(_ => CloseConflictResolutionView())
+            .DisposeWith(_disposables);
+
+        // Wire up ResolveAllCommand to return to sync progress after resolution
+        conflictResolutionVm.ResolveAllCommand
+            .Subscribe(_ =>
+            {
+                // Delay closing to allow user to see the status message
+                Observable.Timer(TimeSpan.FromSeconds(2))
+                    .ObserveOn(RxApp.MainThreadScheduler)
+                    .Subscribe(_ => CloseConflictResolutionView())
+                    .DisposeWith(_disposables);
+            })
+            .DisposeWith(_disposables);
+
+        ConflictResolution = conflictResolutionVm;
+        this.RaisePropertyChanged(nameof(ShowSyncProgress));
+        this.RaisePropertyChanged(nameof(ShowConflictResolution));
+    }
+
+    /// <summary>
+    /// Closes the conflict resolution view and returns to sync progress.
+    /// </summary>
+    private void CloseConflictResolutionView()
+    {
+        ConflictResolution?.Dispose();
+        ConflictResolution = null;
+        this.RaisePropertyChanged(nameof(ShowSyncProgress));
+        this.RaisePropertyChanged(nameof(ShowConflictResolution));
+    }
+
+    /// <summary>
+    /// Closes the sync progress view and returns to sync tree.
+    /// </summary>
+    private void CloseSyncProgressView()
+    {
+        SyncProgress?.Dispose();
+        SyncProgress = null;
+        ConflictResolution?.Dispose();
+        ConflictResolution = null;
+        this.RaisePropertyChanged(nameof(ShowSyncProgress));
+        this.RaisePropertyChanged(nameof(ShowConflictResolution));
+    }
+
     /// <inheritdoc/>
     public void Dispose()
     {
         _disposables.Dispose();
+        ConflictResolution?.Dispose();
         SyncProgress?.Dispose();
         AccountManagement.Dispose();
         SyncTree.Dispose();

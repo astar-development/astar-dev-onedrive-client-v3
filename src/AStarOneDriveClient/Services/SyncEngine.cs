@@ -115,23 +115,36 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var existingFiles = await _fileMetadataRepository.GetByAccountIdAsync(accountId, cancellationToken);
             var existingFilesDict = existingFiles.ToDictionary(f => f.Path, f => f);
 
+            // Detect remote changes in selected folders FIRST (before deciding what to upload)
+            var allRemoteFiles = new List<FileMetadata>();
+            foreach (var folder in selectedFolders)
+            {
+                var (remoteFiles, _) = await _remoteChangeDetector.DetectChangesAsync(
+                    accountId,
+                    folder,
+                    previousDeltaLink: null,
+                    _syncCancellation.Token);
+                allRemoteFiles.AddRange(remoteFiles);
+            }
+
+            // Create dictionaries for fast lookup
+            var remoteFilesDict = allRemoteFiles.ToDictionary(f => f.Path, f => f);
+            var localFilesDict = allLocalFiles.ToDictionary(f => f.Path, f => f);
+
             // Determine which files need uploading
             var filesToUpload = new List<FileMetadata>();
             foreach (var localFile in allLocalFiles)
             {
                 if (existingFilesDict.TryGetValue(localFile.Path, out var existingFile))
                 {
-                    // Check if file has changed
-                    // Priority: Hash comparison is most reliable when available
+                    // File exists in DB - check if it changed locally
                     var bothHaveHashes = !string.IsNullOrEmpty(existingFile.LocalHash) &&
                                         !string.IsNullOrEmpty(localFile.LocalHash);
 
                     bool hasChanged;
                     if (bothHaveHashes)
                     {
-                        // If both files have hashes, trust hash comparison only
                         hasChanged = existingFile.LocalHash != localFile.LocalHash;
-
                         if (hasChanged)
                         {
                             System.Diagnostics.Debug.WriteLine($"[SyncEngine] File marked as changed: {localFile.Name}");
@@ -140,9 +153,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     }
                     else
                     {
-                        // Fallback: use size comparison when hashes unavailable
                         hasChanged = existingFile.Size != localFile.Size;
-
                         if (hasChanged)
                         {
                             System.Diagnostics.Debug.WriteLine($"[SyncEngine] File marked as changed: {localFile.Name}");
@@ -155,39 +166,27 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         filesToUpload.Add(localFile);
                     }
                 }
-                else
+                else if (!remoteFilesDict.ContainsKey(localFile.Path))
                 {
-                    // New file
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] New file to upload: {localFile.Name}");
+                    // File NOT in DB AND NOT on remote - new local file, needs upload
+                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] New local file to upload: {localFile.Name}");
                     filesToUpload.Add(localFile);
                 }
+                // If file NOT in DB BUT exists on remote - will be handled in conflict detection below
             }
 
-            // Detect remote changes in selected folders
-            var allRemoteFiles = new List<FileMetadata>();
-            foreach (var folder in selectedFolders)
-            {
-                var (remoteFiles, _) = await _remoteChangeDetector.DetectChangesAsync(
-                    accountId,
-                    folder,
-                    previousDeltaLink: null,
-                    _syncCancellation.Token);
-                allRemoteFiles.AddRange(remoteFiles);
-            }
-
-            // Determine which files need downloading
+            // Determine which files need downloading and detect conflicts
             var filesToDownload = new List<FileMetadata>();
             var remotePathsSet = allRemoteFiles.Select(f => f.Path).ToHashSet();
-            var localFilesDict = allLocalFiles.ToDictionary(f => f.Path);
             var conflictCount = 0;
             var conflictPaths = new HashSet<string>();
+            var filesToRecordWithoutTransfer = new List<FileMetadata>(); // Files that match, just need DB record
 
             foreach (var remoteFile in allRemoteFiles)
             {
                 if (existingFilesDict.TryGetValue(remoteFile.Path, out var existingFile))
                 {
-                    // Check if remote file has changed (compare with OneDrive metadata)
-                    // CTag is the primary change indicator; also check timestamp with tolerance and size
+                    // File exists in DB - check if remote changed
                     var timeDiff = Math.Abs((existingFile.LastModifiedUtc - remoteFile.LastModifiedUtc).TotalSeconds);
                     var remoteHasChanged = existingFile.CTag != remoteFile.CTag ||
                                          timeDiff > 1.0 ||
@@ -195,13 +194,11 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
                     if (remoteHasChanged)
                     {
-                        // Check if local file also changed since last sync - this is a conflict!
+                        // Check if local file also changed - conflict detection
                         var localFileHasChanged = false;
 
-                        // First check if there's a local file pending upload (from scanner)
                         if (localFilesDict.TryGetValue(remoteFile.Path, out var localFile))
                         {
-                            // Local file exists in scan results - check if it changed
                             var localTimeDiff = Math.Abs((existingFile.LastModifiedUtc - localFile.LastModifiedUtc).TotalSeconds);
                             localFileHasChanged = localTimeDiff > 1.0 || existingFile.Size != localFile.Size;
                         }
@@ -222,7 +219,6 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                                 ResolutionStrategy: ConflictResolutionStrategy.None,
                                 IsResolved: false);
 
-                            // Check if this conflict already exists (avoid duplicates)
                             var existingConflict = await _syncConflictRepository.GetByFilePathAsync(accountId, remoteFile.Path, cancellationToken);
                             if (existingConflict is null)
                             {
@@ -236,11 +232,10 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
                             conflictPaths.Add(remoteFile.Path);
                             System.Diagnostics.Debug.WriteLine($"[SyncEngine] CONFLICT detected for {remoteFile.Path}: local and remote both changed");
-                            // Skip this file - user must resolve conflict manually
                             continue;
                         }
 
-                        // No conflict - remote changed but local didn't, proceed with download
+                        // Remote changed but local didn't - download
                         var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
                         var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
                         filesToDownload.Add(fileWithLocalPath);
@@ -248,11 +243,63 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                 }
                 else
                 {
-                    // New remote file - set local path
-                    var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
-                    var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
-                    filesToDownload.Add(fileWithLocalPath);
+                    // No DB record - first sync or new file
+                    if (localFilesDict.TryGetValue(remoteFile.Path, out var localFile))
+                    {
+                        // File exists BOTH locally and remotely - compare them
+                        var timeDiff = Math.Abs((localFile.LastModifiedUtc - remoteFile.LastModifiedUtc).TotalSeconds);
+                        var filesMatch = localFile.Size == remoteFile.Size && timeDiff <= 2.0; // 2 second tolerance
+
+                        if (filesMatch)
+                        {
+                            // Files match - just record in DB, no upload/download needed
+                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] File exists both places and matches: {remoteFile.Path} - recording in DB");
+                            var matchedFile = localFile with
+                            {
+                                Id = remoteFile.Id,
+                                CTag = remoteFile.CTag,
+                                ETag = remoteFile.ETag,
+                                SyncStatus = FileSyncStatus.Synced,
+                                LastSyncDirection = null
+                            };
+                            filesToRecordWithoutTransfer.Add(matchedFile);
+                        }
+                        else
+                        {
+                            // Files differ - CONFLICT on first sync!
+                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] First sync CONFLICT: {remoteFile.Path} - files differ");
+                            var conflict = new SyncConflict(
+                                Id: Guid.NewGuid().ToString(),
+                                AccountId: accountId,
+                                FilePath: remoteFile.Path,
+                                LocalModifiedUtc: localFile.LastModifiedUtc,
+                                RemoteModifiedUtc: remoteFile.LastModifiedUtc,
+                                LocalSize: localFile.Size,
+                                RemoteSize: remoteFile.Size,
+                                DetectedUtc: DateTime.UtcNow,
+                                ResolutionStrategy: ConflictResolutionStrategy.None,
+                                IsResolved: false);
+
+                            await _syncConflictRepository.AddAsync(conflict, cancellationToken);
+                            conflictCount++;
+                            conflictPaths.Add(remoteFile.Path);
+                        }
+                    }
+                    else
+                    {
+                        // New remote file - download
+                        var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
+                        var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
+                        filesToDownload.Add(fileWithLocalPath);
+                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] New remote file to download: {remoteFile.Path}");
+                    }
                 }
+            }
+
+            // Save matching files to DB without transferring them
+            foreach (var file in filesToRecordWithoutTransfer)
+            {
+                await _fileMetadataRepository.AddAsync(file, cancellationToken);
             }
 
             // Detect files deleted from OneDrive - delete local copies to maintain sync
@@ -358,7 +405,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                             LocalPath = file.LocalPath,
                             LocalHash = file.LocalHash,
                             Size = file.Size,
-                            LastModifiedUtc = uploadedItem.LastModifiedDateTime?.UtcDateTime ?? file.LastModifiedUtc,
+                            LastModifiedUtc = file.LastModifiedUtc, // Keep local timestamp
                             SyncStatus = FileSyncStatus.Synced,
                             LastSyncDirection = SyncDirection.Upload
                         };
@@ -366,12 +413,13 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     else
                     {
                         // New file - use OneDrive ID and metadata from upload response
+                        // IMPORTANT: Keep local LastModifiedUtc, not OneDrive's (they may differ slightly)
                         uploadedFile = file with
                         {
                             Id = uploadedItem.Id ?? throw new InvalidOperationException($"Upload succeeded but no ID returned for {file.Name}"),
                             CTag = uploadedItem.CTag,
                             ETag = uploadedItem.ETag,
-                            LastModifiedUtc = uploadedItem.LastModifiedDateTime?.UtcDateTime ?? file.LastModifiedUtc,
+                            // Keep file.LastModifiedUtc (local timestamp) for accurate comparison in next sync
                             SyncStatus = FileSyncStatus.Synced,
                             LastSyncDirection = SyncDirection.Upload
                         };
@@ -403,8 +451,12 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         SyncStatus = FileSyncStatus.Failed
                     };
 
-                    var isExistingFile = existingFilesDict.ContainsKey(file.Path);
-                    if (isExistingFile)
+                    // Check if file exists in DB (by ID or by path) before adding
+                    var existingDbFile = !string.IsNullOrEmpty(failedFile.Id)
+                        ? await _fileMetadataRepository.GetByIdAsync(failedFile.Id, cancellationToken)
+                        : await _fileMetadataRepository.GetByPathAsync(accountId, failedFile.Path, cancellationToken);
+
+                    if (existingDbFile is not null)
                     {
                         await _fileMetadataRepository.UpdateAsync(failedFile, cancellationToken);
                     }
@@ -448,8 +500,15 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         LocalHash = downloadedHash
                     };
 
-                    // Save to database - check if record exists by ID (not Path)
-                    var existingRecord = await _fileMetadataRepository.GetByIdAsync(downloadedFile.Id, cancellationToken);
+                    // Save to database - check if record exists
+                    FileMetadata? existingRecord = null;
+                    if (!string.IsNullOrEmpty(downloadedFile.Id))
+                    {
+                        existingRecord = await _fileMetadataRepository.GetByIdAsync(downloadedFile.Id, cancellationToken);
+                    }
+                    // If not found by ID, try by path (for files that might have empty IDs)
+                    existingRecord ??= await _fileMetadataRepository.GetByPathAsync(accountId, downloadedFile.Path, cancellationToken);
+
                     if (existingRecord is not null)
                     {
                         await _fileMetadataRepository.UpdateAsync(downloadedFile, cancellationToken);
@@ -468,7 +527,13 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
                     // Log download failure and mark file as failed
                     var failedFile = file with { SyncStatus = FileSyncStatus.Failed };
-                    if (existingFilesDict.ContainsKey(file.Path))
+
+                    // Check if file exists in DB (by ID or by path) before adding
+                    var existingDbFile = !string.IsNullOrEmpty(failedFile.Id)
+                        ? await _fileMetadataRepository.GetByIdAsync(failedFile.Id, cancellationToken)
+                        : await _fileMetadataRepository.GetByPathAsync(accountId, failedFile.Path, cancellationToken);
+
+                    if (existingDbFile is not null)
                     {
                         await _fileMetadataRepository.UpdateAsync(failedFile, cancellationToken);
                     }
