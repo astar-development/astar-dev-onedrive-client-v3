@@ -21,6 +21,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
     private readonly ISyncConfigurationRepository _syncConfigurationRepository;
     private readonly IAccountRepository _accountRepository;
     private readonly IGraphApiClient _graphApiClient;
+    private readonly ISyncConflictRepository _syncConflictRepository;
     private readonly BehaviorSubject<SyncState> _progressSubject;
     private CancellationTokenSource? _syncCancellation;
 
@@ -30,7 +31,8 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         IFileMetadataRepository fileMetadataRepository,
         ISyncConfigurationRepository syncConfigurationRepository,
         IAccountRepository accountRepository,
-        IGraphApiClient graphApiClient)
+        IGraphApiClient graphApiClient,
+        ISyncConflictRepository syncConflictRepository)
     {
         ArgumentNullException.ThrowIfNull(localFileScanner);
         ArgumentNullException.ThrowIfNull(remoteChangeDetector);
@@ -38,6 +40,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         ArgumentNullException.ThrowIfNull(syncConfigurationRepository);
         ArgumentNullException.ThrowIfNull(accountRepository);
         ArgumentNullException.ThrowIfNull(graphApiClient);
+        ArgumentNullException.ThrowIfNull(syncConflictRepository);
 
         _localFileScanner = localFileScanner;
         _remoteChangeDetector = remoteChangeDetector;
@@ -45,6 +48,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         _syncConfigurationRepository = syncConfigurationRepository;
         _accountRepository = accountRepository;
         _graphApiClient = graphApiClient;
+        _syncConflictRepository = syncConflictRepository;
 
         var initialState = new SyncState(
             AccountId: string.Empty,
@@ -174,6 +178,9 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             // Determine which files need downloading
             var filesToDownload = new List<FileMetadata>();
             var remotePathsSet = allRemoteFiles.Select(f => f.Path).ToHashSet();
+            var localFilesDict = allLocalFiles.ToDictionary(f => f.Path);
+            var conflictCount = 0;
+            var conflictPaths = new HashSet<string>();
 
             foreach (var remoteFile in allRemoteFiles)
             {
@@ -182,13 +189,58 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     // Check if remote file has changed (compare with OneDrive metadata)
                     // CTag is the primary change indicator; also check timestamp with tolerance and size
                     var timeDiff = Math.Abs((existingFile.LastModifiedUtc - remoteFile.LastModifiedUtc).TotalSeconds);
-                    var hasChanged = existingFile.CTag != remoteFile.CTag ||
-                                   timeDiff > 1.0 ||
-                                   existingFile.Size != remoteFile.Size;
+                    var remoteHasChanged = existingFile.CTag != remoteFile.CTag ||
+                                         timeDiff > 1.0 ||
+                                         existingFile.Size != remoteFile.Size;
 
-                    if (hasChanged)
+                    if (remoteHasChanged)
                     {
-                        // Set local path before adding to download list
+                        // Check if local file also changed since last sync - this is a conflict!
+                        var localFileHasChanged = false;
+
+                        // First check if there's a local file pending upload (from scanner)
+                        if (localFilesDict.TryGetValue(remoteFile.Path, out var localFile))
+                        {
+                            // Local file exists in scan results - check if it changed
+                            var localTimeDiff = Math.Abs((existingFile.LastModifiedUtc - localFile.LastModifiedUtc).TotalSeconds);
+                            localFileHasChanged = localTimeDiff > 1.0 || existingFile.Size != localFile.Size;
+                        }
+
+                        if (localFileHasChanged)
+                        {
+                            // CONFLICT: Both local and remote changed!
+                            var localFileFromDict = localFilesDict[remoteFile.Path];
+                            var conflict = new SyncConflict(
+                                Id: Guid.NewGuid().ToString(),
+                                AccountId: accountId,
+                                FilePath: remoteFile.Path,
+                                LocalModifiedUtc: localFileFromDict.LastModifiedUtc,
+                                RemoteModifiedUtc: remoteFile.LastModifiedUtc,
+                                LocalSize: localFileFromDict.Size,
+                                RemoteSize: remoteFile.Size,
+                                DetectedUtc: DateTime.UtcNow,
+                                ResolutionStrategy: ConflictResolutionStrategy.None,
+                                IsResolved: false);
+
+                            // Check if this conflict already exists (avoid duplicates)
+                            var existingConflict = await _syncConflictRepository.GetByFilePathAsync(accountId, remoteFile.Path, cancellationToken);
+                            if (existingConflict is null)
+                            {
+                                await _syncConflictRepository.AddAsync(conflict, cancellationToken);
+                                conflictCount++;
+                            }
+                            else
+                            {
+                                conflictCount++;
+                            }
+
+                            conflictPaths.Add(remoteFile.Path);
+                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] CONFLICT detected for {remoteFile.Path}: local and remote both changed");
+                            // Skip this file - user must resolve conflict manually
+                            continue;
+                        }
+
+                        // No conflict - remote changed but local didn't, proceed with download
                         var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
                         var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
                         filesToDownload.Add(fileWithLocalPath);
@@ -254,61 +306,9 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             // Detect conflicts: files that appear in both upload and download lists
             var uploadPathsSet = filesToUpload.Select(f => f.Path).ToHashSet();
-            var conflictPaths = filesToDownload
-                .Where(f => uploadPathsSet.Contains(f.Path))
-                .Select(f => f.Path)
-                .ToHashSet();
-
-            int conflictCount = conflictPaths.Count;
-
-            // Resolve conflicts using LastWriteWins strategy
-            if (conflictCount > 0)
-            {
-                var resolvedUploads = new List<FileMetadata>();
-                var resolvedDownloads = new List<FileMetadata>();
-
-                foreach (var uploadFile in filesToUpload)
-                {
-                    if (conflictPaths.Contains(uploadFile.Path))
-                    {
-                        // Find the corresponding remote file
-                        var remoteFile = filesToDownload.First(f => f.Path == uploadFile.Path);
-
-                        // LastWriteWins: compare timestamps
-                        if (uploadFile.LastModifiedUtc > remoteFile.LastModifiedUtc)
-                        {
-                            // Local is newer - keep in upload list
-                            resolvedUploads.Add(uploadFile);
-                        }
-                        else
-                        {
-                            // Remote is newer or equal - add to download list
-                            resolvedDownloads.Add(remoteFile);
-                        }
-                    }
-                    else
-                    {
-                        // No conflict - keep in upload list
-                        resolvedUploads.Add(uploadFile);
-                    }
-                }
-
-                // Keep non-conflicted downloads
-                foreach (var downloadFile in filesToDownload)
-                {
-                    if (!conflictPaths.Contains(downloadFile.Path))
-                    {
-                        resolvedDownloads.Add(downloadFile);
-                    }
-                }
-
-                filesToUpload = resolvedUploads;
-                filesToDownload = resolvedDownloads;
-            }
-
             // Remove files from upload list that were deleted from OneDrive (since they were deleted locally)
             var deletedPaths = deletedFromOneDrive.Select(f => f.Path).ToHashSet();
-            filesToUpload = filesToUpload.Where(f => !deletedPaths.Contains(f.Path)).ToList();
+            filesToUpload = filesToUpload.Where(f => !deletedPaths.Contains(f.Path) && !conflictPaths.Contains(f.Path)).ToList();
 
             var totalFiles = filesToUpload.Count + filesToDownload.Count;
             var totalBytes = filesToUpload.Sum(f => f.Size) + filesToDownload.Sum(f => f.Size);
@@ -508,6 +508,13 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
     {
         _syncCancellation?.Cancel();
         return Task.CompletedTask;
+    }
+
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<SyncConflict>> GetConflictsAsync(string accountId, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+        return await _syncConflictRepository.GetUnresolvedByAccountIdAsync(accountId, cancellationToken);
     }
 
     private void ReportProgress(

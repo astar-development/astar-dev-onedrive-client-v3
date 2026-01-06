@@ -15,6 +15,7 @@ public sealed class ConflictResolverShould
     private readonly IGraphApiClient _graphApiClient = Substitute.For<IGraphApiClient>();
     private readonly IFileMetadataRepository _metadataRepo = Substitute.For<IFileMetadataRepository>();
     private readonly IAccountRepository _accountRepo = Substitute.For<IAccountRepository>();
+    private readonly ISyncConflictRepository _conflictRepo = Substitute.For<ISyncConflictRepository>();
     private readonly ILogger<ConflictResolver> _logger = Substitute.For<ILogger<ConflictResolver>>();
 
     [Fact]
@@ -76,6 +77,13 @@ public sealed class ConflictResolverShould
                     m.Id == metadata.Id &&
                     m.SyncStatus == FileSyncStatus.Synced &&
                     m.LastSyncDirection == SyncDirection.Upload),
+                Arg.Any<CancellationToken>());
+
+            await _conflictRepo.Received(1).UpdateAsync(
+                Arg.Is<SyncConflict>(c =>
+                    c.Id == conflict.Id &&
+                    c.IsResolved == true &&
+                    c.ResolutionStrategy == ConflictResolutionStrategy.KeepLocal),
                 Arg.Any<CancellationToken>());
         }
         finally
@@ -146,6 +154,13 @@ public sealed class ConflictResolverShould
                     m.SyncStatus == FileSyncStatus.Synced &&
                     m.LastSyncDirection == SyncDirection.Download),
                 Arg.Any<CancellationToken>());
+
+            await _conflictRepo.Received(1).UpdateAsync(
+                Arg.Is<SyncConflict>(c =>
+                    c.Id == conflict.Id &&
+                    c.IsResolved == true &&
+                    c.ResolutionStrategy == ConflictResolutionStrategy.KeepRemote),
+                Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -209,6 +224,13 @@ public sealed class ConflictResolverShould
                     m.Id == metadata.Id &&
                     m.SyncStatus == FileSyncStatus.Synced &&
                     m.LastSyncDirection == SyncDirection.Download),
+                Arg.Any<CancellationToken>());
+
+            await _conflictRepo.Received(1).UpdateAsync(
+                Arg.Is<SyncConflict>(c =>
+                    c.Id == conflict.Id &&
+                    c.IsResolved == true &&
+                    c.ResolutionStrategy == ConflictResolutionStrategy.KeepBoth),
                 Arg.Any<CancellationToken>());
         }
         finally
@@ -274,10 +296,13 @@ public sealed class ConflictResolverShould
         await _metadataRepo.DidNotReceive().UpdateAsync(
             Arg.Any<FileMetadata>(),
             Arg.Any<CancellationToken>());
+        await _conflictRepo.DidNotReceive().UpdateAsync(
+            Arg.Any<SyncConflict>(),
+            Arg.Any<CancellationToken>());
     }
 
     private ConflictResolver CreateResolver() =>
-        new(_graphApiClient, _metadataRepo, _accountRepo, _logger);
+        new(_graphApiClient, _metadataRepo, _accountRepo, _conflictRepo, _logger);
 
     private static SyncConflict CreateTestConflict() =>
         new(

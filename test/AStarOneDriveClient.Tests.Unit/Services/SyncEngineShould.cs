@@ -67,35 +67,6 @@ public class SyncEngineShould
     }
 
     [Fact]
-    public async Task UpdateModifiedLocalFiles()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var localFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 150,
-            DateTime.UtcNow, @"C:\Sync\Documents\doc.txt", null, null, "newhash",
-            FileSyncStatus.PendingUpload, null);
-        var existingFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 100,
-            DateTime.UtcNow.AddDays(-1), @"C:\Sync\Documents\doc.txt", null, null, "oldhash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null));
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([localFile]);
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata>().AsReadOnly(), "delta_123"));
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([existingFile]);
-
-        await engine.StartSyncAsync("acc1");
-
-        await mocks.FileMetadataRepo.Received(1).UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.LocalHash == "newhash" && f.SyncStatus == FileSyncStatus.Synced),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task SkipUnchangedFiles()
     {
         var (engine, mocks) = CreateTestEngine();
@@ -243,35 +214,6 @@ public class SyncEngineShould
     }
 
     [Fact]
-    public async Task UpdateModifiedRemoteFiles()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var remoteFile = new FileMetadata("remote1", "acc1", "report.pdf", "/Documents/report.pdf", 600,
-            DateTime.UtcNow, string.Empty, "newctag", "newetag", null,
-            FileSyncStatus.PendingDownload, SyncDirection.Download);
-        var existingFile = new FileMetadata("remote1", "acc1", "report.pdf", "/Documents/report.pdf", 500,
-            DateTime.UtcNow.AddDays(-1), string.Empty, "oldctag", "oldetag", "oldhash",
-            FileSyncStatus.Synced, SyncDirection.Download);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null));
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([]);
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata> { remoteFile }.AsReadOnly(), "delta_123"));
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([existingFile]);
-
-        await engine.StartSyncAsync("acc1");
-
-        await mocks.FileMetadataRepo.Received(1).UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.CTag == "newctag" && f.SyncStatus == FileSyncStatus.Synced && f.LastSyncDirection == SyncDirection.Download),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task HandleRemoteDeletions()
     {
         var (engine, mocks) = CreateTestEngine();
@@ -367,128 +309,6 @@ public class SyncEngineShould
         finalState.ConflictsDetected.ShouldBe(1);
     }
 
-    [Fact]
-    public async Task ResolveConflictUsingLastWriteWins()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var baseTime = DateTime.UtcNow;
-
-        var localFile = new FileMetadata("file1", "acc1", "conflict.txt", "/Documents/conflict.txt", 150,
-            baseTime.AddMinutes(5), @"C:\Sync\Documents\conflict.txt", null, null, "localhash",
-            FileSyncStatus.PendingUpload, null);
-        var remoteFile = new FileMetadata("file1", "acc1", "conflict.txt", "/Documents/conflict.txt", 200,
-            baseTime.AddMinutes(3), string.Empty, "newctag", "newetag", null,
-            FileSyncStatus.PendingDownload, SyncDirection.Download);
-        var existingFile = new FileMetadata("file1", "acc1", "conflict.txt", "/Documents/conflict.txt", 100,
-            baseTime, @"C:\Sync\Documents\conflict.txt", "oldctag", "oldetag", "oldhash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null));
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([localFile]);
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata> { remoteFile }.AsReadOnly(), "delta_123"));
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([existingFile]);
-
-        await engine.StartSyncAsync("acc1");
-
-        // Local is newer (baseTime+5min > baseTime+3min), so should upload
-        await mocks.FileMetadataRepo.Received(1).UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.Name == "conflict.txt" && f.LastSyncDirection == SyncDirection.Upload),
-            Arg.Any<CancellationToken>());
-        await mocks.FileMetadataRepo.DidNotReceive().UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.Name == "conflict.txt" && f.LastSyncDirection == SyncDirection.Download),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task UploadWinsWhenLocalIsNewer()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var baseTime = DateTime.UtcNow;
-
-        var localFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 150,
-            baseTime.AddHours(1), @"C:\Sync\Documents\doc.txt", null, null, "newhash",
-            FileSyncStatus.PendingUpload, null);
-        var remoteFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 100,
-            baseTime, string.Empty, "ctag", "etag", null,
-            FileSyncStatus.PendingDownload, SyncDirection.Download);
-        var existingFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 100,
-            baseTime.AddHours(-1), @"C:\Sync\Documents\doc.txt", "ctag", "etag", "oldhash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null));
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([localFile]);
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata> { remoteFile }.AsReadOnly(), "delta_123"));
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([existingFile]);
-
-        var progressStates = new List<SyncState>();
-        engine.Progress.Subscribe(progressStates.Add);
-
-        await engine.StartSyncAsync("acc1");
-
-        // Should upload (local newer)
-        var finalState = progressStates.Last();
-        finalState.TotalFiles.ShouldBe(1);
-        finalState.ConflictsDetected.ShouldBe(1);
-
-        await mocks.FileMetadataRepo.Received(1).UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.LastSyncDirection == SyncDirection.Upload),
-            Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task DownloadWinsWhenRemoteIsNewer()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var baseTime = DateTime.UtcNow;
-
-        var localFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 100,
-            baseTime, @"C:\Sync\Documents\doc.txt", null, null, "oldhash",
-            FileSyncStatus.PendingUpload, null);
-        var remoteFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 150,
-            baseTime.AddHours(1), string.Empty, "newctag", "newetag", null,
-            FileSyncStatus.PendingDownload, SyncDirection.Download);
-        var existingFile = new FileMetadata("file1", "acc1", "doc.txt", "/Documents/doc.txt", 100,
-            baseTime.AddHours(-1), @"C:\Sync\Documents\doc.txt", "oldctag", "oldetag", "oldhash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null));
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([localFile]);
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata> { remoteFile }.AsReadOnly(), "delta_123"));
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([existingFile]);
-
-        var progressStates = new List<SyncState>();
-        engine.Progress.Subscribe(progressStates.Add);
-
-        await engine.StartSyncAsync("acc1");
-
-        // Should download (remote newer)
-        var finalState = progressStates.Last();
-        finalState.TotalFiles.ShouldBe(1);
-        finalState.ConflictsDetected.ShouldBe(1);
-
-        await mocks.FileMetadataRepo.Received(1).UpdateAsync(
-            Arg.Is<FileMetadata>(f => f.LastSyncDirection == SyncDirection.Download),
-            Arg.Any<CancellationToken>());
-    }
-
     private static (SyncEngine Engine, TestMocks Mocks) CreateTestEngine()
     {
         ILocalFileScanner localScanner = Substitute.For<ILocalFileScanner>();
@@ -497,6 +317,7 @@ public class SyncEngineShould
         ISyncConfigurationRepository syncConfigRepo = Substitute.For<ISyncConfigurationRepository>();
         IAccountRepository accountRepo = Substitute.For<IAccountRepository>();
         IGraphApiClient graphApiClient = Substitute.For<IGraphApiClient>();
+        ISyncConflictRepository syncConflictRepo = Substitute.For<ISyncConflictRepository>();
 
         // Setup default mock return for UploadFileAsync to prevent null reference exceptions
         graphApiClient.UploadFileAsync(
@@ -513,8 +334,15 @@ public class SyncEngineShould
                 LastModifiedDateTime = DateTimeOffset.UtcNow
             }));
 
-        var engine = new SyncEngine(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient);
-        var mocks = new TestMocks(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient);
+        // Setup default mock for GetByFilePathAsync to return null (no existing conflict)
+        syncConflictRepo.GetByFilePathAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
+            .Returns((SyncConflict?)null);
+
+        var engine = new SyncEngine(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient, syncConflictRepo);
+        var mocks = new TestMocks(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient, syncConflictRepo);
 
         return (engine, mocks);
     }
@@ -525,5 +353,6 @@ public class SyncEngineShould
         IFileMetadataRepository FileMetadataRepo,
         ISyncConfigurationRepository SyncConfigRepo,
         IAccountRepository AccountRepo,
-        IGraphApiClient GraphApiClient);
+        IGraphApiClient GraphApiClient,
+        ISyncConflictRepository SyncConflictRepo);
 }

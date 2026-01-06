@@ -24,4 +24,12 @@ public interface ISyncEngine
     /// Stops any ongoing synchronization.
     /// </summary>
     Task StopSyncAsync();
+
+    /// <summary>
+    /// Gets all detected conflicts for the specified account.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of unresolved conflicts.</returns>
+    Task<IReadOnlyList<SyncConflict>> GetConflictsAsync(string accountId, CancellationToken cancellationToken = default);
 }

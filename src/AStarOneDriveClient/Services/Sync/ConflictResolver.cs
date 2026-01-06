@@ -17,17 +17,20 @@ public sealed class ConflictResolver : IConflictResolver
     private readonly IGraphApiClient _graphApiClient;
     private readonly IFileMetadataRepository _metadataRepo;
     private readonly IAccountRepository _accountRepo;
+    private readonly ISyncConflictRepository _conflictRepo;
     private readonly ILogger<ConflictResolver> _logger;
 
     public ConflictResolver(
         IGraphApiClient graphApiClient,
         IFileMetadataRepository metadataRepo,
         IAccountRepository accountRepo,
+        ISyncConflictRepository conflictRepo,
         ILogger<ConflictResolver> logger)
     {
         _graphApiClient = graphApiClient ?? throw new ArgumentNullException(nameof(graphApiClient));
         _metadataRepo = metadataRepo ?? throw new ArgumentNullException(nameof(metadataRepo));
         _accountRepo = accountRepo ?? throw new ArgumentNullException(nameof(accountRepo));
+        _conflictRepo = conflictRepo ?? throw new ArgumentNullException(nameof(conflictRepo));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -75,11 +78,19 @@ public sealed class ConflictResolver : IConflictResolver
                 {
                     _logger.LogInformation("Skipping conflict resolution for {FilePath}", conflict.FilePath);
                 }
-                break;
+                return;
 
             default:
                 throw new ArgumentException($"Invalid resolution strategy: {strategy}", nameof(strategy));
         }
+
+        // Mark conflict as resolved in database
+        SyncConflict resolvedConflict = conflict with
+        {
+            ResolutionStrategy = strategy,
+            IsResolved = true
+        };
+        await _conflictRepo.UpdateAsync(resolvedConflict, cancellationToken);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
