@@ -90,6 +90,11 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     public bool IsSyncing => SyncState.Status == SyncStatus.Running;
 
     /// <summary>
+    /// Gets a value indicating whether sync is paused.
+    /// </summary>
+    public bool IsPaused => SyncState.Status == SyncStatus.Paused;
+
+    /// <summary>
     /// Gets sync progress as percentage (0-100).
     /// </summary>
     public double ProgressPercentage => SyncState.TotalFiles > 0
@@ -147,9 +152,9 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     public ReactiveCommand<Unit, Unit> StartSyncCommand { get; }
 
     /// <summary>
-    /// Command to stop synchronization.
+    /// Command to cancel synchronization.
     /// </summary>
-    public ReactiveCommand<Unit, Unit> StopSyncCommand { get; }
+    public ReactiveCommand<Unit, Unit> CancelSyncCommand { get; }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SyncTreeViewModel"/> class.
@@ -173,7 +178,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         StartSyncCommand = ReactiveCommand.CreateFromTask(StartSyncAsync,
             this.WhenAnyValue(x => x.SelectedAccountId, x => x.IsSyncing,
                 (accountId, isSyncing) => !string.IsNullOrEmpty(accountId) && !isSyncing));
-        StopSyncCommand = ReactiveCommand.CreateFromTask(StopSyncAsync,
+        CancelSyncCommand = ReactiveCommand.CreateFromTask(CancelSyncAsync,
             this.WhenAnyValue(x => x.IsSyncing));
 
         this.WhenAnyValue(x => x.SelectedAccountId)
@@ -187,6 +192,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             {
                 SyncState = state;
                 this.RaisePropertyChanged(nameof(IsSyncing));
+                this.RaisePropertyChanged(nameof(IsPaused));
                 this.RaisePropertyChanged(nameof(ProgressPercentage));
                 this.RaisePropertyChanged(nameof(ProgressText));
             })
@@ -372,6 +378,11 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
                 }
             }
         }
+        catch (OperationCanceledException)
+        {
+            // Sync was cancelled - this is expected, don't show error
+            // The cancel command already set the LastSyncResult message
+        }
         catch (Exception ex)
         {
             ErrorMessage = $"Sync failed: {ex.Message}";
@@ -380,11 +391,12 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Stops any ongoing synchronization.
+    /// Cancels the ongoing synchronization.
     /// </summary>
-    private async Task StopSyncAsync()
+    private async Task CancelSyncAsync()
     {
         await _syncEngine.StopSyncAsync();
+        LastSyncResult = "Sync cancelled";
     }
 
     /// <inheritdoc/>

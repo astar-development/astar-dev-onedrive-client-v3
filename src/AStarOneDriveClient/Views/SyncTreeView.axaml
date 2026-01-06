@@ -126,8 +126,8 @@
                 Command="{Binding StartSyncCommand}"
                 Classes="accent"
                 MinWidth="120"/>
-        <Button Content="Stop Sync"
-                Command="{Binding StopSyncCommand}"
+        <Button Content="Cancel Sync"
+                Command="{Binding CancelSyncCommand}"
                 MinWidth="120"/>
 
         <!-- Sync Progress -->
