@@ -41,11 +41,22 @@ public sealed class AuthService : IAuthService
             .Build();
 
         // Setup token cache persistence
-        var storageProperties = new StorageCreationPropertiesBuilder(
-            "astar_onedrive_cache.dat",
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AStarOneDriveClient"))
-            .Build();
+        var cacheDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "AStarOneDriveClient");
 
+        var storagePropertiesBuilder = new StorageCreationPropertiesBuilder(
+            "astar_onedrive_cache.dat",
+            cacheDirectory);
+
+        // Use plaintext storage on Linux due to keyring/libsecret compatibility issues
+        // Windows and macOS use platform-specific secure storage (DPAPI and Keychain)
+        if (OperatingSystem.IsLinux())
+        {
+            storagePropertiesBuilder.WithUnprotectedFile();
+        }
+
+        var storageProperties = storagePropertiesBuilder.Build();
         var cacheHelper = await MsalCacheHelper.CreateAsync(storageProperties);
         cacheHelper.RegisterCache(app.UserTokenCache);
 
