@@ -19,6 +19,7 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     private AccountInfo? _selectedAccount;
     private string _localSyncPath = string.Empty;
     private bool _enableDetailedSyncLogging;
+    private bool _enableDebugLogging;
     private string _statusMessage = string.Empty;
     private bool _isSuccess;
 
@@ -66,6 +67,7 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
                 // Load editable fields when account is selected
                 LocalSyncPath = value.LocalSyncPath;
                 EnableDetailedSyncLogging = value.EnableDetailedSyncLogging;
+                EnableDebugLogging = value.EnableDebugLogging;
                 StatusMessage = string.Empty;
             }
         }
@@ -87,6 +89,15 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     {
         get => _enableDetailedSyncLogging;
         set => this.RaiseAndSetIfChanged(ref _enableDetailedSyncLogging, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether debug logging is enabled.
+    /// </summary>
+    public bool EnableDebugLogging
+    {
+        get => _enableDebugLogging;
+        set => this.RaiseAndSetIfChanged(ref _enableDebugLogging, value);
     }
 
     /// <summary>
@@ -166,7 +177,8 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
             var updatedAccount = SelectedAccount with
             {
                 LocalSyncPath = LocalSyncPath,
-                EnableDetailedSyncLogging = EnableDetailedSyncLogging
+                EnableDetailedSyncLogging = EnableDetailedSyncLogging,
+                EnableDebugLogging = EnableDebugLogging
             };
 
             await _accountRepository.UpdateAsync(updatedAccount);

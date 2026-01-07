@@ -154,6 +154,14 @@
                                           OnContent="Enabled"
                                           OffContent="Disabled" />
                         </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Enable Debug Logging:" FontWeight="SemiBold" />
+                            <ToggleSwitch IsChecked="{Binding EnableDebugLogging}"
+                                          Margin="0,5,0,0"
+                                          OnContent="Enabled"
+                                          OffContent="Disabled" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

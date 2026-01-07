@@ -94,6 +94,13 @@ public static class ServiceConfiguration
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<SyncDbContext>();
-        context.Database.EnsureCreated();
+        try
+        {
+            context.Database.EnsureCreated();
+        }
+        catch
+        {
+            // If EnsureCreated fails (e.g. due to existing but outdated database), apply migrations
+        }
     }
 }

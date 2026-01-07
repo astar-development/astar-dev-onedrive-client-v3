@@ -154,7 +154,8 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                     IsAuthenticated: true,
                     LastSyncUtc: null,
                     DeltaToken: null,
-                    EnableDetailedSyncLogging: false);
+                    EnableDetailedSyncLogging: false,
+                    EnableDebugLogging: false);
 
                 await _accountRepository.AddAsync(newAccount);
                 Accounts.Add(newAccount);

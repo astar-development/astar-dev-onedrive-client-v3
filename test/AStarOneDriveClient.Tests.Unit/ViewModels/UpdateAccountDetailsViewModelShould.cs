@@ -60,6 +60,16 @@ public class UpdateAccountDetailsViewModelShould
     }
 
     [Fact]
+    public void InitializeWithEnableDebugLoggingFalse()
+    {
+        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+
+        var sut = new UpdateAccountDetailsViewModel(mockRepo);
+
+        sut.EnableDebugLogging.ShouldBeFalse();
+    }
+
+    [Fact]
     public void InitializeWithEmptyStatusMessage()
     {
         IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
@@ -122,13 +132,35 @@ public class UpdateAccountDetailsViewModelShould
             true,
             DateTime.UtcNow,
             "delta-token",
-            true);
+            true,
+            false);
 
         sut.SelectedAccount = account;
 
         sut.LocalSyncPath.ShouldBe(@"C:\TestPath");
         sut.EnableDetailedSyncLogging.ShouldBeTrue();
         sut.StatusMessage.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void LoadEnableDebugLoggingWhenAccountIsSelected()
+    {
+        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockRepo);
+
+        var account = new AccountInfo(
+            "account-123",
+            "Test User",
+            @"C:\TestPath",
+            true,
+            DateTime.UtcNow,
+            "delta-token",
+            false,
+            true);
+
+        sut.SelectedAccount = account;
+
+        sut.EnableDebugLogging.ShouldBeTrue();
     }
 
     [Fact]
@@ -147,6 +179,7 @@ public class UpdateAccountDetailsViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
 
         sut.SelectedAccount = account;
@@ -176,6 +209,7 @@ public class UpdateAccountDetailsViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
 
         sut.SelectedAccount = account;
@@ -223,6 +257,27 @@ public class UpdateAccountDetailsViewModelShould
 
         propertyChanged.ShouldBeTrue();
         sut.EnableDetailedSyncLogging.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void RaisePropertyChangedWhenEnableDebugLoggingChanges()
+    {
+        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockRepo);
+        var propertyChanged = false;
+
+        sut.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(UpdateAccountDetailsViewModel.EnableDebugLogging))
+            {
+                propertyChanged = true;
+            }
+        };
+
+        sut.EnableDebugLogging = true;
+
+        propertyChanged.ShouldBeTrue();
+        sut.EnableDebugLogging.ShouldBeTrue();
     }
 
     [Fact]
@@ -322,6 +377,7 @@ public class UpdateAccountDetailsViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
 
         sut.SelectedAccount = account;
@@ -346,6 +402,7 @@ public class UpdateAccountDetailsViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
 
         sut.SelectedAccount = account;

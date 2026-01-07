@@ -356,7 +356,8 @@ public sealed class ConflictResolverShould
             IsAuthenticated: true,
             LastSyncUtc: DateTime.UtcNow,
             DeltaToken: null,
-            EnableDetailedSyncLogging: false);
+            EnableDetailedSyncLogging: false,
+            EnableDebugLogging: false);
 
     private static FileMetadata CreateTestMetadata(string accountId, string filePath) =>
         new(

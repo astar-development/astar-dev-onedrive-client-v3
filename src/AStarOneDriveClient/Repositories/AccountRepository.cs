@@ -61,6 +61,7 @@ public sealed class AccountRepository : IAccountRepository
         entity.LastSyncUtc = account.LastSyncUtc;
         entity.DeltaToken = account.DeltaToken;
         entity.EnableDetailedSyncLogging = account.EnableDetailedSyncLogging;
+        entity.EnableDebugLogging = account.EnableDebugLogging;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -94,7 +95,8 @@ public sealed class AccountRepository : IAccountRepository
             entity.IsAuthenticated,
             entity.LastSyncUtc,
             entity.DeltaToken,
-            entity.EnableDetailedSyncLogging
+            entity.EnableDetailedSyncLogging,
+            entity.EnableDebugLogging
         );
 
     private static AccountEntity MapToEntity(AccountInfo model) =>
@@ -106,6 +108,7 @@ public sealed class AccountRepository : IAccountRepository
             IsAuthenticated = model.IsAuthenticated,
             LastSyncUtc = model.LastSyncUtc,
             DeltaToken = model.DeltaToken,
-            EnableDetailedSyncLogging = model.EnableDetailedSyncLogging
+            EnableDetailedSyncLogging = model.EnableDetailedSyncLogging,
+            EnableDebugLogging = model.EnableDebugLogging
         };
 }

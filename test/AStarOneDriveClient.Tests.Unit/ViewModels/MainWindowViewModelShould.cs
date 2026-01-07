@@ -67,6 +67,7 @@ public class MainWindowViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
         accountVm.SelectedAccount = account;
 
@@ -89,6 +90,7 @@ public class MainWindowViewModelShould
             true,
             DateTime.UtcNow,
             null,
+            false,
             false);
         accountVm.SelectedAccount = account;
         accountVm.SelectedAccount = null;
