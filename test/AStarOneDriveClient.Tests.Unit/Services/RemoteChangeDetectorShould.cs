@@ -10,7 +10,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task DetectChangesInRootFolder()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         var file1 = new DriveItem { Id = "file1", Name = "doc1.txt", File = new(), Size = 100 };
         var file2 = new DriveItem { Id = "file2", Name = "doc2.txt", File = new(), Size = 200 };
@@ -31,7 +31,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task DetectChangesInNestedFolders()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         var subFolder = new DriveItem { Id = "folder1", Name = "SubFolder", Folder = new Folder() };
         var file1 = new DriveItem { Id = "file1", Name = "root.txt", File = new(), Size = 100 };
@@ -51,7 +51,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task SetCorrectMetadataForRemoteFiles()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         var lastModified = new DateTimeOffset(2026, 1, 5, 10, 0, 0, TimeSpan.Zero);
         var file = new DriveItem
@@ -87,7 +87,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task ReturnEmptyChangesForEmptyFolder()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         mockClient.GetDriveRootAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(rootItem);
         mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "root", Arg.Any<CancellationToken>()).Returns([]);
@@ -102,7 +102,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task ReturnEmptyChangesWhenRootNotFound()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         mockClient.GetDriveRootAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((DriveItem?)null);
         var detector = new RemoteChangeDetector(mockClient);
 
@@ -115,7 +115,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task GenerateNewDeltaLinkAfterScan()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         mockClient.GetDriveRootAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(rootItem);
         mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "root", Arg.Any<CancellationToken>()).Returns([]);
@@ -133,7 +133,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task HandleCancellation()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var detector = new RemoteChangeDetector(mockClient);
         var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -145,7 +145,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task SkipFoldersAndOnlyReturnFiles()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         var file = new DriveItem { Id = "file1", Name = "doc.txt", File = new() };
         var folder = new DriveItem { Id = "folder1", Name = "Folder", Folder = new Folder() };
@@ -163,7 +163,7 @@ public class RemoteChangeDetectorShould
     [Fact]
     public async Task HandleItemsWithoutRequiredProperties()
     {
-        IGraphApiClient mockClient = Substitute.For<IGraphApiClient>();
+        var mockClient = Substitute.For<IGraphApiClient>();
         var rootItem = new DriveItem { Id = "root", Name = "root", Folder = new Folder() };
         var validFile = new DriveItem { Id = "file1", Name = "valid.txt", File = new() };
         var fileWithoutId = new DriveItem { Id = null, Name = "noId.txt", File = new() };

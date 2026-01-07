@@ -15,29 +15,27 @@ namespace AStarOneDriveClient.ViewModels;
 /// </summary>
 public sealed class MainWindowViewModel : ReactiveObject, IDisposable
 {
-    private readonly CompositeDisposable _disposables = new();
+    private readonly CompositeDisposable _disposables = [];
     private readonly IServiceProvider _serviceProvider;
     private readonly IAutoSyncCoordinator _autoSyncCoordinator;
     private readonly IAccountRepository _accountRepository;
 
-    private SyncProgressViewModel? _syncProgress;
     /// <summary>
     /// Gets the sync progress view model (when sync is active).
     /// </summary>
     public SyncProgressViewModel? SyncProgress
     {
-        get => _syncProgress;
-        private set => this.RaiseAndSetIfChanged(ref _syncProgress, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
-    private ConflictResolutionViewModel? _conflictResolution;
     /// <summary>
     /// Gets the conflict resolution view model (when viewing conflicts).
     /// </summary>
     public ConflictResolutionViewModel? ConflictResolution
     {
-        get => _conflictResolution;
-        private set => this.RaiseAndSetIfChanged(ref _conflictResolution, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>

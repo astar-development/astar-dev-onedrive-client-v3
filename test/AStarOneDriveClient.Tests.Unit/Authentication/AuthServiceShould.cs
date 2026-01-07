@@ -27,7 +27,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnSuccessResultWhenLoginSucceeds()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
         var mockAuthResult = new MsalAuthResult(mockAccount, "access_token");
 
@@ -47,7 +47,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnFailureResultWhenLoginThrowsMsalException()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         mockClient.AcquireTokenInteractiveAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException<MsalAuthResult>(new MsalException("login_failed")));
 
@@ -64,7 +64,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnFailureResultWhenLoginIsCancelled()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -82,7 +82,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnTrueWhenLogoutSucceeds()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { mockAccount }));
@@ -99,9 +99,9 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnFalseWhenLogoutAccountNotFound()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
 
-        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
+        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>([]));
 
         var service = new AuthService(mockClient, CreateTestConfiguration());
 
@@ -113,8 +113,8 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnEmptyListWhenNoAccountsAuthenticated()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
-        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
+        var mockClient = Substitute.For<IAuthenticationClient>();
+        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>([]));
 
         var service = new AuthService(mockClient, CreateTestConfiguration());
 
@@ -126,7 +126,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnAuthenticatedAccountsCorrectly()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var account1 = CreateMockAccount("acc1", "user1@example.com");
         var account2 = CreateMockAccount("acc2", "user2@example.com");
 
@@ -146,7 +146,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnAccessTokenWhenGetAccessTokenSucceeds()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
         var mockAuthResult = new MsalAuthResult(mockAccount, "token123");
 
@@ -164,8 +164,8 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnNullWhenGetAccessTokenAccountNotFound()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
-        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
+        var mockClient = Substitute.For<IAuthenticationClient>();
+        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>([]));
 
         var service = new AuthService(mockClient, CreateTestConfiguration());
 
@@ -177,7 +177,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnNullWhenGetAccessTokenThrowsMsalUiRequiredException()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { mockAccount }));
@@ -195,8 +195,8 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnFalseWhenAccountNotAuthenticated()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
-        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(Array.Empty<IAccount>()));
+        var mockClient = Substitute.For<IAuthenticationClient>();
+        mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>([]));
 
         var service = new AuthService(mockClient, CreateTestConfiguration());
 
@@ -208,7 +208,7 @@ public class AuthServiceShould
     [Fact]
     public async Task ReturnTrueWhenAccountIsAuthenticated()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
 
         mockClient.GetAccountsAsync().Returns(Task.FromResult<IEnumerable<IAccount>>(new[] { mockAccount }));
@@ -223,7 +223,7 @@ public class AuthServiceShould
     [Fact]
     public async Task AcquireTokenSilentlyCallsGetAccessToken()
     {
-        IAuthenticationClient mockClient = Substitute.For<IAuthenticationClient>();
+        var mockClient = Substitute.For<IAuthenticationClient>();
         var mockAccount = CreateMockAccount("acc1", "user@example.com");
         var mockAuthResult = new MsalAuthResult(mockAccount, "token456");
 

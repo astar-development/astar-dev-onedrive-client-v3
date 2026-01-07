@@ -29,7 +29,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
             .OrderBy(f => f.Timestamp)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -43,7 +43,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
             .OrderByDescending(f => f.Timestamp)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -59,7 +59,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>

@@ -280,7 +280,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenFolderServiceIsNull()
     {
-        Exception? exception = Record.Exception(() => new SyncTreeViewModel(null!, _mockSelectionService, _mockSyncEngine));
+        var exception = Record.Exception(() => new SyncTreeViewModel(null!, _mockSelectionService, _mockSyncEngine));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -289,7 +289,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenSelectionServiceIsNull()
     {
-        Exception? exception = Record.Exception(() => new SyncTreeViewModel(_mockFolderService, null!, _mockSyncEngine));
+        var exception = Record.Exception(() => new SyncTreeViewModel(_mockFolderService, null!, _mockSyncEngine));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -298,7 +298,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenLoadingChildrenWithNullFolder()
     {
-        Exception? exception = Record.Exception(() => _viewModel.LoadChildrenCommand.Execute(null!).Subscribe());
+        var exception = Record.Exception(() => _viewModel.LoadChildrenCommand.Execute(null!).Subscribe());
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -307,7 +307,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenTogglingNullFolder()
     {
-        Exception? exception = Record.Exception(() => _viewModel.ToggleSelectionCommand.Execute(null!).Subscribe());
+        var exception = Record.Exception(() => _viewModel.ToggleSelectionCommand.Execute(null!).Subscribe());
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();

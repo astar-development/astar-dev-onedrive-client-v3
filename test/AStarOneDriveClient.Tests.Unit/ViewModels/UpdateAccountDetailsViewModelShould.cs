@@ -19,7 +19,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithEmptyAccountsCollection()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -30,7 +30,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithNullSelectedAccount()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -40,7 +40,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithEmptyLocalSyncPath()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -50,7 +50,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithEnableDetailedSyncLoggingFalse()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -60,7 +60,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithEnableDebugLoggingFalse()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -70,7 +70,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithEmptyStatusMessage()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -80,7 +80,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeWithIsSuccessFalse()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -90,7 +90,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeUpdateCommand()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -100,7 +100,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeCancelCommand()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -110,7 +110,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void InitializeBrowseFolderCommand()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
@@ -120,7 +120,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void LoadEditableFieldsWhenAccountIsSelected()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
         var account = new AccountInfo(
@@ -143,7 +143,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void LoadEnableDebugLoggingWhenAccountIsSelected()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
         var account = new AccountInfo(
@@ -164,7 +164,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void ClearStatusMessageWhenAccountIsSelected()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo)
         {
             StatusMessage = "Previous message"
@@ -188,7 +188,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenSelectedAccountChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -218,7 +218,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenLocalSyncPathChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -239,7 +239,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenEnableDetailedSyncLoggingChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -260,7 +260,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenEnableDebugLoggingChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -281,7 +281,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenStatusMessageChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -302,7 +302,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void RaisePropertyChangedWhenIsSuccessChanges()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var propertyChanged = false;
 
@@ -323,7 +323,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void ExecuteCancelCommandAndRaiseRequestCloseEvent()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
         var eventRaised = false;
 
@@ -337,14 +337,13 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void NotLoadEditableFieldsWhenAccountIsSetToNull()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo)
         {
             LocalSyncPath = @"C:\ExistingPath",
-            EnableDetailedSyncLogging = true
+            EnableDetailedSyncLogging = true,
+            SelectedAccount = null
         };
-
-        sut.SelectedAccount = null;
 
         sut.LocalSyncPath.ShouldBe(@"C:\ExistingPath");
         sut.EnableDetailedSyncLogging.ShouldBeTrue();
@@ -353,7 +352,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void DisableUpdateCommandWhenNoAccountIsSelected()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
         var canExecute = false;
@@ -365,7 +364,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void DisableUpdateCommandWhenLocalSyncPathIsEmpty()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
         var account = new AccountInfo(
@@ -390,7 +389,7 @@ public class UpdateAccountDetailsViewModelShould
     [Fact]
     public void EnableUpdateCommandWhenAccountIsSelectedAndPathIsNotEmpty()
     {
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new UpdateAccountDetailsViewModel(mockRepo);
 
         var account = new AccountInfo(

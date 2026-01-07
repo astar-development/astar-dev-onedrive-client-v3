@@ -33,7 +33,7 @@ public sealed class FolderTreeService : IFolderTreeService
         var isAuthenticated = await _authService.IsAuthenticatedAsync(accountId, cancellationToken);
         if (!isAuthenticated)
         {
-            return Array.Empty<OneDriveFolderNode>();
+            return [];
         }
 
         var driveItems = await _graphApiClient.GetRootChildrenAsync(accountId, cancellationToken);
@@ -42,7 +42,10 @@ public sealed class FolderTreeService : IFolderTreeService
         var nodes = new List<OneDriveFolderNode>();
         foreach (var item in folders)
         {
-            if (item.Id is null || item.Name is null) continue;
+            if (item.Id is null || item.Name is null)
+            {
+                continue;
+            }
 
             var node = new OneDriveFolderNode(
                 id: item.Id,
@@ -70,7 +73,7 @@ public sealed class FolderTreeService : IFolderTreeService
         var isAuthenticated = await _authService.IsAuthenticatedAsync(accountId, cancellationToken);
         if (!isAuthenticated)
         {
-            return Array.Empty<OneDriveFolderNode>();
+            return [];
         }
 
         // Get parent folder to build paths
@@ -85,7 +88,10 @@ public sealed class FolderTreeService : IFolderTreeService
         var nodes = new List<OneDriveFolderNode>();
         foreach (var item in folders)
         {
-            if (item.Id is null || item.Name is null) continue;
+            if (item.Id is null || item.Name is null)
+            {
+                continue;
+            }
 
             var node = new OneDriveFolderNode(
                 id: item.Id,
@@ -112,13 +118,13 @@ public sealed class FolderTreeService : IFolderTreeService
         var isAuthenticated = await _authService.IsAuthenticatedAsync(accountId, cancellationToken);
         if (!isAuthenticated)
         {
-            return Array.Empty<OneDriveFolderNode>();
+            return [];
         }
 
         var rootFolders = await GetRootFoldersAsync(accountId, cancellationToken);
         var rootList = rootFolders.ToList();
 
-        if (maxDepth is null || maxDepth > 0)
+        if (maxDepth is null or > 0)
         {
             foreach (var folder in rootList)
             {

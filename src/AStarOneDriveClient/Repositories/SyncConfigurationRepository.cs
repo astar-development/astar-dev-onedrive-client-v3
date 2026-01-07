@@ -27,7 +27,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
             .Where(sc => sc.AccountId == accountId)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -56,11 +56,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var entity = await _context.SyncConfigurations.FindAsync([configuration.Id], cancellationToken);
-        if (entity is null)
-        {
-            throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
-        }
+        var entity = await _context.SyncConfigurations.FindAsync([configuration.Id], cancellationToken) ?? throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
 
         entity.AccountId = configuration.AccountId;
         entity.FolderPath = configuration.FolderPath;

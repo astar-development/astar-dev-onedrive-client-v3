@@ -18,16 +18,10 @@ public static class DebugLogContext
     /// This flows through all async operations in the current execution context.
     /// </summary>
     /// <param name="accountId">The account ID to set.</param>
-    public static void SetAccountId(string? accountId)
-    {
-        _currentAccountId.Value = accountId;
-    }
+    public static void SetAccountId(string? accountId) => _currentAccountId.Value = accountId;
 
     /// <summary>
     /// Clears the current account ID from the ambient context.
     /// </summary>
-    public static void Clear()
-    {
-        _currentAccountId.Value = null;
-    }
+    public static void Clear() => _currentAccountId.Value = null;
 }

@@ -20,29 +20,29 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
     /// <inheritdoc/>
     public async Task<IReadOnlyList<SyncConflict>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
-        List<SyncConflictEntity> entities = await _context.SyncConflicts
+        var entities = await _context.SyncConflicts
             .Where(c => c.AccountId == accountId)
             .OrderByDescending(c => c.DetectedUtc)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToDomain).ToList();
+        return [.. entities.Select(MapToDomain)];
     }
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<SyncConflict>> GetUnresolvedByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
-        List<SyncConflictEntity> entities = await _context.SyncConflicts
+        var entities = await _context.SyncConflicts
             .Where(c => c.AccountId == accountId && !c.IsResolved)
             .OrderByDescending(c => c.DetectedUtc)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToDomain).ToList();
+        return [.. entities.Select(MapToDomain)];
     }
 
     /// <inheritdoc/>
     public async Task<SyncConflict?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        SyncConflictEntity? entity = await _context.SyncConflicts
+        var entity = await _context.SyncConflicts
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         return entity is not null ? MapToDomain(entity) : null;
@@ -51,7 +51,7 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
     /// <inheritdoc/>
     public async Task<SyncConflict?> GetByFilePathAsync(string accountId, string filePath, CancellationToken cancellationToken = default)
     {
-        SyncConflictEntity? entity = await _context.SyncConflicts
+        var entity = await _context.SyncConflicts
             .Where(c => c.AccountId == accountId && c.FilePath == filePath && !c.IsResolved)
             .OrderByDescending(c => c.DetectedUtc)
             .FirstOrDefaultAsync(cancellationToken);
@@ -62,7 +62,7 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
     /// <inheritdoc/>
     public async Task AddAsync(SyncConflict conflict, CancellationToken cancellationToken = default)
     {
-        SyncConflictEntity entity = MapToEntity(conflict);
+        var entity = MapToEntity(conflict);
         await _context.SyncConflicts.AddAsync(entity, cancellationToken);
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -70,13 +70,8 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
     /// <inheritdoc/>
     public async Task UpdateAsync(SyncConflict conflict, CancellationToken cancellationToken = default)
     {
-        SyncConflictEntity? existingEntity = await _context.SyncConflicts
-            .FirstOrDefaultAsync(c => c.Id == conflict.Id, cancellationToken);
-
-        if (existingEntity is null)
-        {
-            throw new InvalidOperationException($"Conflict not found: {conflict.Id}");
-        }
+        var existingEntity = await _context.SyncConflicts
+            .FirstOrDefaultAsync(c => c.Id == conflict.Id, cancellationToken) ?? throw new InvalidOperationException($"Conflict not found: {conflict.Id}");
 
         existingEntity.ResolutionStrategy = conflict.ResolutionStrategy;
         existingEntity.IsResolved = conflict.IsResolved;
@@ -87,7 +82,7 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
     /// <inheritdoc/>
     public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
-        SyncConflictEntity? entity = await _context.SyncConflicts
+        var entity = await _context.SyncConflicts
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
         if (entity is not null)

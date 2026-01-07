@@ -38,7 +38,9 @@ public partial class SyncTreeView : UserControl
     private void OnRootFoldersChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (DataContext is not SyncTreeViewModel viewModel)
+        {
             return;
+        }
 
         if (e.NewItems != null)
         {

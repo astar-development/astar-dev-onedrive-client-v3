@@ -82,7 +82,7 @@ public sealed class ConflictResolverShould
             await _conflictRepo.Received(1).UpdateAsync(
                 Arg.Is<SyncConflict>(c =>
                     c.Id == conflict.Id &&
-                    c.IsResolved == true &&
+                    c.IsResolved &&
                     c.ResolutionStrategy == ConflictResolutionStrategy.KeepLocal),
                 Arg.Any<CancellationToken>());
         }
@@ -158,7 +158,7 @@ public sealed class ConflictResolverShould
             await _conflictRepo.Received(1).UpdateAsync(
                 Arg.Is<SyncConflict>(c =>
                     c.Id == conflict.Id &&
-                    c.IsResolved == true &&
+                    c.IsResolved &&
                     c.ResolutionStrategy == ConflictResolutionStrategy.KeepRemote),
                 Arg.Any<CancellationToken>());
         }
@@ -256,7 +256,7 @@ public sealed class ConflictResolverShould
             await _conflictRepo.Received(1).UpdateAsync(
                 Arg.Is<SyncConflict>(c =>
                     c.Id == conflict.Id &&
-                    c.IsResolved == true &&
+                    c.IsResolved &&
                     c.ResolutionStrategy == ConflictResolutionStrategy.KeepBoth),
                 Arg.Any<CancellationToken>());
         }

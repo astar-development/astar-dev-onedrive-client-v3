@@ -9,7 +9,7 @@ namespace AStarOneDriveClient.Tests.Unit.Services.OneDriveServices;
 /// <summary>
 /// Helper class for providing bearer token authentication to GraphServiceClient.
 /// </summary>
-file sealed class TokenProvider(string accessToken) : IAuthenticationProvider
+sealed file class TokenProvider(string accessToken) : IAuthenticationProvider
 {
     public Task AuthenticateRequestAsync(
         Microsoft.Kiota.Abstractions.RequestInformation request,
@@ -56,11 +56,7 @@ public class FolderTreeServiceIntegrationShould
             throw new InvalidOperationException("Failed to authenticate with OneDrive");
         }
 
-        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId);
-        if (accessToken is null)
-        {
-            throw new InvalidOperationException("Failed to get access token");
-        }
+        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService);
@@ -90,11 +86,7 @@ public class FolderTreeServiceIntegrationShould
             throw new InvalidOperationException("Failed to authenticate with OneDrive");
         }
 
-        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId);
-        if (accessToken is null)
-        {
-            throw new InvalidOperationException("Failed to get access token");
-        }
+        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService);
@@ -132,11 +124,7 @@ public class FolderTreeServiceIntegrationShould
             throw new InvalidOperationException("Failed to authenticate with OneDrive");
         }
 
-        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId);
-        if (accessToken is null)
-        {
-            throw new InvalidOperationException("Failed to get access token");
-        }
+        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService);
@@ -175,11 +163,7 @@ public class FolderTreeServiceIntegrationShould
             throw new InvalidOperationException("Failed to authenticate with OneDrive");
         }
 
-        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId);
-        if (accessToken is null)
-        {
-            throw new InvalidOperationException("Failed to get access token");
-        }
+        _ = await authService.GetAccessTokenAsync(loginResult.AccountId) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService);
@@ -211,11 +195,7 @@ public class FolderTreeServiceIntegrationShould
             throw new InvalidOperationException("Failed to authenticate with OneDrive");
         }
 
-        var accessToken = await authService.GetAccessTokenAsync(loginResult.AccountId);
-        if (accessToken is null)
-        {
-            throw new InvalidOperationException("Failed to get access token");
-        }
+        _ = await authService.GetAccessTokenAsync(loginResult.AccountId) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
 

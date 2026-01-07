@@ -13,11 +13,7 @@ public sealed class ViewSyncHistoryViewModel : ReactiveObject
 {
     private readonly IAccountRepository _accountRepository;
     private readonly IFileOperationLogRepository _fileOperationLogRepository;
-    private AccountInfo? _selectedAccount;
     private int _currentPage = 1;
-    private bool _hasMoreRecords = true;
-    private bool _isLoading;
-
     private const int PageSize = 20;
 
     /// <summary>
@@ -35,8 +31,8 @@ public sealed class ViewSyncHistoryViewModel : ReactiveObject
         _accountRepository = accountRepository;
         _fileOperationLogRepository = fileOperationLogRepository;
 
-        Accounts = new ObservableCollection<AccountInfo>();
-        SyncHistory = new ObservableCollection<FileOperationLog>();
+        Accounts = [];
+        SyncHistory = [];
 
         LoadNextPageCommand = ReactiveCommand.CreateFromTask(LoadNextPageAsync);
         LoadPreviousPageCommand = ReactiveCommand.CreateFromTask(LoadPreviousPageAsync);
@@ -60,10 +56,10 @@ public sealed class ViewSyncHistoryViewModel : ReactiveObject
     /// </summary>
     public AccountInfo? SelectedAccount
     {
-        get => _selectedAccount;
+        get;
         set
         {
-            this.RaiseAndSetIfChanged(ref _selectedAccount, value);
+            this.RaiseAndSetIfChanged(ref field, value);
             if (value is not null)
             {
                 _currentPage = 1;
@@ -86,17 +82,17 @@ public sealed class ViewSyncHistoryViewModel : ReactiveObject
     /// </summary>
     public bool HasMoreRecords
     {
-        get => _hasMoreRecords;
-        private set => this.RaiseAndSetIfChanged(ref _hasMoreRecords, value);
-    }
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    } = true;
 
     /// <summary>
     /// Gets a value indicating whether data is currently loading.
     /// </summary>
     public bool IsLoading
     {
-        get => _isLoading;
-        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>

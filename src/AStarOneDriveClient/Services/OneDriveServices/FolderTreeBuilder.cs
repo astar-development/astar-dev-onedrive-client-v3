@@ -33,7 +33,9 @@ public static class FolderTreeBuilder
         foreach (var item in folderItems)
         {
             if (item.Id is null || item.Name is null)
+            {
                 continue;
+            }
 
             var path = BuildPath(item);
             var parentId = item.ParentReference?.Id;
@@ -81,7 +83,7 @@ public static class FolderTreeBuilder
             }
         }
 
-        return rootNodes.OrderBy(n => n.Name).ToList();
+        return [.. rootNodes.OrderBy(n => n.Name)];
     }
 
     /// <summary>
@@ -134,7 +136,9 @@ public static class FolderTreeBuilder
 
         var parentNode = FindNodeById(existingTree, parentId);
         if (parentNode is null)
+        {
             return;
+        }
 
         var newNodes = BuildTree(newItems, parentId);
 
@@ -172,11 +176,15 @@ public static class FolderTreeBuilder
         foreach (var node in tree)
         {
             if (node.Id == nodeId)
+            {
                 return node;
+            }
 
-            var foundInChildren = FindNodeById(node.Children.ToList(), nodeId);
+            var foundInChildren = FindNodeById([.. node.Children], nodeId);
             if (foundInChildren is not null)
+            {
                 return foundInChildren;
+            }
         }
 
         return null;

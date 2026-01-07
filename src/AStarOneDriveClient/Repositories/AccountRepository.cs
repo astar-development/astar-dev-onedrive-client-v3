@@ -22,7 +22,7 @@ public sealed class AccountRepository : IAccountRepository
     public async Task<IReadOnlyList<AccountInfo>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var entities = await _context.Accounts.ToListAsync(cancellationToken);
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -49,11 +49,7 @@ public sealed class AccountRepository : IAccountRepository
     {
         ArgumentNullException.ThrowIfNull(account);
 
-        var entity = await _context.Accounts.FindAsync([account.AccountId], cancellationToken);
-        if (entity is null)
-        {
-            throw new InvalidOperationException($"Account with ID '{account.AccountId}' not found.");
-        }
+        var entity = await _context.Accounts.FindAsync([account.AccountId], cancellationToken) ?? throw new InvalidOperationException($"Account with ID '{account.AccountId}' not found.");
 
         entity.DisplayName = account.DisplayName;
         entity.LocalSyncPath = account.LocalSyncPath;

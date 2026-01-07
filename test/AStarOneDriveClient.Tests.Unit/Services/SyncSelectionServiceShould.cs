@@ -284,7 +284,7 @@ public class SyncSelectionServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenSetSelectionFolderIsNull()
     {
-        Exception? exception = Record.Exception(() => _service.SetSelection(null!, true));
+        var exception = Record.Exception(() => _service.SetSelection(null!, true));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -295,7 +295,7 @@ public class SyncSelectionServiceShould
     {
         var rootFolders = new List<OneDriveFolderNode>();
 
-        Exception? exception = Record.Exception(() => _service.UpdateParentStates(null!, rootFolders));
+        var exception = Record.Exception(() => _service.UpdateParentStates(null!, rootFolders));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -306,7 +306,7 @@ public class SyncSelectionServiceShould
     {
         var folder = CreateFolder("test", "Test");
 
-        Exception? exception = Record.Exception(() => _service.UpdateParentStates(folder, null!));
+        var exception = Record.Exception(() => _service.UpdateParentStates(folder, null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -315,7 +315,7 @@ public class SyncSelectionServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenGetSelectedFoldersRootFoldersIsNull()
     {
-        Exception? exception = Record.Exception(() => _service.GetSelectedFolders(null!));
+        var exception = Record.Exception(() => _service.GetSelectedFolders(null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -324,7 +324,7 @@ public class SyncSelectionServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenClearAllSelectionsRootFoldersIsNull()
     {
-        Exception? exception = Record.Exception(() => _service.ClearAllSelections(null!));
+        var exception = Record.Exception(() => _service.ClearAllSelections(null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -333,7 +333,7 @@ public class SyncSelectionServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenCalculateStateFromChildrenFolderIsNull()
     {
-        Exception? exception = Record.Exception(() => _service.CalculateStateFromChildren(null!));
+        var exception = Record.Exception(() => _service.CalculateStateFromChildren(null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();

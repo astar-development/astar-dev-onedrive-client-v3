@@ -19,10 +19,7 @@ public sealed class EnumToBooleanConverter : IValueConverter
     /// <returns><c>true</c> if the value equals the parameter; otherwise, <c>false</c>.</returns>
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is null || parameter is null)
-            return false;
-
-        return value.Equals(parameter);
+        return value is null || parameter is null ? false : value.Equals(parameter);
     }
 
     /// <summary>
@@ -35,9 +32,6 @@ public sealed class EnumToBooleanConverter : IValueConverter
     /// <returns>The parameter value if <paramref name="value"/> is true; otherwise, <c>null</c>.</returns>
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is bool boolValue && boolValue && parameter is not null)
-            return parameter;
-
-        return null;
+        return value is bool boolValue && boolValue && parameter is not null ? parameter : null;
     }
 }

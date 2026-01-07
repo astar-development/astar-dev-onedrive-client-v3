@@ -13,12 +13,6 @@ namespace AStarOneDriveClient.ViewModels;
 public sealed class UpdateAccountDetailsViewModel : ReactiveObject
 {
     private readonly IAccountRepository _accountRepository;
-    private AccountInfo? _selectedAccount;
-    private string _localSyncPath = string.Empty;
-    private bool _enableDetailedSyncLogging;
-    private bool _enableDebugLogging;
-    private string _statusMessage = string.Empty;
-    private bool _isSuccess;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateAccountDetailsViewModel"/> class.
@@ -29,7 +23,7 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
         ArgumentNullException.ThrowIfNull(accountRepository);
         _accountRepository = accountRepository;
 
-        Accounts = new ObservableCollection<AccountInfo>();
+        Accounts = [];
 
         // Update command - enabled when account is selected and path is valid
         var canUpdate = this.WhenAnyValue(
@@ -55,10 +49,10 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     /// </summary>
     public AccountInfo? SelectedAccount
     {
-        get => _selectedAccount;
+        get;
         set
         {
-            this.RaiseAndSetIfChanged(ref _selectedAccount, value);
+            this.RaiseAndSetIfChanged(ref field, value);
             if (value is not null)
             {
                 // Load editable fields when account is selected
@@ -75,17 +69,17 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     /// </summary>
     public string LocalSyncPath
     {
-        get => _localSyncPath;
-        set => this.RaiseAndSetIfChanged(ref _localSyncPath, value);
-    }
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    } = string.Empty;
 
     /// <summary>
     /// Gets or sets a value indicating whether detailed sync logging is enabled.
     /// </summary>
     public bool EnableDetailedSyncLogging
     {
-        get => _enableDetailedSyncLogging;
-        set => this.RaiseAndSetIfChanged(ref _enableDetailedSyncLogging, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -93,8 +87,8 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     /// </summary>
     public bool EnableDebugLogging
     {
-        get => _enableDebugLogging;
-        set => this.RaiseAndSetIfChanged(ref _enableDebugLogging, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -102,17 +96,17 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     /// </summary>
     public string StatusMessage
     {
-        get => _statusMessage;
-        set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
-    }
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    } = string.Empty;
 
     /// <summary>
     /// Gets or sets a value indicating whether the last operation was successful.
     /// </summary>
     public bool IsSuccess
     {
-        get => _isSuccess;
-        set => this.RaiseAndSetIfChanged(ref _isSuccess, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -204,10 +198,7 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
         }
     }
 
-    private void Cancel()
-    {
-        RequestClose?.Invoke(this, EventArgs.Empty);
-    }
+    private void Cancel() => RequestClose?.Invoke(this, EventArgs.Empty);
 
     private async Task BrowseFolderAsync()
     {

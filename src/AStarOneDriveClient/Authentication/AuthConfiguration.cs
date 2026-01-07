@@ -43,12 +43,9 @@ public sealed class AuthConfiguration
         }
 
         var clientId = authSection["ClientId"];
-        if (string.IsNullOrWhiteSpace(clientId))
-        {
-            throw new InvalidOperationException("Authentication:ClientId is not configured. Please set it in appsettings.json or user secrets.");
-        }
-
-        return new AuthConfiguration
+        return string.IsNullOrWhiteSpace(clientId)
+            ? throw new InvalidOperationException("Authentication:ClientId is not configured. Please set it in appsettings.json or user secrets.")
+            : new AuthConfiguration
         {
             ClientId = clientId,
             RedirectUri = authSection["RedirectUri"] ?? "http://localhost",

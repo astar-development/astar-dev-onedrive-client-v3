@@ -18,10 +18,7 @@ public sealed class App : Application
     public static ServiceProvider? Services { get; private set; }
 
     /// <inheritdoc/>
-    public override void Initialize()
-    {
-        AvaloniaXamlLoader.Load(this);
-    }
+    public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
     /// <inheritdoc/>
     public override void OnFrameworkInitializationCompleted()
@@ -39,10 +36,7 @@ public sealed class App : Application
             desktop.MainWindow = new MainWindow();
 
             // Cleanup on exit
-            desktop.Exit += (_, _) =>
-            {
-                Services?.Dispose();
-            };
+            desktop.Exit += (_, _) => Services?.Dispose();
         }
 
         base.OnFrameworkInitializationCompleted();

@@ -1,7 +1,6 @@
 using AStarOneDriveClient.Data;
 using AStarOneDriveClient.Data.Entities;
 using AStarOneDriveClient.Repositories;
-using Microsoft.EntityFrameworkCore;
 
 namespace AStarOneDriveClient.Services;
 
@@ -22,28 +21,16 @@ public sealed class DebugLogger : IDebugLogger
     }
 
     /// <inheritdoc/>
-    public async Task LogInfoAsync(string source, string message, CancellationToken cancellationToken = default)
-    {
-        await LogAsync("Info", source, message, null, cancellationToken);
-    }
+    public async Task LogInfoAsync(string source, string message, CancellationToken cancellationToken = default) => await LogAsync("Info", source, message, null, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task LogErrorAsync(string source, string message, Exception? exception = null, CancellationToken cancellationToken = default)
-    {
-        await LogAsync("Error", source, message, exception, cancellationToken);
-    }
+    public async Task LogErrorAsync(string source, string message, Exception? exception = null, CancellationToken cancellationToken = default) => await LogAsync("Error", source, message, exception, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task LogEntryAsync(string source, CancellationToken cancellationToken = default)
-    {
-        await LogAsync("Entry", source, "Method entry", null, cancellationToken);
-    }
+    public async Task LogEntryAsync(string source, CancellationToken cancellationToken = default) => await LogAsync("Entry", source, "Method entry", null, cancellationToken);
 
     /// <inheritdoc/>
-    public async Task LogExitAsync(string source, CancellationToken cancellationToken = default)
-    {
-        await LogAsync("Exit", source, "Method exit", null, cancellationToken);
-    }
+    public async Task LogExitAsync(string source, CancellationToken cancellationToken = default) => await LogAsync("Exit", source, "Method exit", null, cancellationToken);
 
     private async Task LogAsync(string logLevel, string source, string message, Exception? exception, CancellationToken cancellationToken)
     {

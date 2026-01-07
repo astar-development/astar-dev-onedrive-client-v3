@@ -134,7 +134,7 @@ public sealed class AuthService : IAuthService
         }
         catch (MsalException)
         {
-            return Array.Empty<(string, string)>();
+            return [];
         }
     }
 
@@ -185,8 +185,5 @@ public sealed class AuthService : IAuthService
     }
 
     /// <inheritdoc/>
-    public async Task<string?> AcquireTokenSilentAsync(string accountId, CancellationToken cancellationToken = default)
-    {
-        return await GetAccessTokenAsync(accountId, cancellationToken);
-    }
+    public async Task<string?> AcquireTokenSilentAsync(string accountId, CancellationToken cancellationToken = default) => await GetAccessTokenAsync(accountId, cancellationToken);
 }

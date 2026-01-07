@@ -17,49 +17,52 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     private readonly IFolderTreeService _folderTreeService;
     private readonly ISyncSelectionService _selectionService;
     private readonly ISyncEngine _syncEngine;
-    private readonly CompositeDisposable _disposables = new();
+    private readonly CompositeDisposable _disposables = [];
 
-    private string? _selectedAccountId;
     /// <summary>
     /// Gets or sets the currently selected account ID.
     /// </summary>
     public string? SelectedAccountId
     {
-        get => _selectedAccountId;
-        set => this.RaiseAndSetIfChanged(ref _selectedAccountId, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
-    private ObservableCollection<OneDriveFolderNode> _rootFolders = [];
     /// <summary>
     /// Gets the root-level folders for the selected account.
     /// </summary>
     public ObservableCollection<OneDriveFolderNode> RootFolders
     {
-        get => _rootFolders;
-        private set => this.RaiseAndSetIfChanged(ref _rootFolders, value);
-    }
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    } = [];
 
-    private bool _isLoading;
     /// <summary>
     /// Gets a value indicating whether folders are currently being loaded.
     /// </summary>
     public bool IsLoading
     {
-        get => _isLoading;
-        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
-    private string? _errorMessage;
     /// <summary>
     /// Gets the error message if loading fails.
     /// </summary>
     public string? ErrorMessage
     {
-        get => _errorMessage;
-        private set => this.RaiseAndSetIfChanged(ref _errorMessage, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
-    private SyncState _syncState = new(
+    /// <summary>
+    /// Gets the current sync state.
+    /// </summary>
+    public SyncState SyncState
+    {
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    } = new(
         AccountId: string.Empty,
         Status: SyncStatus.Idle,
         TotalFiles: 0,
@@ -73,15 +76,6 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         MegabytesPerSecond: 0,
         EstimatedSecondsRemaining: null,
         LastUpdateUtc: null);
-
-    /// <summary>
-    /// Gets the current sync state.
-    /// </summary>
-    public SyncState SyncState
-    {
-        get => _syncState;
-        private set => this.RaiseAndSetIfChanged(ref _syncState, value);
-    }
 
     /// <summary>
     /// Gets a value indicating whether sync is currently running.
@@ -112,17 +106,17 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         SyncStatus.Completed => $"Sync completed - {SyncState.TotalFiles} files",
         SyncStatus.Paused => "Sync paused",
         SyncStatus.Failed => "Sync failed",
+        SyncStatus.Queued => throw new NotImplementedException(),
         _ => string.Empty
     };
 
-    private string? _lastSyncResult;
     /// <summary>
     /// Gets the result message from the last sync operation.
     /// </summary>
     public string? LastSyncResult
     {
-        get => _lastSyncResult;
-        private set => this.RaiseAndSetIfChanged(ref _lastSyncResult, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -244,7 +238,9 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         ArgumentNullException.ThrowIfNull(folder);
 
         if (folder.ChildrenLoaded || string.IsNullOrEmpty(SelectedAccountId))
+        {
             return;
+        }
 
         try
         {
@@ -342,10 +338,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     /// Gets all selected folders.
     /// </summary>
     /// <returns>List of selected folder nodes.</returns>
-    public List<OneDriveFolderNode> GetSelectedFolders()
-    {
-        return _selectionService.GetSelectedFolders([.. RootFolders]);
-    }
+    public List<OneDriveFolderNode> GetSelectedFolders() => _selectionService.GetSelectedFolders([.. RootFolders]);
 
     /// <summary>
     /// Starts file synchronization for the selected account.
@@ -367,14 +360,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             {
                 var totalChanges = SyncState.TotalFiles + SyncState.FilesDeleted;
 
-                if (totalChanges == 0)
-                {
-                    LastSyncResult = "✓ Sync complete: No changes detected";
-                }
-                else
-                {
-                    LastSyncResult = $"✓ Sync complete: {totalChanges} change(s) synchronized";
-                }
+                LastSyncResult = totalChanges == 0 ? "✓ Sync complete: No changes detected" : $"✓ Sync complete: {totalChanges} change(s) synchronized";
             }
         }
         catch (OperationCanceledException)
@@ -399,8 +385,5 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        _disposables.Dispose();
-    }
+    public void Dispose() => _disposables.Dispose();
 }

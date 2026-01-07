@@ -15,7 +15,7 @@ public sealed class AutoSyncCoordinator : IAutoSyncCoordinator
     private readonly ISyncEngine _syncEngine;
     private readonly IAccountRepository _accountRepository;
     private readonly ILogger<AutoSyncCoordinator> _logger;
-    private readonly CompositeDisposable _disposables = new();
+    private readonly CompositeDisposable _disposables = [];
     private readonly Dictionary<string, IDisposable> _accountSubscriptions = [];
 
     /// <summary>

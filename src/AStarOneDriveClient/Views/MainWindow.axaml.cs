@@ -14,7 +14,7 @@ namespace AStarOneDriveClient.Views;
 public sealed partial class MainWindow : Window
 {
     private readonly IWindowPreferencesService? _preferencesService;
-    private DispatcherTimer? _savePreferencesTimer;
+    private readonly DispatcherTimer? _savePreferencesTimer;
 
     public MainWindow()
     {
@@ -46,14 +46,16 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private async System.Threading.Tasks.Task LoadWindowPreferencesAsync()
+    private async Task LoadWindowPreferencesAsync()
     {
         if (_preferencesService is null)
+        {
             return;
+        }
 
         try
         {
-            WindowPreferences? preferences = await _preferencesService.LoadAsync();
+            var preferences = await _preferencesService.LoadAsync();
             if (preferences is not null)
             {
                 // Apply saved preferences
@@ -92,10 +94,12 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async System.Threading.Tasks.Task SaveWindowPreferencesAsync()
+    private async Task SaveWindowPreferencesAsync()
     {
         if (_preferencesService is null)
+        {
             return;
+        }
 
         try
         {

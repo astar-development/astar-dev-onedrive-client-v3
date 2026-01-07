@@ -46,11 +46,15 @@ public sealed class SyncSelectionService : ISyncSelectionService
         ArgumentNullException.ThrowIfNull(rootFolders);
 
         if (folder.ParentId is null)
+        {
             return;
+        }
 
         var parent = FindNodeById(rootFolders, folder.ParentId);
         if (parent is null)
+        {
             return;
+        }
 
         var calculatedState = CalculateStateFromChildren(parent);
         parent.SelectionState = calculatedState;
@@ -93,7 +97,9 @@ public sealed class SyncSelectionService : ISyncSelectionService
         ArgumentNullException.ThrowIfNull(folder);
 
         if (folder.Children.Count == 0)
+        {
             return folder.SelectionState;
+        }
 
         var checkedCount = 0;
         var uncheckedCount = 0;
@@ -112,20 +118,28 @@ public sealed class SyncSelectionService : ISyncSelectionService
                 case SelectionState.Indeterminate:
                     indeterminateCount++;
                     break;
+                default:
+                    break;
             }
         }
 
         // If any child is indeterminate, parent is indeterminate
         if (indeterminateCount > 0)
+        {
             return SelectionState.Indeterminate;
+        }
 
         // If all children are checked, parent is checked
         if (checkedCount == folder.Children.Count)
+        {
             return SelectionState.Checked;
+        }
 
         // If all children are unchecked, parent is unchecked
         if (uncheckedCount == folder.Children.Count)
+        {
             return SelectionState.Unchecked;
+        }
 
         // Mixed state = indeterminate
         return SelectionState.Indeterminate;
@@ -140,6 +154,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
             {
                 SelectionState.Checked => true,
                 SelectionState.Unchecked => false,
+                SelectionState.Indeterminate => throw new NotImplementedException(),
                 _ => null
             };
 
@@ -158,7 +173,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
                 result.Add(folder);
             }
 
-            CollectSelectedFolders(folder.Children.ToList(), result);
+            CollectSelectedFolders([.. folder.Children], result);
         }
     }
 
@@ -167,11 +182,15 @@ public sealed class SyncSelectionService : ISyncSelectionService
         foreach (var folder in folders)
         {
             if (folder.Id == nodeId)
+            {
                 return folder;
+            }
 
-            var foundInChildren = FindNodeById(folder.Children.ToList(), nodeId);
+            var foundInChildren = FindNodeById([.. folder.Children], nodeId);
             if (foundInChildren is not null)
+            {
                 return foundInChildren;
+            }
         }
 
         return null;
@@ -184,7 +203,9 @@ public sealed class SyncSelectionService : ISyncSelectionService
         ArgumentNullException.ThrowIfNull(rootFolders);
 
         if (_configurationRepository is null)
+        {
             return; // No persistence configured
+        }
 
         // Get all checked folders
         var selectedFolders = GetSelectedFolders(rootFolders);
@@ -209,7 +230,9 @@ public sealed class SyncSelectionService : ISyncSelectionService
         ArgumentNullException.ThrowIfNull(rootFolders);
 
         if (_configurationRepository is null)
+        {
             return; // No persistence configured
+        }
 
         // Get saved folder paths
         var savedFolderPaths = await _configurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
@@ -253,7 +276,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
 
             if (folder.Children.Count > 0)
             {
-                BuildPathLookup(folder.Children.ToList(), pathMap);
+                BuildPathLookup([.. folder.Children], pathMap);
             }
         }
     }

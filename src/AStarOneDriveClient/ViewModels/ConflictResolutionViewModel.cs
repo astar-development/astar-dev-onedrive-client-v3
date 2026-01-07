@@ -24,11 +24,7 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
     private readonly IConflictResolver _conflictResolver;
     private readonly ILogger<ConflictResolutionViewModel> _logger;
     private readonly string _accountId;
-    private readonly CompositeDisposable _disposables = new();
-
-    private bool _isLoading;
-    private bool _isResolving;
-    private string _statusMessage = string.Empty;
+    private readonly CompositeDisposable _disposables = [];
 
     /// <summary>
     /// Gets the collection of conflicts to display and resolve.
@@ -40,8 +36,8 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
     /// </summary>
     public bool IsLoading
     {
-        get => _isLoading;
-        set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -49,8 +45,8 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
     /// </summary>
     public bool IsResolving
     {
-        get => _isResolving;
-        set => this.RaiseAndSetIfChanged(ref _isResolving, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -58,9 +54,9 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
     /// </summary>
     public string StatusMessage
     {
-        get => _statusMessage;
-        set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
-    }
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
+    } = string.Empty;
 
     /// <summary>
     /// Gets a value indicating whether there are any conflicts to display.
@@ -116,10 +112,7 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
         CancelCommand = ReactiveCommand.Create(OnCancel);
 
         // Observe collection changes to update HasConflicts property
-        Conflicts.CollectionChanged += (_, _) =>
-        {
-            this.RaisePropertyChanged(nameof(HasConflicts));
-        };
+        Conflicts.CollectionChanged += (_, _) => this.RaisePropertyChanged(nameof(HasConflicts));
 
         // Load conflicts on initialization
         LoadConflictsCommand.Execute().Subscribe().DisposeWith(_disposables);
@@ -242,8 +235,5 @@ public sealed class ConflictResolutionViewModel : ReactiveObject, IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        _disposables.Dispose();
-    }
+    public void Dispose() => _disposables.Dispose();
 }

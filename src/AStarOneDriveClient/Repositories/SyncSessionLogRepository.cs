@@ -29,7 +29,7 @@ public sealed class SyncSessionLogRepository : ISyncSessionLogRepository
             .OrderByDescending(s => s.StartedUtc)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -59,11 +59,7 @@ public sealed class SyncSessionLogRepository : ISyncSessionLogRepository
     {
         ArgumentNullException.ThrowIfNull(sessionLog);
 
-        var entity = await _context.SyncSessionLogs.FindAsync([sessionLog.Id], cancellationToken);
-        if (entity is null)
-        {
-            throw new InvalidOperationException($"Sync session log with ID '{sessionLog.Id}' not found.");
-        }
+        var entity = await _context.SyncSessionLogs.FindAsync([sessionLog.Id], cancellationToken) ?? throw new InvalidOperationException($"Sync session log with ID '{sessionLog.Id}' not found.");
 
         entity.CompletedUtc = sessionLog.CompletedUtc;
         entity.Status = (int)sessionLog.Status;

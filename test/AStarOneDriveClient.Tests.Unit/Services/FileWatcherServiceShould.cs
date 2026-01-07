@@ -13,7 +13,7 @@ public class FileWatcherServiceShould : IDisposable
 
     public FileWatcherServiceShould()
     {
-        ILogger<FileWatcherService> mockLogger = Substitute.For<ILogger<FileWatcherService>>();
+        var mockLogger = Substitute.For<ILogger<FileWatcherService>>();
         _sut = new FileWatcherService(mockLogger);
 
         // Create a temporary directory for testing
@@ -24,7 +24,7 @@ public class FileWatcherServiceShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenAccountIdIsNull()
     {
-        Exception? exception = Record.Exception(() =>
+        var exception = Record.Exception(() =>
             _sut.StartWatching(null!, _testDirectory));
 
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -33,7 +33,7 @@ public class FileWatcherServiceShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenLocalPathIsNull()
     {
-        Exception? exception = Record.Exception(() =>
+        var exception = Record.Exception(() =>
             _sut.StartWatching("account1", null!));
 
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -44,7 +44,7 @@ public class FileWatcherServiceShould : IDisposable
     {
         var nonExistentPath = Path.Combine(_testDirectory, "NonExistent");
 
-        Exception? exception = Record.Exception(() =>
+        var exception = Record.Exception(() =>
             _sut.StartWatching("account1", nonExistentPath));
 
         exception.ShouldBeOfType<DirectoryNotFoundException>();
@@ -73,10 +73,7 @@ public class FileWatcherServiceShould : IDisposable
 
         // Verify at least one event is for our test file
         var fileEvent = events.FirstOrDefault(e => e.RelativePath == "test.txt");
-        if (fileEvent is not null)
-        {
-            fileEvent.AccountId.ShouldBe("account1");
-        }
+        fileEvent?.AccountId.ShouldBe("account1");
     }
 
     [Fact]
@@ -232,7 +229,7 @@ public class FileWatcherServiceShould : IDisposable
         _sut.StartWatching("account1", _testDirectory);
 
         // Start watching again for same account - should stop existing watcher
-        Exception? exception = Record.Exception(() =>
+        var exception = Record.Exception(() =>
             _sut.StartWatching("account1", _testDirectory));
 
         exception.ShouldBeNull();
@@ -241,7 +238,7 @@ public class FileWatcherServiceShould : IDisposable
     [Fact]
     public void ThrowArgumentNullExceptionWhenStoppingNullAccountId()
     {
-        Exception? exception = Record.Exception(() =>
+        var exception = Record.Exception(() =>
             _sut.StopWatching(null!));
 
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -256,7 +253,7 @@ public class FileWatcherServiceShould : IDisposable
         _sut.StartWatching("account1", _testDirectory);
         _sut.StartWatching("account2", subFolder);
 
-        Exception? exception = Record.Exception(() => _sut.Dispose());
+        var exception = Record.Exception(_sut.Dispose);
 
         exception.ShouldBeNull();
     }

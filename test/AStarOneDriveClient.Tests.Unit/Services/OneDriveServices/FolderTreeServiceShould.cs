@@ -9,8 +9,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task ReturnEmptyListWhenAccountIsNotAuthenticated()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(false));
 
         var service = new FolderTreeService(mockGraph, mockAuth);
@@ -24,8 +24,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task ReturnRootFoldersWhenAuthenticated()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
         var driveItems = new List<DriveItem>
@@ -52,8 +52,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task FilterOutFilesAndReturnOnlyFolders()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
         var driveItems = new List<DriveItem>
@@ -75,8 +75,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task GetChildFoldersForSpecificParent()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
         var parentItem = new DriveItem
@@ -108,8 +108,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task ReturnEmptyListWhenGettingChildrenForUnauthenticatedAccount()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(false));
 
         var service = new FolderTreeService(mockGraph, mockAuth);
@@ -123,8 +123,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task GetFolderHierarchyReturnsEmptyWhenNotAuthenticated()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(false));
 
         var service = new FolderTreeService(mockGraph, mockAuth);
@@ -137,8 +137,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task GetFolderHierarchyCallsGetRootFoldersAsync()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         mockAuth.IsAuthenticatedAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
         var rootItems = new List<DriveItem>
@@ -158,8 +158,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task ThrowArgumentNullExceptionWhenAccountIdIsNull()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         var service = new FolderTreeService(mockGraph, mockAuth);
 
         await Should.ThrowAsync<ArgumentNullException>(async () =>
@@ -169,8 +169,8 @@ public class FolderTreeServiceShould
     [Fact]
     public async Task ThrowArgumentNullExceptionWhenParentFolderIdIsNull()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
+        var mockAuth = Substitute.For<IAuthService>();
         var service = new FolderTreeService(mockGraph, mockAuth);
 
         await Should.ThrowAsync<ArgumentNullException>(async () =>
@@ -180,7 +180,7 @@ public class FolderTreeServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenGraphApiClientIsNull()
     {
-        IAuthService mockAuth = Substitute.For<IAuthService>();
+        var mockAuth = Substitute.For<IAuthService>();
 
         Should.Throw<ArgumentNullException>(() =>
             new FolderTreeService(null!, mockAuth));
@@ -189,7 +189,7 @@ public class FolderTreeServiceShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenAuthServiceIsNull()
     {
-        IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
+        var mockGraph = Substitute.For<IGraphApiClient>();
 
         Should.Throw<ArgumentNullException>(() =>
             new FolderTreeService(mockGraph, null!));

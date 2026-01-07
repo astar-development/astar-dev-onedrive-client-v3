@@ -54,7 +54,9 @@ public class ConflictItemViewModelShould
         viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ConflictItemViewModel.SelectedStrategy))
+            {
                 propertyChanged = true;
+            }
         };
 
         viewModel.SelectedStrategy = ConflictResolutionStrategy.KeepRemote;
@@ -73,7 +75,9 @@ public class ConflictItemViewModelShould
         viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(ConflictItemViewModel.SelectedStrategy))
+            {
                 propertyChangedCount++;
+            }
         };
 
         viewModel.SelectedStrategy = ConflictResolutionStrategy.None;

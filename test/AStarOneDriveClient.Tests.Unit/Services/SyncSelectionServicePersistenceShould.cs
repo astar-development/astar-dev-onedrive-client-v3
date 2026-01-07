@@ -9,7 +9,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task SaveCheckedFoldersToDatabase()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         var sut = new SyncSelectionService(mockRepo);
 
         var folder1 = CreateFolder("1", "Folder1", "/Folder1");
@@ -32,7 +32,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task SaveMultipleCheckedFoldersToDatabase()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         var sut = new SyncSelectionService(mockRepo);
 
         var folder1 = CreateFolder("1", "Folder1", "/Folder1");
@@ -53,7 +53,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task NotSaveUncheckedFoldersToDatabase()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         var sut = new SyncSelectionService(mockRepo);
 
         var folder1 = CreateFolder("1", "Folder1", "/Folder1");
@@ -73,7 +73,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task LoadSelectionsFromDatabaseAndApplyToTree()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         mockRepo.GetSelectedFoldersAsync("acc-123", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>(["/Folder1"]));
 
@@ -92,7 +92,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task HandleEmptyDatabaseGracefully()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         mockRepo.GetSelectedFoldersAsync("acc-123", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>([]));
 
@@ -109,7 +109,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task IgnoreFoldersInDatabaseThatNoLongerExist()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         mockRepo.GetSelectedFoldersAsync("acc-123", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>([
                 "/Folder1",
@@ -133,7 +133,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task RecalculateIndeterminateStatesAfterLoading()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         mockRepo.GetSelectedFoldersAsync("acc-123", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>(["/Parent/Child1"]));
 
@@ -159,7 +159,7 @@ public class SyncSelectionServicePersistenceShould
     [Fact]
     public async Task WorkWithNestedFolderStructures()
     {
-        ISyncConfigurationRepository mockRepo = Substitute.For<ISyncConfigurationRepository>();
+        var mockRepo = Substitute.For<ISyncConfigurationRepository>();
         mockRepo.GetSelectedFoldersAsync("acc-123", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<string>>([
                 "/Parent/Child/Grandchild"

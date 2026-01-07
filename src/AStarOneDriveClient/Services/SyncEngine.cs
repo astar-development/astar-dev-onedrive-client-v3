@@ -118,7 +118,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var selectedFolders = await _syncConfigurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
 
             // Deduplicate selected folders to prevent processing same folder multiple times
-            selectedFolders = selectedFolders.Distinct().ToList();
+            selectedFolders = [.. selectedFolders.Distinct()];
 
             await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Starting sync with {selectedFolders.Count} selected folders: {string.Join(", ", selectedFolders)}", cancellationToken);
 
@@ -234,10 +234,9 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files before deduplication: {allRemoteFiles.Count}");
 
             // Deduplicate remote files by Path (in case overlapping folder selections return same files)
-            allRemoteFiles = allRemoteFiles
+            allRemoteFiles = [.. allRemoteFiles
                 .GroupBy(f => f.Path)
-                .Select(g => g.First())
-                .ToList();
+                .Select(g => g.First())];
 
             System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files after deduplication: {allRemoteFiles.Count}");
             System.Diagnostics.Debug.WriteLine($"[SyncEngine] Remote file paths: {string.Join(", ", allRemoteFiles.Select(f => f.Path))}");
@@ -255,8 +254,8 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     // File exists in DB - check if it needs uploading
 
                     // Case 1: File has pending upload or failed status - needs (re)upload
-                    if (existingFile.SyncStatus == FileSyncStatus.PendingUpload ||
-                        existingFile.SyncStatus == FileSyncStatus.Failed)
+                    if (existingFile.SyncStatus is FileSyncStatus.PendingUpload or
+                        FileSyncStatus.Failed)
                     {
                         System.Diagnostics.Debug.WriteLine($"[SyncEngine] File needs upload (status={existingFile.SyncStatus}): {localFile.Name}");
                         // Use existing DB record (preserves ID and status) but update with current local file info
@@ -564,7 +563,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var uploadPathsSet = filesToUpload.Select(f => f.Path).ToHashSet();
             // Remove files from upload list that were deleted from OneDrive (since they were deleted locally)
             var deletedPaths = deletedFromOneDrive.Select(f => f.Path).ToHashSet();
-            filesToUpload = filesToUpload.Where(f => !deletedPaths.Contains(f.Path) && !conflictPaths.Contains(f.Path)).ToList();
+            filesToUpload = [.. filesToUpload.Where(f => !deletedPaths.Contains(f.Path) && !conflictPaths.Contains(f.Path))];
 
             var totalFiles = filesToUpload.Count + filesToDownload.Count;
             var totalBytes = filesToUpload.Sum(f => f.Size) + filesToDownload.Sum(f => f.Size);
@@ -991,7 +990,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     var totalTransferred = completedBytes - _transferHistory[0].Bytes;
                     if (totalElapsed > 0)
                     {
-                        megabytesPerSecond = (totalTransferred / (1024.0 * 1024.0)) / totalElapsed;
+                        megabytesPerSecond = totalTransferred / (1024.0 * 1024.0) / totalElapsed;
                     }
                 }
 

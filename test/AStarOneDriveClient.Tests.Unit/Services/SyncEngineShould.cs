@@ -320,13 +320,13 @@ public class SyncEngineShould
 
     private static (SyncEngine Engine, TestMocks Mocks) CreateTestEngine()
     {
-        ILocalFileScanner localScanner = Substitute.For<ILocalFileScanner>();
-        IRemoteChangeDetector remoteDetector = Substitute.For<IRemoteChangeDetector>();
-        IFileMetadataRepository fileMetadataRepo = Substitute.For<IFileMetadataRepository>();
-        ISyncConfigurationRepository syncConfigRepo = Substitute.For<ISyncConfigurationRepository>();
-        IAccountRepository accountRepo = Substitute.For<IAccountRepository>();
-        IGraphApiClient graphApiClient = Substitute.For<IGraphApiClient>();
-        ISyncConflictRepository syncConflictRepo = Substitute.For<ISyncConflictRepository>();
+        var localScanner = Substitute.For<ILocalFileScanner>();
+        var remoteDetector = Substitute.For<IRemoteChangeDetector>();
+        var fileMetadataRepo = Substitute.For<IFileMetadataRepository>();
+        var syncConfigRepo = Substitute.For<ISyncConfigurationRepository>();
+        var accountRepo = Substitute.For<IAccountRepository>();
+        var graphApiClient = Substitute.For<IGraphApiClient>();
+        var syncConflictRepo = Substitute.For<ISyncConflictRepository>();
 
         // Setup default mock return for UploadFileAsync to prevent null reference exceptions
         graphApiClient.UploadFileAsync(
@@ -351,8 +351,8 @@ public class SyncEngineShould
             Arg.Any<CancellationToken>())
             .Returns((SyncConflict?)null);
 
-        ISyncSessionLogRepository syncSessionLogRepo = Substitute.For<ISyncSessionLogRepository>();
-        IFileOperationLogRepository fileOperationLogRepo = Substitute.For<IFileOperationLogRepository>();
+        var syncSessionLogRepo = Substitute.For<ISyncSessionLogRepository>();
+        var fileOperationLogRepo = Substitute.For<IFileOperationLogRepository>();
 
         var engine = new SyncEngine(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient, syncConflictRepo, syncSessionLogRepo, fileOperationLogRepo);
         var mocks = new TestMocks(localScanner, remoteDetector, fileMetadataRepo, syncConfigRepo, accountRepo, graphApiClient, syncConflictRepo);

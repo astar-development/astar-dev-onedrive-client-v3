@@ -32,7 +32,7 @@ public sealed class SyncStateRepository : ISyncStateRepository
     public async Task<IReadOnlyList<SyncState>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var entities = await _context.SyncStates.ToListAsync(cancellationToken);
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>

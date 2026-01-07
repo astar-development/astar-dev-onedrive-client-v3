@@ -251,7 +251,7 @@ public class FolderTreeBuilderShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenItemsIsNull()
     {
-        Exception? exception = Record.Exception(() => FolderTreeBuilder.BuildTree(null!));
+        var exception = Record.Exception(() => FolderTreeBuilder.BuildTree(null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -262,7 +262,7 @@ public class FolderTreeBuilderShould
     {
         var items = new List<DriveItem> { CreateFolder("test", "Test", "parent", "/drive/root:") };
 
-        Exception? exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(null!, items, "parent"));
+        var exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(null!, items, "parent"));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -273,7 +273,7 @@ public class FolderTreeBuilderShould
     {
         var tree = new List<OneDriveFolderNode>();
 
-        Exception? exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(tree, null!, "parent"));
+        var exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(tree, null!, "parent"));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();
@@ -285,7 +285,7 @@ public class FolderTreeBuilderShould
         var tree = new List<OneDriveFolderNode>();
         var items = new List<DriveItem>();
 
-        Exception? exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(tree, items, null!));
+        var exception = Record.Exception(() => FolderTreeBuilder.MergeIntoTree(tree, items, null!));
 
         exception.ShouldNotBeNull();
         exception.ShouldBeOfType<ArgumentNullException>();

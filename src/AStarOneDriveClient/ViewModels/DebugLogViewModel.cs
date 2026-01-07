@@ -13,11 +13,6 @@ public sealed class DebugLogViewModel : ReactiveObject
 {
     private readonly IAccountRepository _accountRepository;
     private readonly IDebugLogRepository _debugLogRepository;
-    private AccountInfo? _selectedAccount;
-    private int _currentPage = 1;
-    private bool _hasMoreRecords = true;
-    private bool _isLoading;
-
     private const int PageSize = 50;
 
     /// <summary>
@@ -35,8 +30,8 @@ public sealed class DebugLogViewModel : ReactiveObject
         _accountRepository = accountRepository;
         _debugLogRepository = debugLogRepository;
 
-        Accounts = new ObservableCollection<AccountInfo>();
-        DebugLogs = new ObservableCollection<DebugLogEntry>();
+        Accounts = [];
+        DebugLogs = [];
 
         LoadNextPageCommand = ReactiveCommand.CreateFromTask(LoadNextPageAsync);
         LoadPreviousPageCommand = ReactiveCommand.CreateFromTask(LoadPreviousPageAsync);
@@ -61,10 +56,10 @@ public sealed class DebugLogViewModel : ReactiveObject
     /// </summary>
     public AccountInfo? SelectedAccount
     {
-        get => _selectedAccount;
+        get;
         set
         {
-            this.RaiseAndSetIfChanged(ref _selectedAccount, value);
+            this.RaiseAndSetIfChanged(ref field, value);
             if (value is not null)
             {
                 CurrentPage = 1;
@@ -78,26 +73,26 @@ public sealed class DebugLogViewModel : ReactiveObject
     /// </summary>
     public int CurrentPage
     {
-        get => _currentPage;
-        private set => this.RaiseAndSetIfChanged(ref _currentPage, value);
-    }
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    } = 1;
 
     /// <summary>
     /// Gets a value indicating whether there are more records to load.
     /// </summary>
     public bool HasMoreRecords
     {
-        get => _hasMoreRecords;
-        private set => this.RaiseAndSetIfChanged(ref _hasMoreRecords, value);
-    }
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    } = true;
 
     /// <summary>
     /// Gets a value indicating whether data is currently loading.
     /// </summary>
     public bool IsLoading
     {
-        get => _isLoading;
-        private set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>

@@ -13,8 +13,8 @@ public class SyncProgressViewModelShould
     [Fact]
     public void ThrowArgumentExceptionWhenAccountIdIsNull()
     {
-        ISyncEngine syncEngine = Substitute.For<ISyncEngine>();
-        ILogger<SyncProgressViewModel> logger = Substitute.For<ILogger<SyncProgressViewModel>>();
+        var syncEngine = Substitute.For<ISyncEngine>();
+        var logger = Substitute.For<ILogger<SyncProgressViewModel>>();
 
         var exception = Record.Exception(() => new SyncProgressViewModel(
             null!,
@@ -28,8 +28,8 @@ public class SyncProgressViewModelShould
     [Fact]
     public void ThrowArgumentExceptionWhenAccountIdIsEmpty()
     {
-        ISyncEngine syncEngine = Substitute.For<ISyncEngine>();
-        ILogger<SyncProgressViewModel> logger = Substitute.For<ILogger<SyncProgressViewModel>>();
+        var syncEngine = Substitute.For<ISyncEngine>();
+        var logger = Substitute.For<ILogger<SyncProgressViewModel>>();
 
         var exception = Record.Exception(() => new SyncProgressViewModel(
             string.Empty,
@@ -43,7 +43,7 @@ public class SyncProgressViewModelShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenSyncEngineIsNull()
     {
-        ILogger<SyncProgressViewModel> logger = Substitute.For<ILogger<SyncProgressViewModel>>();
+        var logger = Substitute.For<ILogger<SyncProgressViewModel>>();
 
         var exception = Record.Exception(() => new SyncProgressViewModel(
             "test-account",
@@ -57,7 +57,7 @@ public class SyncProgressViewModelShould
     [Fact]
     public void ThrowArgumentNullExceptionWhenLoggerIsNull()
     {
-        ISyncEngine syncEngine = Substitute.For<ISyncEngine>();
+        var syncEngine = Substitute.For<ISyncEngine>();
 
         var exception = Record.Exception(() => new SyncProgressViewModel(
             "test-account",
@@ -265,14 +265,13 @@ public class SyncProgressViewModelShould
         viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(SyncProgressViewModel.IsSyncing))
+            {
                 isSyncingValues.Add(viewModel.IsSyncing);
+            }
         };
 
         syncEngine.StartSyncAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(async _ =>
-            {
-                await Task.Delay(50);
-            });
+            .Returns(async _ => await Task.Delay(50));
 
         await viewModel.StartSyncCommand.Execute().FirstAsync();
 
@@ -300,7 +299,7 @@ public class SyncProgressViewModelShould
         var (viewModel, syncEngine, _) = CreateTestViewModel();
 
         syncEngine.StartSyncAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns<Task>(_ => throw new OperationCanceledException());
+            .Returns(_ => throw new OperationCanceledException());
 
         await viewModel.StartSyncCommand.Execute().FirstAsync();
 
@@ -314,7 +313,7 @@ public class SyncProgressViewModelShould
         var (viewModel, syncEngine, _) = CreateTestViewModel();
 
         syncEngine.StartSyncAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns<Task>(_ => throw new InvalidOperationException("Test error"));
+            .Returns(_ => throw new InvalidOperationException("Test error"));
 
         await viewModel.StartSyncCommand.Execute().FirstAsync();
 
@@ -423,7 +422,9 @@ public class SyncProgressViewModelShould
         viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is not null)
+            {
                 changedProperties.Add(e.PropertyName);
+            }
         };
 
         var progress = new SyncState(
@@ -455,8 +456,8 @@ public class SyncProgressViewModelShould
     private static (SyncProgressViewModel ViewModel, ISyncEngine SyncEngine, Subject<SyncState> ProgressSubject)
         CreateTestViewModel()
     {
-        ISyncEngine syncEngine = Substitute.For<ISyncEngine>();
-        ILogger<SyncProgressViewModel> logger = Substitute.For<ILogger<SyncProgressViewModel>>();
+        var syncEngine = Substitute.For<ISyncEngine>();
+        var logger = Substitute.For<ILogger<SyncProgressViewModel>>();
 
         var progressSubject = new Subject<SyncState>();
         syncEngine.Progress.Returns(progressSubject);

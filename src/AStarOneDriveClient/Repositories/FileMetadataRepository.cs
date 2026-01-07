@@ -29,7 +29,7 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
             .Where(fm => fm.AccountId == accountId)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -62,7 +62,7 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
             .Where(fm => fm.AccountId == accountId && fm.SyncStatus == (int)status)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(MapToModel).ToList();
+        return [.. entities.Select(MapToModel)];
     }
 
     /// <inheritdoc/>
@@ -80,11 +80,7 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
     {
         ArgumentNullException.ThrowIfNull(fileMetadata);
 
-        var entity = await _context.FileMetadata.FindAsync([fileMetadata.Id], cancellationToken);
-        if (entity is null)
-        {
-            throw new InvalidOperationException($"File metadata with ID '{fileMetadata.Id}' not found.");
-        }
+        var entity = await _context.FileMetadata.FindAsync([fileMetadata.Id], cancellationToken) ?? throw new InvalidOperationException($"File metadata with ID '{fileMetadata.Id}' not found.");
 
         entity.AccountId = fileMetadata.AccountId;
         entity.Name = fileMetadata.Name;

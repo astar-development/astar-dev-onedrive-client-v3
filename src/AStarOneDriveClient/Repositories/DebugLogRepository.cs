@@ -29,7 +29,7 @@ public sealed class DebugLogRepository : IDebugLogRepository
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(entity => new DebugLogEntry(
+        return [.. entities.Select(entity => new DebugLogEntry(
             entity.Id,
             entity.AccountId,
             entity.TimestampUtc,
@@ -37,7 +37,7 @@ public sealed class DebugLogRepository : IDebugLogRepository
             entity.Source,
             entity.Message,
             entity.Exception
-        )).ToList();
+        ))];
     }
 
     /// <inheritdoc/>
@@ -50,7 +50,7 @@ public sealed class DebugLogRepository : IDebugLogRepository
             .OrderByDescending(log => log.TimestampUtc)
             .ToListAsync(cancellationToken);
 
-        return entities.Select(entity => new DebugLogEntry(
+        return [.. entities.Select(entity => new DebugLogEntry(
             entity.Id,
             entity.AccountId,
             entity.TimestampUtc,
@@ -58,7 +58,7 @@ public sealed class DebugLogRepository : IDebugLogRepository
             entity.Source,
             entity.Message,
             entity.Exception
-        )).ToList();
+        ))];
     }
 
     /// <inheritdoc/>

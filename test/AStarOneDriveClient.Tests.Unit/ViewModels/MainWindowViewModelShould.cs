@@ -13,8 +13,8 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
 
@@ -26,8 +26,8 @@ public class MainWindowViewModelShould
     public void ThrowArgumentNullExceptionWhenAccountManagementViewModelIsNull()
     {
         var syncTreeVm = CreateSyncTreeViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var exception = Should.Throw<ArgumentNullException>(() =>
             new MainWindowViewModel(null!, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo));
@@ -39,8 +39,8 @@ public class MainWindowViewModelShould
     public void ThrowArgumentNullExceptionWhenSyncTreeViewModelIsNull()
     {
         var accountVm = CreateAccountManagementViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
 
         var exception = Should.Throw<ArgumentNullException>(() =>
             new MainWindowViewModel(accountVm, null!, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo));
@@ -53,9 +53,10 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+
+        _ = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
 
         var account = new AccountInfo(
             "account-123",
@@ -76,9 +77,10 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
-        var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
+
+        _ = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
 
         var account = new AccountInfo(
             "account-123",
@@ -100,17 +102,17 @@ public class MainWindowViewModelShould
     {
         var accountVm = CreateAccountManagementViewModel();
         var syncTreeVm = CreateSyncTreeViewModel();
-        IAutoSyncCoordinator mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, mockRepo);
 
-        Should.NotThrow(() => sut.Dispose());
+        Should.NotThrow(sut.Dispose);
     }
 
     private static AccountManagementViewModel CreateAccountManagementViewModel()
     {
-        IAuthService mockAuth = Substitute.For<IAuthService>();
-        IAccountRepository mockRepo = Substitute.For<IAccountRepository>();
+        var mockAuth = Substitute.For<IAuthService>();
+        var mockRepo = Substitute.For<IAccountRepository>();
         mockRepo.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<AccountInfo>>([]));
         return new AccountManagementViewModel(mockAuth, mockRepo);
@@ -118,9 +120,9 @@ public class MainWindowViewModelShould
 
     private static SyncTreeViewModel CreateSyncTreeViewModel()
     {
-        IFolderTreeService mockFolderService = Substitute.For<IFolderTreeService>();
-        ISyncSelectionService mockSelectionService = Substitute.For<ISyncSelectionService>();
-        ISyncEngine mockSyncEngine = Substitute.For<ISyncEngine>();
+        var mockFolderService = Substitute.For<IFolderTreeService>();
+        var mockSelectionService = Substitute.For<ISyncSelectionService>();
+        var mockSyncEngine = Substitute.For<ISyncEngine>();
 
         var progressSubject = new System.Reactive.Subjects.Subject<SyncState>();
         mockSyncEngine.Progress.Returns(progressSubject);

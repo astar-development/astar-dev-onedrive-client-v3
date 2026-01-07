@@ -14,11 +14,9 @@ namespace AStarOneDriveClient.ViewModels;
 /// </summary>
 public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 {
-    private readonly CompositeDisposable _disposables = new();
+    private readonly CompositeDisposable _disposables = [];
     private readonly IAuthService _authService;
     private readonly IAccountRepository _accountRepository;
-    private AccountInfo? _selectedAccount;
-    private bool _isLoading;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AccountManagementViewModel"/> class.
@@ -32,7 +30,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
         _authService = authService;
         _accountRepository = accountRepository;
-        Accounts = new ObservableCollection<AccountInfo>();
+        Accounts = [];
 
         // Add Account command - always enabled
         AddAccountCommand = ReactiveCommand.CreateFromTask(
@@ -82,8 +80,8 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     /// </summary>
     public AccountInfo? SelectedAccount
     {
-        get => _selectedAccount;
-        set => this.RaiseAndSetIfChanged(ref _selectedAccount, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -91,8 +89,8 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     /// </summary>
     public bool IsLoading
     {
-        get => _isLoading;
-        set => this.RaiseAndSetIfChanged(ref _isLoading, value);
+        get;
+        set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
     /// <summary>
@@ -170,7 +168,10 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task RemoveAccountAsync()
     {
-        if (SelectedAccount is null) return;
+        if (SelectedAccount is null)
+        {
+            return;
+        }
 
         IsLoading = true;
         try
@@ -187,7 +188,10 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task LoginAsync()
     {
-        if (SelectedAccount is null) return;
+        if (SelectedAccount is null)
+        {
+            return;
+        }
 
         IsLoading = true;
         try
@@ -214,7 +218,10 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task LogoutAsync()
     {
-        if (SelectedAccount is null) return;
+        if (SelectedAccount is null)
+        {
+            return;
+        }
 
         IsLoading = true;
         try
@@ -240,8 +247,5 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     }
 
     /// <inheritdoc/>
-    public void Dispose()
-    {
-        _disposables.Dispose();
-    }
+    public void Dispose() => _disposables.Dispose();
 }

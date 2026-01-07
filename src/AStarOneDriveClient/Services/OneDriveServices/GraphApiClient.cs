@@ -58,11 +58,7 @@ public sealed class GraphApiClient : IGraphApiClient
             Dictionary<string, object>? additionalAuthenticationContext = null,
             CancellationToken cancellationToken = default)
         {
-            var token = await _authService.GetAccessTokenAsync(_accountId, cancellationToken);
-            if (token is null)
-            {
-                throw new InvalidOperationException($"Failed to acquire access token for account: {_accountId}");
-            }
+            var token = await _authService.GetAccessTokenAsync(_accountId, cancellationToken) ?? throw new InvalidOperationException($"Failed to acquire access token for account: {_accountId}");
             return token;
         }
     }
@@ -79,12 +75,7 @@ public sealed class GraphApiClient : IGraphApiClient
     {
         var graphClient = await CreateGraphClientAsync(accountId, cancellationToken);
         var drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
-        if (drive?.Id is null)
-        {
-            return null;
-        }
-
-        return await graphClient.Drives[drive.Id].Root.GetAsync(cancellationToken: cancellationToken);
+        return drive?.Id is null ? null : await graphClient.Drives[drive.Id].Root.GetAsync(cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -94,12 +85,15 @@ public sealed class GraphApiClient : IGraphApiClient
 
         var graphClient = await CreateGraphClientAsync(accountId, cancellationToken);
         var drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
-        if (drive?.Id is null) return Enumerable.Empty<DriveItem>();
+        if (drive?.Id is null)
+        {
+            return [];
+        }
 
         var response = await graphClient.Drives[drive.Id].Items[itemId].Children.GetAsync(cancellationToken: cancellationToken);
 
         // Filter out deleted items (items in recycle bin)
-        return response?.Value?.Where(item => item.Deleted is null) ?? Enumerable.Empty<DriveItem>();
+        return response?.Value?.Where(item => item.Deleted is null) ?? [];
     }
 
     /// <inheritdoc/>
@@ -109,9 +103,7 @@ public sealed class GraphApiClient : IGraphApiClient
 
         var graphClient = await CreateGraphClientAsync(accountId, cancellationToken);
         var drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
-        if (drive?.Id is null) return null;
-
-        return await graphClient.Drives[drive.Id].Items[itemId].GetAsync(cancellationToken: cancellationToken);
+        return drive?.Id is null ? null : await graphClient.Drives[drive.Id].Items[itemId].GetAsync(cancellationToken: cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -119,10 +111,16 @@ public sealed class GraphApiClient : IGraphApiClient
     {
         var graphClient = await CreateGraphClientAsync(accountId, cancellationToken);
         var drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
-        if (drive?.Id is null) return Enumerable.Empty<DriveItem>();
+        if (drive?.Id is null)
+        {
+            return [];
+        }
 
         var root = await graphClient.Drives[drive.Id].Root.GetAsync(cancellationToken: cancellationToken);
-        if (root?.Id is null) return Enumerable.Empty<DriveItem>();
+        if (root?.Id is null)
+        {
+            return [];
+        }
 
         var response = await graphClient.Drives[drive.Id].Items[root.Id].Children.GetAsync(cancellationToken: cancellationToken);
         return response?.Value ?? Enumerable.Empty<DriveItem>();
@@ -142,11 +140,7 @@ public sealed class GraphApiClient : IGraphApiClient
         }
 
         // Download file content stream from OneDrive
-        var contentStream = await graphClient.Drives[drive.Id].Items[itemId].Content.GetAsync(cancellationToken: cancellationToken);
-        if (contentStream is null)
-        {
-            throw new InvalidOperationException($"Failed to download file content for item {itemId}");
-        }
+        var contentStream = await graphClient.Drives[drive.Id].Items[itemId].Content.GetAsync(cancellationToken: cancellationToken) ?? throw new InvalidOperationException($"Failed to download file content for item {itemId}");
 
         // Ensure the directory exists
         var directory = Path.GetDirectoryName(localFilePath);
@@ -193,12 +187,7 @@ public sealed class GraphApiClient : IGraphApiClient
             var uploadedItem = await graphClient.Drives[drive.Id]
                 .Items[$"root:/{normalizedPath}:"]
                 .Content
-                .PutAsync(fileStream, cancellationToken: cancellationToken);
-
-            if (uploadedItem is null)
-            {
-                throw new InvalidOperationException($"Upload failed for file: {localFilePath}");
-            }
+                .PutAsync(fileStream, cancellationToken: cancellationToken) ?? throw new InvalidOperationException($"Upload failed for file: {localFilePath}");
 
             // Report full file size as uploaded for small files
             progress?.Report(fileInfo.Length);
@@ -273,11 +262,7 @@ public sealed class GraphApiClient : IGraphApiClient
                 if (position >= totalLength && response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-                    var uploadedItem = System.Text.Json.JsonSerializer.Deserialize<DriveItem>(responseContent);
-                    if (uploadedItem is null)
-                    {
-                        throw new InvalidOperationException("Failed to deserialize uploaded DriveItem from response");
-                    }
+                    var uploadedItem = System.Text.Json.JsonSerializer.Deserialize<DriveItem>(responseContent) ?? throw new InvalidOperationException("Failed to deserialize uploaded DriveItem from response");
                     return uploadedItem;
                 }
             }

@@ -50,11 +50,9 @@ public static class ServiceConfiguration
 
         // Authentication - registered as singleton with factory
         services.AddSingleton<IAuthService>(provider =>
-        {
             // AuthService.CreateAsync must be called synchronously during startup
             // This is acceptable as it's a one-time initialization cost
-            return AuthService.CreateAsync(authConfig).GetAwaiter().GetResult();
-        });
+            AuthService.CreateAsync(authConfig).GetAwaiter().GetResult());
 
         // Services
         services.AddSingleton<IFileSystem, FileSystem>();
