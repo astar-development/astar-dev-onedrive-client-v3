@@ -197,7 +197,7 @@ public class FileMetadataRepositoryShould
     }
 
     private static FileMetadata CreateFileMetadata(string id, string accountId, string path, FileSyncStatus status = FileSyncStatus.Synced) =>
-        new(id, accountId, System.IO.Path.GetFileName(path), path, 1024, DateTime.UtcNow, $@"C:\local{path}", "ctag", "etag", "hash", status, null);
+        new(id, accountId, Path.GetFileName(path), path, 1024, DateTime.UtcNow, $@"C:\local{path}", "ctag", "etag", "hash", status, null);
 
     private static SyncDbContext CreateInMemoryContext()
     {

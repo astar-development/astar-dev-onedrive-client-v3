@@ -30,6 +30,7 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         string? previousDeltaLink,
         CancellationToken cancellationToken = default)
     {
+        await DebugLog.EntryAsync("RemoteChangeDetector.DetectChangesAsync", cancellationToken);
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(folderPath);
 
@@ -54,11 +55,14 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         // In production, this would be the actual deltaLink from Graph API
         var newDeltaLink = $"delta_{DateTime.UtcNow:yyyyMMddHHmmss}";
 
+        await DebugLog.ExitAsync("RemoteChangeDetector.DetectChangesAsync", cancellationToken);
+
         return (changes, newDeltaLink);
     }
 
     private async Task<DriveItem?> GetFolderItemAsync(string accountId, string folderPath, CancellationToken cancellationToken)
     {
+        await DebugLog.EntryAsync("RemoteChangeDetector.GetFolderItemAsync", cancellationToken);
         // For root or empty path, return the drive root
         if (folderPath == "/" || string.IsNullOrEmpty(folderPath))
         {
@@ -91,6 +95,8 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
             }
         }
 
+        await DebugLog.ExitAsync("RemoteChangeDetector.GetFolderItemAsync", cancellationToken);
+
         return currentItem;
     }
 
@@ -102,6 +108,7 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
         CancellationToken cancellationToken,
         int maxFiles = int.MaxValue)
     {
+        await DebugLog.EntryAsync("RemoteChangeDetector.ScanFolderRecursiveAsync", cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (changes.Count >= maxFiles)
@@ -143,6 +150,8 @@ public sealed class RemoteChangeDetector : IRemoteChangeDetector
                 await ScanFolderRecursiveAsync(accountId, item, itemPath, changes, cancellationToken, maxFiles);
             }
         }
+
+        await DebugLog.ExitAsync("RemoteChangeDetector.ScanFolderRecursiveAsync", cancellationToken);
     }
 
     private static FileMetadata ConvertToFileMetadata(string accountId, DriveItem item, string path)

@@ -25,15 +25,17 @@ public sealed class LocalFileScanner : ILocalFileScanner
         string oneDriveFolderPath,
         CancellationToken cancellationToken = default)
     {
+        await DebugLog.EntryAsync("LocalFileScanner.ScanFolderAsync", cancellationToken);
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(localFolderPath);
         ArgumentNullException.ThrowIfNull(oneDriveFolderPath);
 
         if (!_fileSystem.Directory.Exists(localFolderPath))
         {
-            return Array.Empty<FileMetadata>();
+            return [];
         }
 
+        await DebugLog.InfoAsync("LocalFileScanner.ScanFolderAsync", $"Scanning folder: {localFolderPath}", cancellationToken);
         var fileMetadataList = new List<FileMetadata>();
         await ScanDirectoryRecursiveAsync(
             accountId,
@@ -41,6 +43,7 @@ public sealed class LocalFileScanner : ILocalFileScanner
             oneDriveFolderPath,
             fileMetadataList,
             cancellationToken);
+        await DebugLog.ExitAsync("LocalFileScanner.ScanFolderAsync", cancellationToken);
 
         return fileMetadataList;
     }
@@ -52,6 +55,7 @@ public sealed class LocalFileScanner : ILocalFileScanner
         List<FileMetadata> fileMetadataList,
         CancellationToken cancellationToken)
     {
+        await DebugLog.EntryAsync("LocalFileScanner.ScanDirectoryRecursiveAsync", cancellationToken);
         cancellationToken.ThrowIfCancellationRequested();
 
         try
@@ -123,6 +127,8 @@ public sealed class LocalFileScanner : ILocalFileScanner
         {
             // Directory was deleted during scan
         }
+
+        await DebugLog.ExitAsync("LocalFileScanner.ScanDirectoryRecursiveAsync", cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -142,13 +148,9 @@ public sealed class LocalFileScanner : ILocalFileScanner
     }
 
     private static string EnsureTrailingSlash(string path)
-    {
-        if (!path.EndsWith(Path.DirectorySeparatorChar) && !path.EndsWith(Path.AltDirectorySeparatorChar))
-        {
-            return path + Path.DirectorySeparatorChar;
-        }
-        return path;
-    }
+        => !path.EndsWith(Path.DirectorySeparatorChar) && !path.EndsWith(Path.AltDirectorySeparatorChar)
+                ? path + Path.DirectorySeparatorChar
+                : path;
 
     private static string CombinePaths(string basePath, string relativePath)
     {

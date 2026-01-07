@@ -120,9 +120,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             // Deduplicate selected folders to prevent processing same folder multiple times
             selectedFolders = selectedFolders.Distinct().ToList();
 
-            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Found {selectedFolders.Count} selected folders", cancellationToken);
-
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Starting sync with {selectedFolders.Count} unique folders: {string.Join(", ", selectedFolders)}");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Starting sync with {selectedFolders.Count} selected folders: {string.Join(", ", selectedFolders)}", cancellationToken);
 
             if (selectedFolders.Count == 0)
             {
@@ -164,7 +162,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var allLocalFiles = new List<FileMetadata>();
             foreach (var folder in selectedFolders)
             {
-                var localFolderPath = System.IO.Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
+                var localFolderPath = Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
                 var localFiles = await _localFileScanner.ScanFolderAsync(
                     accountId,
                     localFolderPath,
@@ -400,7 +398,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         }
 
                         // Remote changed but local didn't - download
-                        var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
+                        var localFilePath = Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
                         var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
                         filesToDownload.Add(fileWithLocalPath);
                     }
@@ -479,7 +477,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     else
                     {
                         // New remote file - download
-                        var localFilePath = System.IO.Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
+                        var localFilePath = Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
                         var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
                         filesToDownload.Add(fileWithLocalPath);
                         System.Diagnostics.Debug.WriteLine($"[SyncEngine] New remote file to download: {remoteFile.Path}");

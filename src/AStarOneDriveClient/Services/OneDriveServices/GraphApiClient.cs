@@ -149,7 +149,7 @@ public sealed class GraphApiClient : IGraphApiClient
         }
 
         // Ensure the directory exists
-        var directory = System.IO.Path.GetDirectoryName(localFilePath);
+        var directory = Path.GetDirectoryName(localFilePath);
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
