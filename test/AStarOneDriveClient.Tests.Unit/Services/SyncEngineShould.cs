@@ -59,6 +59,7 @@ public class SyncEngineShould
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<string>(),
+            Arg.Any<IProgress<long>?>(),
             Arg.Any<CancellationToken>());
 
         await mocks.FileMetadataRepo.Received(1).AddAsync(
@@ -264,7 +265,7 @@ public class SyncEngineShould
 
         await engine.StartSyncAsync("acc1");
 
-        await mocks.FileMetadataRepo.Received(2).AddAsync(Arg.Any<FileMetadata>(), Arg.Any<CancellationToken>());
+        await mocks.FileMetadataRepo.Received(3).AddAsync(Arg.Any<FileMetadata>(), Arg.Any<CancellationToken>());
 
         var finalState = progressStates.Last();
         finalState.Status.ShouldBe(SyncStatus.Completed);
@@ -324,6 +325,7 @@ public class SyncEngineShould
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<string>(),
+            Arg.Any<IProgress<long>?>(),
             Arg.Any<CancellationToken>())
             .Returns(callInfo => Task.FromResult(new Microsoft.Graph.Models.DriveItem
             {

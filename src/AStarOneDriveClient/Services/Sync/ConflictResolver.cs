@@ -138,6 +138,7 @@ public sealed class ConflictResolver : IConflictResolver
             account.AccountId,
             localPath,
             conflict.FilePath,
+            progress: null,
             cancellationToken);
 
         // Update metadata

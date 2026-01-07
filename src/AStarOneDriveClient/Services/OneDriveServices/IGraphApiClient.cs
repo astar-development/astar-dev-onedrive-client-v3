@@ -70,13 +70,14 @@ public interface IGraphApiClient
     /// <param name="accountId">The account identifier.</param>
     /// <param name="localFilePath">The local file path to upload.</param>
     /// <param name="remotePath">The remote path where the file should be uploaded (relative to drive root, e.g., "/Documents/file.txt").</param>
+    /// <param name="progress">Optional progress reporter for upload progress (reports bytes uploaded).</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>The uploaded DriveItem with OneDrive metadata (ID, CTag, ETag, etc.).</returns>
     /// <remarks>
     /// Uses simple upload for files under 4MB and resumable upload session for larger files.
     /// The remotePath should include the filename and be relative to the drive root.
     /// </remarks>
-    Task<DriveItem> UploadFileAsync(string accountId, string localFilePath, string remotePath, CancellationToken cancellationToken = default);
+    Task<DriveItem> UploadFileAsync(string accountId, string localFilePath, string remotePath, IProgress<long>? progress = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Deletes a file from OneDrive.

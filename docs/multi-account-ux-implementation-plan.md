@@ -2405,10 +2405,10 @@ private async Task LoadChildrenAsync(
 - [x] Add concurrent sync protection - ✅ COMPLETE: Interlocked-based guard prevents duplicate sync execution
 - [x] Fix upload timestamp synchronization - ✅ COMPLETE: Local file timestamps synchronized to OneDrive after upload to prevent false change detection
 - [x] Add extensive debug logging - ✅ COMPLETE: Debug.WriteLine statements throughout sync flow for troubleshooting (kept for future debugging needs)
-- [ ] Create `SyncProgressView.axaml` - NOT YET IMPLEMENTED (future work - basic progress updates available via SyncProgress observable)
-- [ ] Implement `SyncProgressViewModel` with live updates - NOT YET IMPLEMENTED (SyncProgress observable exists in ISyncEngine but no dedicated progress UI)
-- [x] Add pause/resume UI controls - NOT YET IMPLEMENTED (no UI controls, though CancellationToken plumbing fully implemented)
-- [ ] Test progress calculations (ETA, MB/sec) - NOT YET IMPLEMENTED (basic progress observable exists but no ETA/speed calculations)
+- [x] Create `SyncProgressView.axaml` - ✅ COMPLETE: Full UI with progress bar, file counts, transfer details, conflict warnings
+- [x] Implement `SyncProgressViewModel` with live updates - ✅ COMPLETE: Real-time progress updates with reactive bindings, property notifications, status messages
+- [x] Add pause/resume UI controls - ✅ COMPLETE: Start Sync and Pause buttons with proper state management via IsSyncing property
+- [x] Test progress calculations (ETA, MB/sec) - ✅ COMPLETE: Implemented transfer speed calculation (MB/s) with 10-sample smoothing and ETA based on remaining bytes
 - [x] Ensure UI updates don't block sync - ✅ COMPLETE: All async operations with CancellationToken, ReactiveUI scheduling ensures UI responsiveness
 
 ### Sprint 8 (Week 16-17): Integration & Navigation

@@ -96,7 +96,25 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
             if (CurrentProgress is null)
                 return string.Empty;
 
-            return $"↑ {CurrentProgress.FilesUploading} uploading  ↓ {CurrentProgress.FilesDownloading} downloading";
+            var parts = new List<string>
+            {
+                $"↑ {CurrentProgress.FilesUploading} uploading  ↓ {CurrentProgress.FilesDownloading} downloading"
+            };
+
+            // Add transfer speed if available
+            if (CurrentProgress.MegabytesPerSecond > 0.01)
+            {
+                parts.Add($"{CurrentProgress.MegabytesPerSecond:F2} MB/s");
+            }
+
+            // Add ETA if available
+            if (CurrentProgress.EstimatedSecondsRemaining.HasValue)
+            {
+                var eta = FormatTimeRemaining(CurrentProgress.EstimatedSecondsRemaining.Value);
+                parts.Add($"ETA: {eta}");
+            }
+
+            return string.Join("  •  ", parts);
         }
     }
 
@@ -316,6 +334,27 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
         this.RaisePropertyChanged(nameof(HasConflicts));
 
         _logger.LogDebug("Refreshed conflict count for account {AccountId}: {Count} conflicts", _accountId, conflictCount);
+    }
+
+    /// <summary>
+    /// Formats time remaining in seconds to a human-readable string.
+    /// </summary>
+    /// <param name="seconds">Total seconds remaining.</param>
+    /// <returns>Formatted time string (e.g., "2h 15m", "45m", "30s").</returns>
+    private static string FormatTimeRemaining(int seconds)
+    {
+        if (seconds < 60)
+            return $"{seconds}s";
+
+        if (seconds < 3600)
+        {
+            var minutes = seconds / 60;
+            return $"{minutes}m";
+        }
+
+        var hours = seconds / 3600;
+        var remainingMinutes = (seconds % 3600) / 60;
+        return remainingMinutes > 0 ? $"{hours}h {remainingMinutes}m" : $"{hours}h";
     }
 
     /// <inheritdoc/>

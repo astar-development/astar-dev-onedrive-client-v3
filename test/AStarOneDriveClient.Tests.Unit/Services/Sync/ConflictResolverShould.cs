@@ -72,6 +72,7 @@ public sealed class ConflictResolverShould
                 account.AccountId,
                 localPath,
                 conflict.FilePath,
+                Arg.Any<IProgress<long>?>(),
                 Arg.Any<CancellationToken>());
 
             await _metadataRepo.Received(1).UpdateAsync(
@@ -316,6 +317,7 @@ public sealed class ConflictResolverShould
             Arg.Any<string>(),
             Arg.Any<string>(),
             Arg.Any<string>(),
+            Arg.Any<IProgress<long>?>(),
             Arg.Any<CancellationToken>());
         await _graphApiClient.DidNotReceive().DownloadFileAsync(
             Arg.Any<string>(),

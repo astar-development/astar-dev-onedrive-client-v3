@@ -161,7 +161,7 @@ public sealed class GraphApiClient : IGraphApiClient
     }
 
     /// <inheritdoc/>
-    public async Task<DriveItem> UploadFileAsync(string accountId, string localFilePath, string remotePath, CancellationToken cancellationToken = default)
+    public async Task<DriveItem> UploadFileAsync(string accountId, string localFilePath, string remotePath, IProgress<long>? progress = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(localFilePath);
         ArgumentNullException.ThrowIfNull(remotePath);
@@ -199,6 +199,9 @@ public sealed class GraphApiClient : IGraphApiClient
             {
                 throw new InvalidOperationException($"Upload failed for file: {localFilePath}");
             }
+
+            // Report full file size as uploaded for small files
+            progress?.Report(fileInfo.Length);
 
             return uploadedItem;
         }
@@ -262,6 +265,9 @@ public sealed class GraphApiClient : IGraphApiClient
                 }
 
                 position += chunkSize;
+
+                // Report progress after each chunk
+                progress?.Report(position);
 
                 // If this is the last chunk, parse the response to get the DriveItem
                 if (position >= totalLength && response.IsSuccessStatusCode)
