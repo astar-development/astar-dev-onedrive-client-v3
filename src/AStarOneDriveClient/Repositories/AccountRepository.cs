@@ -60,6 +60,7 @@ public sealed class AccountRepository : IAccountRepository
         entity.IsAuthenticated = account.IsAuthenticated;
         entity.LastSyncUtc = account.LastSyncUtc;
         entity.DeltaToken = account.DeltaToken;
+        entity.EnableDetailedSyncLogging = account.EnableDetailedSyncLogging;
 
         await _context.SaveChangesAsync(cancellationToken);
     }

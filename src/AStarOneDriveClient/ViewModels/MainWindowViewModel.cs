@@ -240,15 +240,12 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     /// </summary>
     private void OpenUpdateAccountDetails()
     {
-        var window = new UpdateAccountDetailsWindow
-        {
-            DataContext = _serviceProvider.GetRequiredService<UpdateAccountDetailsViewModel>()
-        };
+        var window = new UpdateAccountDetailsWindow();
 
         if (Avalonia.Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
             desktop.MainWindow is not null)
         {
-            window.ShowDialog(desktop.MainWindow);
+            _ = window.ShowDialog(desktop.MainWindow);
         }
     }
 

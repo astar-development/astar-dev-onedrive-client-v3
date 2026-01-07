@@ -1,3 +1,11 @@
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Reactive;
+using System.Reactive.Linq;
+using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Repositories;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 using ReactiveUI;
 
 namespace AStarOneDriveClient.ViewModels;
@@ -7,8 +15,207 @@ namespace AStarOneDriveClient.ViewModels;
 /// </summary>
 public sealed class UpdateAccountDetailsViewModel : ReactiveObject
 {
+    private readonly IAccountRepository _accountRepository;
+    private AccountInfo? _selectedAccount;
+    private string _localSyncPath = string.Empty;
+    private bool _enableDetailedSyncLogging;
+    private string _statusMessage = string.Empty;
+    private bool _isSuccess;
+
     /// <summary>
-    /// Gets the placeholder message.
+    /// Initializes a new instance of the <see cref="UpdateAccountDetailsViewModel"/> class.
     /// </summary>
-    public static string PlaceholderMessage => "Account details editing coming soon";
+    /// <param name="accountRepository">Repository for account data.</param>
+    public UpdateAccountDetailsViewModel(IAccountRepository accountRepository)
+    {
+        ArgumentNullException.ThrowIfNull(accountRepository);
+        _accountRepository = accountRepository;
+
+        Accounts = new ObservableCollection<AccountInfo>();
+
+        // Update command - enabled when account is selected and path is valid
+        var canUpdate = this.WhenAnyValue(
+            x => x.SelectedAccount,
+            x => x.LocalSyncPath,
+            (account, path) => account is not null && !string.IsNullOrWhiteSpace(path));
+
+        UpdateCommand = ReactiveCommand.CreateFromTask(UpdateAccountAsync, canUpdate);
+        CancelCommand = ReactiveCommand.Create(Cancel);
+        BrowseFolderCommand = ReactiveCommand.CreateFromTask(BrowseFolderAsync);
+
+        // Load accounts on initialization
+        _ = LoadAccountsAsync();
+    }
+
+    /// <summary>
+    /// Gets the collection of accounts.
+    /// </summary>
+    public ObservableCollection<AccountInfo> Accounts { get; }
+
+    /// <summary>
+    /// Gets or sets the selected account.
+    /// </summary>
+    public AccountInfo? SelectedAccount
+    {
+        get => _selectedAccount;
+        set
+        {
+            this.RaiseAndSetIfChanged(ref _selectedAccount, value);
+            if (value is not null)
+            {
+                // Load editable fields when account is selected
+                LocalSyncPath = value.LocalSyncPath;
+                EnableDetailedSyncLogging = value.EnableDetailedSyncLogging;
+                StatusMessage = string.Empty;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the local sync path.
+    /// </summary>
+    public string LocalSyncPath
+    {
+        get => _localSyncPath;
+        set => this.RaiseAndSetIfChanged(ref _localSyncPath, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether detailed sync logging is enabled.
+    /// </summary>
+    public bool EnableDetailedSyncLogging
+    {
+        get => _enableDetailedSyncLogging;
+        set => this.RaiseAndSetIfChanged(ref _enableDetailedSyncLogging, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the status message.
+    /// </summary>
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set => this.RaiseAndSetIfChanged(ref _statusMessage, value);
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the last operation was successful.
+    /// </summary>
+    public bool IsSuccess
+    {
+        get => _isSuccess;
+        set => this.RaiseAndSetIfChanged(ref _isSuccess, value);
+    }
+
+    /// <summary>
+    /// Gets the command to update the account.
+    /// </summary>
+    public ReactiveCommand<Unit, Unit> UpdateCommand { get; }
+
+    /// <summary>
+    /// Gets the command to cancel and close the window.
+    /// </summary>
+    public ReactiveCommand<Unit, Unit> CancelCommand { get; }
+
+    /// <summary>
+    /// Gets the command to browse for a folder.
+    /// </summary>
+    public ReactiveCommand<Unit, Unit> BrowseFolderCommand { get; }
+
+    /// <summary>
+    /// Event raised when the window should be closed.
+    /// </summary>
+    public event EventHandler? RequestClose;
+
+    private async Task LoadAccountsAsync()
+    {
+        try
+        {
+            var accounts = await _accountRepository.GetAllAsync();
+            Accounts.Clear();
+            foreach (var account in accounts)
+            {
+                Accounts.Add(account);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to load accounts: {ex.Message}";
+            IsSuccess = false;
+        }
+    }
+
+    private async Task UpdateAccountAsync()
+    {
+        if (SelectedAccount is null)
+        {
+            return;
+        }
+
+        // Validate LocalSyncPath exists
+        if (!Directory.Exists(LocalSyncPath))
+        {
+            StatusMessage = "Local sync path does not exist. Please select a valid directory.";
+            IsSuccess = false;
+            return;
+        }
+
+        try
+        {
+            // Create updated account with new values
+            var updatedAccount = SelectedAccount with
+            {
+                LocalSyncPath = LocalSyncPath,
+                EnableDetailedSyncLogging = EnableDetailedSyncLogging
+            };
+
+            await _accountRepository.UpdateAsync(updatedAccount);
+
+            // Update the account in the collection
+            var index = Accounts.IndexOf(SelectedAccount);
+            if (index >= 0)
+            {
+                Accounts[index] = updatedAccount;
+                SelectedAccount = updatedAccount;
+            }
+
+            // Set status AFTER updating SelectedAccount (which clears StatusMessage)
+            StatusMessage = "Account updated successfully!";
+            IsSuccess = true;
+
+            // Allow UI to update before closing - wait 2 seconds then close on UI thread
+            await Task.Delay(2000);
+            RequestClose?.Invoke(this, EventArgs.Empty);
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to update account: {ex.Message}";
+            IsSuccess = false;
+            // Window stays open on error
+        }
+    }
+
+    private void Cancel()
+    {
+        RequestClose?.Invoke(this, EventArgs.Empty);
+    }
+
+    private async Task BrowseFolderAsync()
+    {
+        // Get the top level from the current application
+        if (Avalonia.Application.Current?.ApplicationLifetime is Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop &&
+            desktop.MainWindow?.StorageProvider is { } storageProvider)
+        {
+            var result = await storageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = "Select Local Sync Path",
+                AllowMultiple = false
+            });
+
+            if (result.Count > 0)
+            {
+                LocalSyncPath = result[0].Path.LocalPath;
+            }
+        }
+    }
 }
