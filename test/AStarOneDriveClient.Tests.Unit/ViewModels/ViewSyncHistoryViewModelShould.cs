@@ -1,4 +1,6 @@
+using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.ViewModels;
+using NSubstitute;
 using Shouldly;
 
 namespace AStarOneDriveClient.Tests.Unit.ViewModels;
@@ -6,18 +8,134 @@ namespace AStarOneDriveClient.Tests.Unit.ViewModels;
 public class ViewSyncHistoryViewModelShould
 {
     [Fact]
-    public void InitializeSuccessfully()
+    public void ThrowArgumentNullExceptionWhenAccountRepositoryIsNull()
     {
-        var sut = new ViewSyncHistoryViewModel();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
 
-        sut.ShouldNotBeNull();
+        var exception = Should.Throw<ArgumentNullException>(() =>
+            new ViewSyncHistoryViewModel(null!, mockFileOpLogRepo));
+
+        exception.ParamName.ShouldBe("accountRepository");
     }
 
     [Fact]
-    public void ReturnPlaceholderMessage()
+    public void ThrowArgumentNullExceptionWhenFileOperationLogRepositoryIsNull()
     {
-        var message = ViewSyncHistoryViewModel.PlaceholderMessage;
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
 
-        message.ShouldBe("Sync history viewing coming soon");
+        var exception = Should.Throw<ArgumentNullException>(() =>
+            new ViewSyncHistoryViewModel(mockAccountRepo, null!));
+
+        exception.ParamName.ShouldBe("fileOperationLogRepository");
+    }
+
+    [Fact]
+    public void InitializeWithEmptyAccountsCollection()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.Accounts.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void InitializeWithEmptySyncHistoryCollection()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.SyncHistory.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public void InitializeWithNullSelectedAccount()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.SelectedAccount.ShouldBeNull();
+    }
+
+    [Fact]
+    public void InitializeWithCurrentPageOne()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.CurrentPage.ShouldBe(1);
+    }
+
+    [Fact]
+    public void InitializeWithHasMoreRecordsTrue()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.HasMoreRecords.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void InitializeWithIsLoadingFalse()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.IsLoading.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void InitializeLoadNextPageCommand()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.LoadNextPageCommand.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void InitializeLoadPreviousPageCommand()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.LoadPreviousPageCommand.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public void ReturnCanGoToPreviousPageFalseWhenOnFirstPage()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.CanGoToPreviousPage.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void ReturnCanGoToNextPageTrueWhenHasMoreRecords()
+    {
+        IAccountRepository mockAccountRepo = Substitute.For<IAccountRepository>();
+        IFileOperationLogRepository mockFileOpLogRepo = Substitute.For<IFileOperationLogRepository>();
+
+        var sut = new ViewSyncHistoryViewModel(mockAccountRepo, mockFileOpLogRepo);
+
+        sut.CanGoToNextPage.ShouldBeTrue();
     }
 }

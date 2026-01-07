@@ -47,6 +47,22 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
     }
 
     /// <inheritdoc/>
+    public async Task<IReadOnlyList<FileOperationLog>> GetByAccountIdAsync(string accountId, int pageSize, int skip, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(accountId);
+
+        var entities = await _context.FileOperationLogs
+            .AsNoTracking()
+            .Where(f => f.AccountId == accountId)
+            .OrderByDescending(f => f.Timestamp)
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return entities.Select(MapToModel).ToList();
+    }
+
+    /// <inheritdoc/>
     public async Task AddAsync(FileOperationLog operationLog, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operationLog);

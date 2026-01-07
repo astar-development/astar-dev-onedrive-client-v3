@@ -75,7 +75,6 @@ public static class ServiceConfiguration
         services.AddTransient<ConflictResolutionViewModel>();
         services.AddTransient<SyncProgressViewModel>();
         services.AddTransient<UpdateAccountDetailsViewModel>();
-        services.AddTransient<ViewSyncHistoryViewModel>();
 
         // Logging
         services.AddLogging(builder =>

@@ -24,6 +24,16 @@ public interface IFileOperationLogRepository
     Task<IReadOnlyList<FileOperationLog>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets file operations for an account with paging support.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="pageSize">Number of records to return.</param>
+    /// <param name="skip">Number of records to skip.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of file operations.</returns>
+    Task<IReadOnlyList<FileOperationLog>> GetByAccountIdAsync(string accountId, int pageSize, int skip, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Adds a new file operation log.
     /// </summary>
     /// <param name="operationLog">The operation log to add.</param>

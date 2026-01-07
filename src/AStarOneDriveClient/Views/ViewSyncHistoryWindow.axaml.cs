@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,10 +14,12 @@ public sealed partial class ViewSyncHistoryWindow : Window
     {
         InitializeComponent();
 
-        // Retrieve the ViewSyncHistoryViewModel from DI container
+        // Retrieve dependencies from DI container and create ViewModel
         if (App.Services is not null)
         {
-            DataContext = App.Services.GetRequiredService<ViewSyncHistoryViewModel>();
+            var accountRepo = App.Services.GetRequiredService<IAccountRepository>();
+            var fileOpLogRepo = App.Services.GetRequiredService<IFileOperationLogRepository>();
+            DataContext = new ViewSyncHistoryViewModel(accountRepo, fileOpLogRepo);
         }
     }
 }
