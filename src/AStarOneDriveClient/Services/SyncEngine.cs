@@ -588,15 +588,19 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var completedFiles = 0;
             long completedBytes = 0;
 
-            // Upload files to OneDrive
-            for (var i = 0; i < filesToUpload.Count; i++)
+            // Upload files to OneDrive with parallel execution
+            var maxParallelUploads = account.MaxParallelUpDownloads;
+            using var uploadSemaphore = new SemaphoreSlim(maxParallelUploads, maxParallelUploads);
+            var activeUploads = 0;
+            var uploadTasks = filesToUpload.Select(async file =>
             {
-                _syncCancellation.Token.ThrowIfCancellationRequested();
-
-                var file = filesToUpload[i];
+                await uploadSemaphore.WaitAsync(_syncCancellation.Token);
+                Interlocked.Increment(ref activeUploads);
 
                 try
                 {
+                    _syncCancellation.Token.ThrowIfCancellationRequested();
+
                     // Determine if this is an update or new file
                     // Check if file exists in DB with PendingUpload/Failed status (resuming upload)
                     // OR exists in DB with a valid OneDrive ID (updating existing file)
@@ -642,12 +646,14 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     }
 
                     // Upload file to OneDrive via Graph API with progress reporting
-                    var baseCompletedBytes = completedBytes;
+                    var baseCompletedBytes = Interlocked.Read(ref completedBytes);
+                    var currentActiveUploads = Interlocked.CompareExchange(ref activeUploads, 0, 0);
                     var uploadProgress = new Progress<long>(bytesUploaded =>
                     {
                         // Update completedBytes with current upload progress
                         var currentCompletedBytes = baseCompletedBytes + bytesUploaded;
-                        ReportProgress(accountId, SyncStatus.Running, totalFiles, completedFiles, totalBytes, currentCompletedBytes, filesUploading: 1, conflictsDetected: conflictCount);
+                        var currentCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
+                        ReportProgress(accountId, SyncStatus.Running, totalFiles, currentCompleted, totalBytes, currentCompletedBytes, filesUploading: currentActiveUploads, conflictsDetected: conflictCount);
                     });
 
                     var uploadedItem = await _graphApiClient.UploadFileAsync(
@@ -709,9 +715,12 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     // So the record should already exist - never ADD after upload
                     await _fileMetadataRepository.UpdateAsync(uploadedFile, cancellationToken);
 
-                    completedFiles++;
-                    completedBytes += file.Size;
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, completedFiles, totalBytes, completedBytes, filesUploading: 1, conflictsDetected: conflictCount);
+                    Interlocked.Increment(ref completedFiles);
+                    Interlocked.Add(ref completedBytes, file.Size);
+                    var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
+                    var finalBytes = Interlocked.Read(ref completedBytes);
+                    var finalActiveUploads = Interlocked.CompareExchange(ref activeUploads, 0, 0);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesUploading: finalActiveUploads, conflictsDetected: conflictCount);
                 }
                 catch (Exception ex)
                 {
@@ -738,20 +747,33 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     }
 
                     // Continue with next file (don't fail entire sync)
-                    completedFiles++;
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, completedFiles, totalBytes, completedBytes, conflictsDetected: conflictCount);
+                    Interlocked.Increment(ref completedFiles);
+                    var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
+                    var finalBytes = Interlocked.Read(ref completedBytes);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount);
                 }
-            }
+                finally
+                {
+                    Interlocked.Decrement(ref activeUploads);
+                    uploadSemaphore.Release();
+                }
+            }).ToList();
 
-            // Download files
-            for (var i = 0; i < filesToDownload.Count; i++)
+            await Task.WhenAll(uploadTasks);
+
+            // Download files with parallel execution
+            var maxParallelDownloads = account.MaxParallelUpDownloads;
+            using var downloadSemaphore = new SemaphoreSlim(maxParallelDownloads, maxParallelDownloads);
+            var activeDownloads = 0;
+            var downloadTasks = filesToDownload.Select(async file =>
             {
-                _syncCancellation.Token.ThrowIfCancellationRequested();
-
-                var file = filesToDownload[i];
+                await downloadSemaphore.WaitAsync(_syncCancellation.Token);
+                Interlocked.Increment(ref activeDownloads);
 
                 try
                 {
+                    _syncCancellation.Token.ThrowIfCancellationRequested();
+
                     System.Diagnostics.Debug.WriteLine($"Starting download: {file.Name} (ID: {file.Id}) to {file.LocalPath}");
 
                     // Log file operation if detailed logging is enabled
@@ -813,6 +835,13 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     }
 
                     System.Diagnostics.Debug.WriteLine($"Successfully synced: {file.Name}");
+
+                    Interlocked.Increment(ref completedFiles);
+                    Interlocked.Add(ref completedBytes, file.Size);
+                    var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
+                    var finalBytes = Interlocked.Read(ref completedBytes);
+                    var finalActiveDownloads = Interlocked.CompareExchange(ref activeDownloads, 0, 0);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesDownloading: finalActiveDownloads, conflictsDetected: conflictCount);
                 }
                 catch (Exception ex)
                 {
@@ -835,12 +864,21 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     {
                         await _fileMetadataRepository.AddAsync(failedFile, cancellationToken);
                     }
-                }
 
-                completedFiles++;
-                completedBytes += file.Size;
-                ReportProgress(accountId, SyncStatus.Running, totalFiles, completedFiles, totalBytes, completedBytes, filesDownloading: 1, conflictsDetected: conflictCount);
-            }
+                    Interlocked.Increment(ref completedFiles);
+                    Interlocked.Add(ref completedBytes, file.Size);
+                    var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
+                    var finalBytes = Interlocked.Read(ref completedBytes);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeDownloads);
+                    downloadSemaphore.Release();
+                }
+            }).ToList();
+
+            await Task.WhenAll(downloadTasks);
 
             // Handle deletions
             foreach (var fileToDelete in filesToDelete)

@@ -261,16 +261,11 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
 
         if (IsSyncing)
         {
-            if (CurrentProgress.TotalFiles == 0)
-            {
-                StatusMessage = "Scanning for changes...";
-            }
-            else
-            {
-                StatusMessage = CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles
+            StatusMessage = CurrentProgress.TotalFiles == 0
+                ? "Scanning for changes..."
+                : CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles
                     ? "Finalizing sync..."
                     : $"Syncing {CurrentProgress.CompletedFiles} of {CurrentProgress.TotalFiles} files...";
-            }
         }
         else if (CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles && CurrentProgress.TotalFiles > 0)
         {

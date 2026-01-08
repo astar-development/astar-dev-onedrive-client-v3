@@ -46,11 +46,11 @@ public sealed class AuthConfiguration
         return string.IsNullOrWhiteSpace(clientId)
             ? throw new InvalidOperationException("Authentication:ClientId is not configured. Please set it in appsettings.json or user secrets.")
             : new AuthConfiguration
-        {
-            ClientId = clientId,
-            RedirectUri = authSection["RedirectUri"] ?? "http://localhost",
-            Authority = authSection["Authority"] ?? "https://login.microsoftonline.com/common",
-            Scopes = authSection.GetSection("Scopes").Get<string[]>() ?? ["Files.ReadWrite", "User.Read", "offline_access"]
-        };
+            {
+                ClientId = clientId,
+                RedirectUri = authSection["RedirectUri"] ?? "http://localhost",
+                Authority = authSection["Authority"] ?? "https://login.microsoftonline.com/common",
+                Scopes = authSection.GetSection("Scopes").Get<string[]>() ?? ["Files.ReadWrite", "User.Read", "offline_access"]
+            };
     }
 }

@@ -318,6 +318,107 @@ public class SyncEngineShould
         finalState.ConflictsDetected.ShouldBe(1);
     }
 
+    [Fact]
+    public async Task RespectMaxParallelUpDownloadsSettingForUploads()
+    {
+        var (engine, mocks) = CreateTestEngine();
+
+        // Create multiple files to upload
+        var files = Enumerable.Range(1, 5)
+            .Select(i => new FileMetadata(
+                "", "acc1", $"file{i}.txt", $"/Documents/file{i}.txt", 100,
+                DateTime.UtcNow, $@"C:\Sync\Documents\file{i}.txt", null, null, $"hash{i}",
+                FileSyncStatus.PendingUpload, null))
+            .ToList();
+
+        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns(["/Documents"]);
+
+        // Set MaxParallelUpDownloads to 2
+        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null, false, false, 2, 50));
+
+        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(files);
+        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns((new List<FileMetadata>().AsReadOnly(), "delta_123"));
+        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var progressStates = new List<SyncState>();
+        engine.Progress.Subscribe(progressStates.Add);
+
+        await engine.StartSyncAsync("acc1");
+
+        // Verify all files were uploaded
+        await mocks.GraphApiClient.Received(5).UploadFileAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<IProgress<long>?>(),
+            Arg.Any<CancellationToken>());
+
+        // Check that progress reported uploads (filesUploading should have been > 0 at some point)
+        var uploadingStates = progressStates.Where(s => s.FilesUploading > 0).ToList();
+        uploadingStates.ShouldNotBeEmpty();
+
+        // The max concurrent uploads should not exceed the configured limit
+        // (Though in unit tests with mocks, this happens so fast we might not catch it,
+        // but the implementation should honor the semaphore limit)
+        uploadingStates.Max(s => s.FilesUploading).ShouldBeLessThanOrEqualTo(2);
+    }
+
+    [Fact]
+    public async Task RespectMaxParallelUpDownloadsSettingForDownloads()
+    {
+        var (engine, mocks) = CreateTestEngine();
+
+        // Create multiple files to download
+        var files = Enumerable.Range(1, 5)
+            .Select(i => new FileMetadata(
+                $"remote{i}", "acc1", $"file{i}.txt", $"/Documents/file{i}.txt", 100,
+                DateTime.UtcNow, $@"C:\Sync\Documents\file{i}.txt", $"ctag{i}", $"etag{i}", null,
+                FileSyncStatus.PendingDownload, null))
+            .ToList();
+
+        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns(["/Documents"]);
+
+        // Set MaxParallelUpDownloads to 3
+        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null, false, false, 3, 50));
+
+        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns((files.AsReadOnly(), "delta_123"));
+        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        // Mock hash computation
+        mocks.LocalScanner.ComputeFileHashAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns("computed_hash");
+
+        var progressStates = new List<SyncState>();
+        engine.Progress.Subscribe(progressStates.Add);
+
+        await engine.StartSyncAsync("acc1");
+
+        // Verify all files were downloaded
+        await mocks.GraphApiClient.Received(5).DownloadFileAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
+
+        // Check that progress reported downloads (filesDownloading should have been > 0 at some point)
+        var downloadingStates = progressStates.Where(s => s.FilesDownloading > 0).ToList();
+        downloadingStates.ShouldNotBeEmpty();
+
+        // The max concurrent downloads should not exceed the configured limit
+        downloadingStates.Max(s => s.FilesDownloading).ShouldBeLessThanOrEqualTo(3);
+    }
+
     private static (SyncEngine Engine, TestMocks Mocks) CreateTestEngine()
     {
         var localScanner = Substitute.For<ILocalFileScanner>();

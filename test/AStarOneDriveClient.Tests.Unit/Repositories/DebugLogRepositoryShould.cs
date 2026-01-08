@@ -156,7 +156,7 @@ public class DebugLogRepositoryShould
 
     private static async Task SeedDebugLogsAsync(SyncDbContext context, string accountId, int count)
     {
-        for (int i = 0; i < count; i++)
+        for (var i = 0; i < count; i++)
         {
             context.DebugLogs.Add(new DebugLogEntity
             {

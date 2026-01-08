@@ -87,7 +87,7 @@ public class SyncTreeViewModelShould : IDisposable
         await Task.Delay(50);
         isLoadingValues.ShouldContain(true);
 
-        tcs.SetResult(new List<OneDriveFolderNode>());
+        tcs.SetResult([]);
         await Task.Delay(50);
 
         isLoadingValues.ShouldContain(false);

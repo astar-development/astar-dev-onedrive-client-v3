@@ -131,7 +131,7 @@ public class DebugLogViewModelShould
 
         // Set up account and load initial data - return 51 records to indicate HasMoreRecords
         var account = new AccountInfo("acc1", "Test", @"C:\Path", true, null, null, false, false, 3, 50);
-        mockAccountRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<AccountInfo> { account });
+        mockAccountRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns([account]);
 
         var logs = new List<DebugLogEntry>();
         for (var i = 0; i < 51; i++)
