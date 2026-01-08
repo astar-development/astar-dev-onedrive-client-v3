@@ -13,6 +13,8 @@ namespace AStarOneDriveClient.Services.OneDriveServices;
 /// </remarks>
 public sealed class GraphApiClient : IGraphApiClient
 {
+    public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
+        => await GetDriveItemChildrenAsync(accountId, itemId, 200, cancellationToken);
     private readonly IAuthService _authService;
 
     /// <summary>
@@ -79,7 +81,7 @@ public sealed class GraphApiClient : IGraphApiClient
     }
 
     /// <inheritdoc/>
-    public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, int maxItemsInBatch = 200, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(itemId);
 
@@ -97,23 +99,41 @@ public sealed class GraphApiClient : IGraphApiClient
 
         await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Using drive ID: {drive.Id}", cancellationToken);
 
-        var response = await graphClient.Drives[drive.Id].Items[itemId].Children.GetAsync(cancellationToken: cancellationToken);
+        var itemsList = new List<DriveItem>();
+        string? nextLink = null;
+        do
+        {
+            Microsoft.Graph.Models.DriveItemCollectionResponse? response;
+            if (nextLink is null)
+            {
+                response = await graphClient.Drives[drive.Id].Items[itemId].Children.GetAsync(q =>
+                {
+                    q.QueryParameters.Top = maxItemsInBatch;
+                }, cancellationToken: cancellationToken);
+            }
+            else
+            {
+                response = await graphClient.RequestAdapter.SendAsync<Microsoft.Graph.Models.DriveItemCollectionResponse>(
+                    new Microsoft.Kiota.Abstractions.RequestInformation
+                    {
+                        HttpMethod = Microsoft.Kiota.Abstractions.Method.GET,
+                        URI = new Uri(nextLink)
+                    },
+                    Microsoft.Graph.Models.DriveItemCollectionResponse.CreateFromDiscriminatorValue,
+                    null,
+                    cancellationToken);
+            }
 
-        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Response received - Value count: {response?.Value?.Count ?? 0}, NextLink: {response?.OdataNextLink}", cancellationToken);
+            await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Response received - Value count: {response?.Value?.Count ?? 0}, NextLink: {response?.OdataNextLink}", cancellationToken);
 
-        // Filter out deleted items (items in recycle bin)
-        var items = response?.Value?.Where(item => item.Deleted is null) ?? [];
-        var itemsList = items.ToList();
+            var items = response?.Value?.Where(item => item.Deleted is null) ?? [];
+            itemsList.AddRange(items);
+
+            nextLink = response?.OdataNextLink;
+        } while (!string.IsNullOrEmpty(nextLink));
 
         await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"After filtering deleted items: {itemsList.Count} items", cancellationToken);
-
-        if (itemsList.Count == 0 && response?.Value?.Count > 0)
-        {
-            await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"All {response.Value.Count} items were filtered out (deleted)", cancellationToken);
-        }
-
         await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", cancellationToken);
-
         return itemsList;
     }
 
