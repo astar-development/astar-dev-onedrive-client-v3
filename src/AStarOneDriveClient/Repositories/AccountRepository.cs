@@ -58,6 +58,8 @@ public sealed class AccountRepository : IAccountRepository
         entity.DeltaToken = account.DeltaToken;
         entity.EnableDetailedSyncLogging = account.EnableDetailedSyncLogging;
         entity.EnableDebugLogging = account.EnableDebugLogging;
+        entity.MaxParallelUpDownloads = account.MaxParallelUpDownloads;
+        entity.MaxItemsInBatch = account.MaxItemsInBatch;
 
         await _context.SaveChangesAsync(cancellationToken);
     }
@@ -92,7 +94,9 @@ public sealed class AccountRepository : IAccountRepository
             entity.LastSyncUtc,
             entity.DeltaToken,
             entity.EnableDetailedSyncLogging,
-            entity.EnableDebugLogging
+            entity.EnableDebugLogging,
+            entity.MaxParallelUpDownloads,
+            entity.MaxItemsInBatch
         );
 
     private static AccountEntity MapToEntity(AccountInfo model) =>
@@ -105,6 +109,8 @@ public sealed class AccountRepository : IAccountRepository
             LastSyncUtc = model.LastSyncUtc,
             DeltaToken = model.DeltaToken,
             EnableDetailedSyncLogging = model.EnableDetailedSyncLogging,
-            EnableDebugLogging = model.EnableDebugLogging
+            EnableDebugLogging = model.EnableDebugLogging,
+            MaxParallelUpDownloads = model.MaxParallelUpDownloads,
+            MaxItemsInBatch = model.MaxItemsInBatch
         };
 }

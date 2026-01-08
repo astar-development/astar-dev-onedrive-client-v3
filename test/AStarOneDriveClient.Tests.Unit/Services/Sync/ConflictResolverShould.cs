@@ -354,7 +354,9 @@ public sealed class ConflictResolverShould
             LastSyncUtc: DateTime.UtcNow,
             DeltaToken: null,
             EnableDetailedSyncLogging: false,
-            EnableDebugLogging: false);
+            EnableDebugLogging: false,
+            MaxParallelUpDownloads: 3,
+            MaxItemsInBatch: 50);
 
     private static FileMetadata CreateTestMetadata(string accountId, string filePath) =>
         new(

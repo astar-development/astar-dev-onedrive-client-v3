@@ -13,4 +13,6 @@ public sealed class AccountEntity
     public string? DeltaToken { get; set; }
     public bool EnableDetailedSyncLogging { get; set; }
     public bool EnableDebugLogging { get; set; }
+    public int MaxParallelUpDownloads { get; set; }
+    public int MaxItemsInBatch { get; set; }
 }

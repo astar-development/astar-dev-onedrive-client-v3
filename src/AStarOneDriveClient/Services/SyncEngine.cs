@@ -585,11 +585,11 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             ReportProgress(accountId, SyncStatus.Running, totalFiles, 0, totalBytes, 0, filesDeleted: filesToDelete.Count, conflictsDetected: conflictCount);
 
-            int completedFiles = 0;
+            var completedFiles = 0;
             long completedBytes = 0;
 
             // Upload files to OneDrive
-            for (int i = 0; i < filesToUpload.Count; i++)
+            for (var i = 0; i < filesToUpload.Count; i++)
             {
                 _syncCancellation.Token.ThrowIfCancellationRequested();
 
@@ -744,7 +744,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             }
 
             // Download files
-            for (int i = 0; i < filesToDownload.Count; i++)
+            for (var i = 0; i < filesToDownload.Count; i++)
             {
                 _syncCancellation.Token.ThrowIfCancellationRequested();
 

@@ -114,7 +114,7 @@ public class DebugLogViewModelShould
             }
         };
 
-        var account = new AccountInfo("acc1", "Test", @"C:\Path", true, null, null, false, false);
+        var account = new AccountInfo("acc1", "Test", @"C:\Path", true, null, null, false, false, 3, 50);
         sut.SelectedAccount = account;
 
         propertyChanged.ShouldBeTrue();
@@ -130,7 +130,7 @@ public class DebugLogViewModelShould
         var propertyChanged = false;
 
         // Set up account and load initial data - return 51 records to indicate HasMoreRecords
-        var account = new AccountInfo("acc1", "Test", @"C:\Path", true, null, null, false, false);
+        var account = new AccountInfo("acc1", "Test", @"C:\Path", true, null, null, false, false, 3, 50);
         mockAccountRepo.GetAllAsync(Arg.Any<CancellationToken>()).Returns(new List<AccountInfo> { account });
 
         var logs = new List<DebugLogEntry>();

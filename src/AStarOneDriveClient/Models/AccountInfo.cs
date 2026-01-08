@@ -11,6 +11,8 @@ namespace AStarOneDriveClient.Models;
 /// <param name="DeltaToken">Delta token for incremental synchronization.</param>
 /// <param name="EnableDetailedSyncLogging">Enables detailed logging of all file operations during sync.</param>
 /// <param name="EnableDebugLogging">Enables debug logging to database for historical review.</param>
+/// <param name="MaxParallelUpDownloads">Maximum number of parallel upload/download operations (1-10).</param>
+/// <param name="MaxItemsInBatch">Maximum number of items to process in a single batch (1-100).</param>
 public sealed record AccountInfo(
     string AccountId,
     string DisplayName,
@@ -19,5 +21,7 @@ public sealed record AccountInfo(
     DateTime? LastSyncUtc,
     string? DeltaToken,
     bool EnableDetailedSyncLogging,
-    bool EnableDebugLogging
+    bool EnableDebugLogging,
+    int MaxParallelUpDownloads,
+    int MaxItemsInBatch
 );

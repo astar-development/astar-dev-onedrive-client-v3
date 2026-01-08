@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Reactive.Linq;
 using AStarOneDriveClient.Models;
 using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.ViewModels;
@@ -131,7 +132,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             "delta-token",
             true,
-            false);
+            false,
+            3,
+            50);
 
         sut.SelectedAccount = account;
 
@@ -154,7 +157,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             "delta-token",
             false,
-            true);
+            true,
+            3,
+            50);
 
         sut.SelectedAccount = account;
 
@@ -178,7 +183,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
 
         sut.SelectedAccount = account;
 
@@ -208,7 +215,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
 
         sut.SelectedAccount = account;
 
@@ -375,7 +384,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
 
         sut.SelectedAccount = account;
         sut.LocalSyncPath = string.Empty;
@@ -400,7 +411,9 @@ public class UpdateAccountDetailsViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
 
         sut.SelectedAccount = account;
         sut.LocalSyncPath = @"C:\ValidPath";
@@ -409,5 +422,97 @@ public class UpdateAccountDetailsViewModelShould
         sut.UpdateCommand.CanExecute.Subscribe(x => canExecute = x);
 
         canExecute.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ClampMaxParallelUpDownloadsToMinimumOf1()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo)
+        {
+            MaxParallelUpDownloads = 0
+        };
+
+        sut.MaxParallelUpDownloads.ShouldBe(1);
+    }
+
+    [Fact]
+    public void ClampMaxParallelUpDownloadsToMaximumOf10()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo)
+        {
+            MaxParallelUpDownloads = 20
+        };
+
+        sut.MaxParallelUpDownloads.ShouldBe(10);
+    }
+
+    [Fact]
+    public void ClampMaxItemsInBatchToMinimumOf1()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo)
+        {
+            MaxItemsInBatch = 0
+        };
+
+        sut.MaxItemsInBatch.ShouldBe(1);
+    }
+
+    [Fact]
+    public void ClampMaxItemsInBatchToMaximumOf100()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo)
+        {
+            MaxItemsInBatch = 200
+        };
+
+        sut.MaxItemsInBatch.ShouldBe(100);
+    }
+
+    [Fact]
+    public void LoadMaxParallelUpDownloadsWhenAccountSelected()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo);
+        var account = new AccountInfo(
+            "acc1",
+            "Test User",
+            @"C:\Sync",
+            true,
+            null,
+            null,
+            false,
+            false,
+            5,
+            75);
+
+        sut.SelectedAccount = account;
+
+        sut.MaxParallelUpDownloads.ShouldBe(5);
+    }
+
+    [Fact]
+    public void LoadMaxItemsInBatchWhenAccountSelected()
+    {
+        var mockAccountRepo = Substitute.For<IAccountRepository>();
+        var sut = new UpdateAccountDetailsViewModel(mockAccountRepo);
+        var account = new AccountInfo(
+            "acc1",
+            "Test User",
+            @"C:\Sync",
+            true,
+            null,
+            null,
+            false,
+            false,
+            5,
+            75);
+
+        sut.SelectedAccount = account;
+
+        sut.MaxItemsInBatch.ShouldBe(75);
     }
 }

@@ -59,6 +59,8 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
                 LocalSyncPath = value.LocalSyncPath;
                 EnableDetailedSyncLogging = value.EnableDetailedSyncLogging;
                 EnableDebugLogging = value.EnableDebugLogging;
+                MaxParallelUpDownloads = value.MaxParallelUpDownloads;
+                MaxItemsInBatch = value.MaxItemsInBatch;
                 StatusMessage = string.Empty;
             }
         }
@@ -89,6 +91,32 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
     {
         get;
         set => this.RaiseAndSetIfChanged(ref field, value);
+    }
+
+    /// <summary>
+    /// Gets or sets the maximum number of parallel upload/download operations (1-10).
+    /// </summary>
+    public int MaxParallelUpDownloads
+    {
+        get;
+        set
+        {
+            var clampedValue = Math.Clamp(value, 1, 10);
+            this.RaiseAndSetIfChanged(ref field, clampedValue);
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets the maximum number of items to process in a single batch (1-100).
+    /// </summary>
+    public int MaxItemsInBatch
+    {
+        get;
+        set
+        {
+            var clampedValue = Math.Clamp(value, 1, 100);
+            this.RaiseAndSetIfChanged(ref field, clampedValue);
+        }
     }
 
     /// <summary>
@@ -169,7 +197,9 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
             {
                 LocalSyncPath = LocalSyncPath,
                 EnableDetailedSyncLogging = EnableDetailedSyncLogging,
-                EnableDebugLogging = EnableDebugLogging
+                EnableDebugLogging = EnableDebugLogging,
+                MaxParallelUpDownloads = MaxParallelUpDownloads,
+                MaxItemsInBatch = MaxItemsInBatch
             };
 
             await _accountRepository.UpdateAsync(updatedAccount);

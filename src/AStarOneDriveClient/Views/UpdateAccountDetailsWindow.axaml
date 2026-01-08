@@ -162,6 +162,30 @@
                                           OnContent="Enabled"
                                           OffContent="Disabled" />
                         </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Max Parallel Upload/Downloads (1-10):" FontWeight="SemiBold" />
+                            <NumericUpDown Value="{Binding MaxParallelUpDownloads}"
+                                           Minimum="1"
+                                           Maximum="10"
+                                           Increment="1"
+                                           FormatString="0"
+                                           Margin="0,5,0,0"
+                                           Width="150"
+                                           HorizontalAlignment="Left" />
+                        </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Max Items In Batch (1-100):" FontWeight="SemiBold" />
+                            <NumericUpDown Value="{Binding MaxItemsInBatch}"
+                                           Minimum="1"
+                                           Maximum="100"
+                                           Increment="5"
+                                           FormatString="0"
+                                           Margin="0,5,0,0"
+                                           Width="150"
+                                           HorizontalAlignment="Left" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>

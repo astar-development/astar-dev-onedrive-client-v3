@@ -66,7 +66,9 @@ public class MainWindowViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
         accountVm.SelectedAccount = account;
 
         syncTreeVm.SelectedAccountId.ShouldBe("account-123");
@@ -90,7 +92,9 @@ public class MainWindowViewModelShould
             DateTime.UtcNow,
             null,
             false,
-            false);
+            false,
+            3,
+            50);
         accountVm.SelectedAccount = account;
         accountVm.SelectedAccount = null;
 
