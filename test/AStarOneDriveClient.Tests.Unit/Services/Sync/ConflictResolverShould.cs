@@ -356,7 +356,8 @@ public sealed class ConflictResolverShould
             EnableDetailedSyncLogging: false,
             EnableDebugLogging: false,
             MaxParallelUpDownloads: 3,
-            MaxItemsInBatch: 50);
+            MaxItemsInBatch: 50,
+            AutoSyncIntervalMinutes: null);
 
     private static FileMetadata CreateTestMetadata(string accountId, string filePath) =>
         new(

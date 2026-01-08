@@ -92,6 +92,7 @@ public sealed class SyncStateRepository : ISyncStateRepository
             entity.ConflictsDetected,
             entity.MegabytesPerSecond,
             entity.EstimatedSecondsRemaining,
+            null, // CurrentScanningFolder - not persisted in database, only used during sync
             entity.LastUpdateUtc
         );
 

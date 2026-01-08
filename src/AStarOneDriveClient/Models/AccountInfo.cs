@@ -13,6 +13,7 @@ namespace AStarOneDriveClient.Models;
 /// <param name="EnableDebugLogging">Enables debug logging to database for historical review.</param>
 /// <param name="MaxParallelUpDownloads">Maximum number of parallel upload/download operations (1-10).</param>
 /// <param name="MaxItemsInBatch">Maximum number of items to process in a single batch (1-100).</param>
+/// <param name="AutoSyncIntervalMinutes">Interval in minutes for automatic remote sync checks (null = disabled, 60-1440).</param>
 public sealed record AccountInfo(
     string AccountId,
     string DisplayName,
@@ -23,5 +24,6 @@ public sealed record AccountInfo(
     bool EnableDetailedSyncLogging,
     bool EnableDebugLogging,
     int MaxParallelUpDownloads,
-    int MaxItemsInBatch
+    int MaxItemsInBatch,
+    int? AutoSyncIntervalMinutes
 );

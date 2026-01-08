@@ -75,6 +75,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         ConflictsDetected: 0,
         MegabytesPerSecond: 0,
         EstimatedSecondsRemaining: null,
+        CurrentScanningFolder: null,
         LastUpdateUtc: null);
 
     /// <summary>

@@ -31,12 +31,20 @@ public sealed class App : Application
         var debugLogger = Services.GetRequiredService<IDebugLogger>();
         DebugLog.Initialize(debugLogger);
 
+        // Start auto-sync scheduler
+        var scheduler = Services.GetRequiredService<IAutoSyncSchedulerService>();
+        _ = scheduler.StartAsync();
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
 
             // Cleanup on exit
-            desktop.Exit += (_, _) => Services?.Dispose();
+            desktop.Exit += (_, _) =>
+            {
+                scheduler.Dispose();
+                Services?.Dispose();
+            };
         }
 
         base.OnFrameworkInitializationCompleted();

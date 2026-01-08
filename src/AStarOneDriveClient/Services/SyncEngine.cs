@@ -78,6 +78,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             ConflictsDetected: 0,
             MegabytesPerSecond: 0,
             EstimatedSecondsRemaining: null,
+            CurrentScanningFolder: null,
             LastUpdateUtc: null);
 
         _progressSubject = new BehaviorSubject<SyncState>(initialState);
@@ -222,6 +223,9 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             var allRemoteFiles = new List<FileMetadata>();
             foreach (var folder in selectedFolders)
             {
+                // Report scanning progress
+                ReportProgress(accountId, SyncStatus.Running, 0, 0, 0, 0, currentScanningFolder: folder);
+
                 var (remoteFiles, _) = await _remoteChangeDetector.DetectChangesAsync(
                     accountId,
                     folder,
@@ -567,6 +571,8 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
 
             var totalFiles = filesToUpload.Count + filesToDownload.Count;
             var totalBytes = filesToUpload.Sum(f => f.Size) + filesToDownload.Sum(f => f.Size);
+            var uploadBytes = filesToUpload.Sum(f => f.Size);
+            var downloadBytes = filesToDownload.Sum(f => f.Size);
 
             // Log file counts for debugging
             System.Diagnostics.Debug.WriteLine($"Sync summary: {filesToDownload.Count} to download, {filesToUpload.Count} to upload, {filesToDelete.Count} to delete");
@@ -653,7 +659,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                         // Update completedBytes with current upload progress
                         var currentCompletedBytes = baseCompletedBytes + bytesUploaded;
                         var currentCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
-                        ReportProgress(accountId, SyncStatus.Running, totalFiles, currentCompleted, totalBytes, currentCompletedBytes, filesUploading: currentActiveUploads, conflictsDetected: conflictCount);
+                        ReportProgress(accountId, SyncStatus.Running, totalFiles, currentCompleted, totalBytes, currentCompletedBytes, filesUploading: currentActiveUploads, conflictsDetected: conflictCount, phaseTotalBytes: uploadBytes);
                     });
 
                     var uploadedItem = await _graphApiClient.UploadFileAsync(
@@ -720,7 +726,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
                     var finalBytes = Interlocked.Read(ref completedBytes);
                     var finalActiveUploads = Interlocked.CompareExchange(ref activeUploads, 0, 0);
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesUploading: finalActiveUploads, conflictsDetected: conflictCount);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesUploading: finalActiveUploads, conflictsDetected: conflictCount, phaseTotalBytes: uploadBytes);
                 }
                 catch (Exception ex)
                 {
@@ -750,7 +756,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     Interlocked.Increment(ref completedFiles);
                     var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
                     var finalBytes = Interlocked.Read(ref completedBytes);
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount, phaseTotalBytes: uploadBytes);
                 }
                 finally
                 {
@@ -760,6 +766,11 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             }).ToList();
 
             await Task.WhenAll(uploadTasks);
+
+            // Reset transfer tracking for download phase
+            _transferHistory.Clear();
+            _lastProgressUpdate = DateTime.UtcNow;
+            _lastCompletedBytes = completedBytes;
 
             // Download files with parallel execution
             var maxParallelDownloads = account.MaxParallelUpDownloads;
@@ -841,7 +852,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
                     var finalBytes = Interlocked.Read(ref completedBytes);
                     var finalActiveDownloads = Interlocked.CompareExchange(ref activeDownloads, 0, 0);
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesDownloading: finalActiveDownloads, conflictsDetected: conflictCount);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, filesDownloading: finalActiveDownloads, conflictsDetected: conflictCount, phaseTotalBytes: uploadBytes + downloadBytes);
                 }
                 catch (Exception ex)
                 {
@@ -869,7 +880,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
                     Interlocked.Add(ref completedBytes, file.Size);
                     var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
                     var finalBytes = Interlocked.Read(ref completedBytes);
-                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount);
+                    ReportProgress(accountId, SyncStatus.Running, totalFiles, finalCompleted, totalBytes, finalBytes, conflictsDetected: conflictCount, phaseTotalBytes: uploadBytes + downloadBytes);
                 }
                 finally
                 {
@@ -999,7 +1010,9 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         int filesDownloading = 0,
         int filesUploading = 0,
         int filesDeleted = 0,
-        int conflictsDetected = 0)
+        int conflictsDetected = 0,
+        string? currentScanningFolder = null,
+        long? phaseTotalBytes = null)
     {
         var now = DateTime.UtcNow;
         var elapsedSeconds = (now - _lastProgressUpdate).TotalSeconds;
@@ -1038,10 +1051,12 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
         }
 
         // Calculate ETA (Estimated Time of Arrival)
+        // Use phase-specific bytes if provided (for accurate per-phase ETA)
         int? estimatedSecondsRemaining = null;
-        if (megabytesPerSecond > 0.01 && completedBytes < totalBytes)
+        var bytesForEta = phaseTotalBytes ?? totalBytes;
+        if (megabytesPerSecond > 0.01 && completedBytes < bytesForEta)
         {
-            var remainingBytes = totalBytes - completedBytes;
+            var remainingBytes = bytesForEta - completedBytes;
             var remainingMegabytes = remainingBytes / (1024.0 * 1024.0);
             estimatedSecondsRemaining = (int)Math.Ceiling(remainingMegabytes / megabytesPerSecond);
         }
@@ -1059,6 +1074,7 @@ public sealed class SyncEngine : ISyncEngine, IDisposable
             ConflictsDetected: conflictsDetected,
             MegabytesPerSecond: megabytesPerSecond,
             EstimatedSecondsRemaining: estimatedSecondsRemaining,
+            CurrentScanningFolder: currentScanningFolder,
             LastUpdateUtc: now);
 
         _progressSubject.OnNext(progress);

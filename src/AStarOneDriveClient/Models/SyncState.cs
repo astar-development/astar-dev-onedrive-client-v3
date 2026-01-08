@@ -17,6 +17,7 @@ namespace AStarOneDriveClient.Models;
 /// <param name="ConflictsDetected">Number of conflicts detected.</param>
 /// <param name="MegabytesPerSecond">Current transfer speed in MB/s.</param>
 /// <param name="EstimatedSecondsRemaining">Estimated seconds until completion.</param>
+/// <param name="CurrentScanningFolder">The folder path currently being scanned (null when not scanning).</param>
 /// <param name="LastUpdateUtc">Timestamp of the last state update.</param>
 public sealed record SyncState(
     string AccountId,
@@ -31,5 +32,6 @@ public sealed record SyncState(
     int ConflictsDetected,
     double MegabytesPerSecond,
     int? EstimatedSecondsRemaining,
+    string? CurrentScanningFolder,
     DateTime? LastUpdateUtc
 );

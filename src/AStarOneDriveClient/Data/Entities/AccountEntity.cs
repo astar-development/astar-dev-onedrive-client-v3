@@ -15,4 +15,5 @@ public sealed class AccountEntity
     public bool EnableDebugLogging { get; set; }
     public int MaxParallelUpDownloads { get; set; }
     public int MaxItemsInBatch { get; set; }
+    public int? AutoSyncIntervalMinutes { get; set; }
 }

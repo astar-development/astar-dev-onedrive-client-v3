@@ -68,7 +68,8 @@ public class MainWindowViewModelShould
             false,
             false,
             3,
-            50);
+            50,
+            null);
         accountVm.SelectedAccount = account;
 
         syncTreeVm.SelectedAccountId.ShouldBe("account-123");
@@ -94,7 +95,8 @@ public class MainWindowViewModelShould
             false,
             false,
             3,
-            50);
+            50,
+            null);
         accountVm.SelectedAccount = account;
         accountVm.SelectedAccount = null;
 

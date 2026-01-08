@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reactive;
 using AStarOneDriveClient.Models;
 using AStarOneDriveClient.Repositories;
+using AStarOneDriveClient.Services;
 using Avalonia.Platform.Storage;
 using ReactiveUI;
 
@@ -13,15 +14,21 @@ namespace AStarOneDriveClient.ViewModels;
 public sealed class UpdateAccountDetailsViewModel : ReactiveObject
 {
     private readonly IAccountRepository _accountRepository;
+    private readonly IAutoSyncSchedulerService _schedulerService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="UpdateAccountDetailsViewModel"/> class.
     /// </summary>
     /// <param name="accountRepository">Repository for account data.</param>
-    public UpdateAccountDetailsViewModel(IAccountRepository accountRepository)
+    /// <param name="schedulerService">Service for scheduling automatic syncs.</param>
+    public UpdateAccountDetailsViewModel(
+        IAccountRepository accountRepository,
+        IAutoSyncSchedulerService schedulerService)
     {
         ArgumentNullException.ThrowIfNull(accountRepository);
+        ArgumentNullException.ThrowIfNull(schedulerService);
         _accountRepository = accountRepository;
+        _schedulerService = schedulerService;
 
         Accounts = [];
 
@@ -61,6 +68,7 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
                 EnableDebugLogging = value.EnableDebugLogging;
                 MaxParallelUpDownloads = value.MaxParallelUpDownloads;
                 MaxItemsInBatch = value.MaxItemsInBatch;
+                AutoSyncIntervalMinutes = value.AutoSyncIntervalMinutes;
                 StatusMessage = string.Empty;
             }
         }
@@ -118,6 +126,19 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
             this.RaiseAndSetIfChanged(ref field, clampedValue);
         }
     } = 50;
+
+    /// <summary>
+    /// Gets or sets the auto-sync interval in minutes (60-1440, null = disabled).
+    /// </summary>
+    public int? AutoSyncIntervalMinutes
+    {
+        get;
+        set
+        {
+            var clampedValue = value.HasValue ? Math.Clamp(value.Value, 60, 1440) : (int?)null;
+            this.RaiseAndSetIfChanged(ref field, clampedValue);
+        }
+    }
 
     /// <summary>
     /// Gets or sets the status message.
@@ -199,10 +220,14 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
                 EnableDetailedSyncLogging = EnableDetailedSyncLogging,
                 EnableDebugLogging = EnableDebugLogging,
                 MaxParallelUpDownloads = MaxParallelUpDownloads,
-                MaxItemsInBatch = MaxItemsInBatch
+                MaxItemsInBatch = MaxItemsInBatch,
+                AutoSyncIntervalMinutes = AutoSyncIntervalMinutes
             };
 
             await _accountRepository.UpdateAsync(updatedAccount);
+
+            // Update the scheduler with new auto-sync interval
+            _schedulerService.UpdateSchedule(updatedAccount.AccountId, updatedAccount.AutoSyncIntervalMinutes);
 
             // Update the account in the collection
             var index = Accounts.IndexOf(SelectedAccount);

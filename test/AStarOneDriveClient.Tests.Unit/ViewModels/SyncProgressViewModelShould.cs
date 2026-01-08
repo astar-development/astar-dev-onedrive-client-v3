@@ -98,6 +98,7 @@ public class SyncProgressViewModelShould
             0,
             1.5,
             null,
+            null,
             DateTime.UtcNow
         );
 
@@ -126,6 +127,7 @@ public class SyncProgressViewModelShould
             0,
             2.5,
             null,
+            null,
             DateTime.UtcNow
         );
 
@@ -152,6 +154,7 @@ public class SyncProgressViewModelShould
             0,
             0,
             null,
+            null,
             DateTime.UtcNow
         );
 
@@ -177,6 +180,7 @@ public class SyncProgressViewModelShould
             0,
             0,
             1.5,
+            null,
             null,
             DateTime.UtcNow
         );
@@ -205,6 +209,7 @@ public class SyncProgressViewModelShould
             2,
             1.5,
             null,
+            null,
             DateTime.UtcNow
         );
 
@@ -231,6 +236,7 @@ public class SyncProgressViewModelShould
             0,
             0,
             1.5,
+            null,
             null,
             DateTime.UtcNow
         );
@@ -379,6 +385,7 @@ public class SyncProgressViewModelShould
             2,
             1.5,
             null,
+            null,
             DateTime.UtcNow
         );
 
@@ -404,6 +411,7 @@ public class SyncProgressViewModelShould
             0,
             0,
             1.5,
+            null,
             null,
             DateTime.UtcNow
         );
@@ -439,6 +447,7 @@ public class SyncProgressViewModelShould
             0,
             1,
             1.5,
+            null,
             null,
             DateTime.UtcNow
         );

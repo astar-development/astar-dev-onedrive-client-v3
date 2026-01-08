@@ -1,6 +1,7 @@
 using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using AStarOneDriveClient.Models.Enums;
 using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.Services;
 using AStarOneDriveClient.Views;
@@ -128,6 +129,14 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
 
                         // Wire up CloseCommand to dismiss sync progress view
                         syncProgressVm.CloseCommand
+                            .Subscribe(_ => CloseSyncProgressView())
+                            .DisposeWith(_disposables);
+
+                        // Auto-close overlay when sync completes successfully
+                        syncProgressVm.WhenAnyValue(x => x.CurrentProgress)
+                            .Where(progress => progress is not null && progress.Status == SyncStatus.Completed)
+                            .Delay(TimeSpan.FromSeconds(2)) // Show completion message briefly
+                            .ObserveOn(RxApp.MainThreadScheduler)
                             .Subscribe(_ => CloseSyncProgressView())
                             .DisposeWith(_disposables);
 

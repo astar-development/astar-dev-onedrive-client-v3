@@ -37,6 +37,12 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
     public bool IsSyncing { get; set => this.RaiseAndSetIfChanged(ref field, value); }
 
     /// <summary>
+    /// Gets a value indicating whether the progress bar should be indeterminate.
+    /// True only during scanning phase when we don't know the total file count yet.
+    /// </summary>
+    public bool IsProgressIndeterminate => IsSyncing && (CurrentProgress is null || CurrentProgress.TotalFiles == 0);
+
+    /// <summary>
     /// Gets or sets the status message to display.
     /// </summary>
     public string StatusMessage { get; set => this.RaiseAndSetIfChanged(ref field, value); } = "Ready to sync";
@@ -71,22 +77,30 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
                 return string.Empty;
             }
 
-            var parts = new List<string>
-            {
-                $"↑ {CurrentProgress.FilesUploading} uploading  ↓ {CurrentProgress.FilesDownloading} downloading"
-            };
+            var parts = new List<string>();
 
-            // Add transfer speed if available
-            if (CurrentProgress.MegabytesPerSecond > 0.01)
+            // Show scanning folder if currently scanning
+            if (!string.IsNullOrEmpty(CurrentProgress.CurrentScanningFolder))
             {
-                parts.Add($"{CurrentProgress.MegabytesPerSecond:F2} MB/s");
+                parts.Add($"Scanning: {CurrentProgress.CurrentScanningFolder}");
             }
-
-            // Add ETA if available
-            if (CurrentProgress.EstimatedSecondsRemaining.HasValue)
+            else
             {
-                var eta = FormatTimeRemaining(CurrentProgress.EstimatedSecondsRemaining.Value);
-                parts.Add($"ETA: {eta}");
+                // Show upload/download counts during transfer
+                parts.Add($"↑ {CurrentProgress.FilesUploading} uploading  ↓ {CurrentProgress.FilesDownloading} downloading");
+
+                // Add transfer speed if available
+                if (CurrentProgress.MegabytesPerSecond > 0.01)
+                {
+                    parts.Add($"{CurrentProgress.MegabytesPerSecond:F2} MB/s");
+                }
+
+                // Add ETA if available
+                if (CurrentProgress.EstimatedSecondsRemaining.HasValue)
+                {
+                    var eta = FormatTimeRemaining(CurrentProgress.EstimatedSecondsRemaining.Value);
+                    parts.Add($"ETA: {eta}");
+                }
             }
 
             return string.Join("  •  ", parts);
@@ -177,6 +191,7 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
                 this.RaisePropertyChanged(nameof(TransferDetailsText));
                 this.RaisePropertyChanged(nameof(ConflictsText));
                 this.RaisePropertyChanged(nameof(HasConflicts));
+                this.RaisePropertyChanged(nameof(IsProgressIndeterminate));
 
                 _logger.LogDebug(
                     "Progress update: {Completed}/{Total} files, {Conflicts} conflicts",
@@ -261,11 +276,21 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
 
         if (IsSyncing)
         {
-            StatusMessage = CurrentProgress.TotalFiles == 0
-                ? "Scanning for changes..."
-                : CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles
-                    ? "Finalizing sync..."
-                    : $"Syncing {CurrentProgress.CompletedFiles} of {CurrentProgress.TotalFiles} files...";
+            if (CurrentProgress.TotalFiles == 0)
+            {
+                // During scanning phase, show the folder being scanned
+                StatusMessage = string.IsNullOrEmpty(CurrentProgress.CurrentScanningFolder)
+                    ? "Scanning for changes..."
+                    : $"Scanning: {CurrentProgress.CurrentScanningFolder}";
+            }
+            else if (CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles)
+            {
+                StatusMessage = "Finalizing sync...";
+            }
+            else
+            {
+                StatusMessage = $"Syncing {CurrentProgress.CompletedFiles} of {CurrentProgress.TotalFiles} files...";
+            }
         }
         else if (CurrentProgress.CompletedFiles == CurrentProgress.TotalFiles && CurrentProgress.TotalFiles > 0)
         {

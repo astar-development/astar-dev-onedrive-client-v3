@@ -186,6 +186,25 @@
                                            Width="150"
                                            HorizontalAlignment="Left" />
                         </StackPanel>
+
+                        <StackPanel>
+                            <TextBlock Text="Auto-Sync Interval (minutes, 60-1440):" FontWeight="SemiBold" />
+                            <TextBlock Text="Leave empty to disable automatic remote checks"
+                                       FontSize="11"
+                                       Opacity="0.7"
+                                       Margin="0,2,0,5" />
+                            <NumericUpDown Value="{Binding AutoSyncIntervalMinutes}"
+                                           Minimum="60"
+                                           Maximum="1440"
+                                           Increment="60"
+                                           FormatString="0"
+                                           AllowSpin="True"
+                                           ShowButtonSpinner="True"
+                                           Watermark="Disabled"
+                                           Margin="0,5,0,0"
+                                           Width="150"
+                                           HorizontalAlignment="Left" />
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
             </Border>
