@@ -73,7 +73,9 @@ public class MainWindowViewModelIntegrationShould : IDisposable
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
         var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository);
+        ISyncConflictRepository mockConflictRepo = Substitute.For<ISyncConflictRepository>();
+        mockConflictRepo.GetUnresolvedByAccountIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<SyncConflict>>(new List<SyncConflict>()));
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository, mockConflictRepo);
 
         // Allow initialization to complete
         await Task.Delay(100);
@@ -120,7 +122,9 @@ public class MainWindowViewModelIntegrationShould : IDisposable
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
         var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository);
+        ISyncConflictRepository mockConflictRepo = Substitute.For<ISyncConflictRepository>();
+        mockConflictRepo.GetUnresolvedByAccountIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<SyncConflict>>(new List<SyncConflict>()));
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository, mockConflictRepo);
 
         await Task.Delay(100);
         accountVm.SelectedAccount = account;
@@ -167,7 +171,9 @@ public class MainWindowViewModelIntegrationShould : IDisposable
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
         var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository);
+        ISyncConflictRepository mockConflictRepo = Substitute.For<ISyncConflictRepository>();
+        mockConflictRepo.GetUnresolvedByAccountIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<SyncConflict>>(new List<SyncConflict>()));
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository, mockConflictRepo);
 
         await Task.Delay(100);
 
@@ -201,7 +207,9 @@ public class MainWindowViewModelIntegrationShould : IDisposable
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
         var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository);
+        ISyncConflictRepository mockConflictRepo = Substitute.For<ISyncConflictRepository>();
+        mockConflictRepo.GetUnresolvedByAccountIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<SyncConflict>>(new List<SyncConflict>()));
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository, mockConflictRepo);
 
         await Task.Delay(100);
 
@@ -236,7 +244,9 @@ public class MainWindowViewModelIntegrationShould : IDisposable
         var accountVm = new AccountManagementViewModel(_mockAuthService, _accountRepository);
         var syncTreeVm = new SyncTreeViewModel(_mockFolderTreeService, _syncSelectionService, _mockSyncEngine);
         var mockCoordinator = Substitute.For<IAutoSyncCoordinator>();
-        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository);
+        ISyncConflictRepository mockConflictRepo = Substitute.For<ISyncConflictRepository>();
+        mockConflictRepo.GetUnresolvedByAccountIdAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<SyncConflict>>(new List<SyncConflict>()));
+        using var sut = new MainWindowViewModel(accountVm, syncTreeVm, Substitute.For<IServiceProvider>(), mockCoordinator, _accountRepository, mockConflictRepo);
 
         await Task.Delay(100);
         accountVm.SelectedAccount = account;

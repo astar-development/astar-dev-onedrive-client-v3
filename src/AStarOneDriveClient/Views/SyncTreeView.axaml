@@ -130,6 +130,17 @@
                 Command="{Binding CancelSyncCommand}"
                 MinWidth="120"/>
 
+        <!-- Unresolved Conflicts Button -->
+        <Button Content="⚠️ View Conflicts"
+                Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ViewConflictsCommand}"
+                Background="#FFF3E0"
+                BorderBrush="#FF6F00"
+                Foreground="#E65100"
+                FontWeight="SemiBold"
+                MinWidth="140"
+                IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).HasUnresolvedConflicts}"
+                ToolTip.Tip="There are unresolved sync conflicts that need your attention"/>
+
         <!-- Sync Progress -->
         <StackPanel Orientation="Vertical"
                     Spacing="4"

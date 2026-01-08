@@ -97,7 +97,7 @@ public static class ServiceConfiguration
         var context = scope.ServiceProvider.GetRequiredService<SyncDbContext>();
         try
         {
-            context.Database.EnsureCreated();
+            context.Database.Migrate();
         }
         catch
         {

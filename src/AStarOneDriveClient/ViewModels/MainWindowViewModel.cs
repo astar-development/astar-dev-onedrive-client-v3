@@ -20,6 +20,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     private readonly IServiceProvider _serviceProvider;
     private readonly IAutoSyncCoordinator _autoSyncCoordinator;
     private readonly IAccountRepository _accountRepository;
+    private readonly ISyncConflictRepository _conflictRepository;
 
     /// <summary>
     /// Gets the sync progress view model (when sync is active).
@@ -50,6 +51,15 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     public bool ShowConflictResolution => ConflictResolution is not null;
 
     /// <summary>
+    /// Gets a value indicating whether the selected account has unresolved conflicts.
+    /// </summary>
+    public bool HasUnresolvedConflicts
+    {
+        get;
+        private set => this.RaiseAndSetIfChanged(ref field, value);
+    }
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="MainWindowViewModel"/> class.
     /// </summary>
     /// <param name="accountManagementViewModel">The account management view model.</param>
@@ -57,30 +67,50 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     /// <param name="serviceProvider">The service provider for creating SyncProgressViewModel instances.</param>
     /// <param name="autoSyncCoordinator">The auto-sync coordinator for file watching.</param>
     /// <param name="accountRepository">Repository for account data.</param>
+    /// <param name="conflictRepository">Repository for sync conflicts.</param>
     public MainWindowViewModel(
         AccountManagementViewModel accountManagementViewModel,
         SyncTreeViewModel syncTreeViewModel,
         IServiceProvider serviceProvider,
         IAutoSyncCoordinator autoSyncCoordinator,
-        IAccountRepository accountRepository)
+        IAccountRepository accountRepository,
+        ISyncConflictRepository conflictRepository)
     {
         ArgumentNullException.ThrowIfNull(accountManagementViewModel);
         ArgumentNullException.ThrowIfNull(syncTreeViewModel);
         ArgumentNullException.ThrowIfNull(serviceProvider);
         ArgumentNullException.ThrowIfNull(autoSyncCoordinator);
         ArgumentNullException.ThrowIfNull(accountRepository);
+        ArgumentNullException.ThrowIfNull(conflictRepository);
 
         AccountManagement = accountManagementViewModel;
         SyncTree = syncTreeViewModel;
         _serviceProvider = serviceProvider;
         _autoSyncCoordinator = autoSyncCoordinator;
         _accountRepository = accountRepository;
+        _conflictRepository = conflictRepository;
 
         // Wire up: When an account is selected, update the sync tree
         accountManagementViewModel
             .WhenAnyValue(x => x.SelectedAccount)
             .Select(account => account?.AccountId)
             .BindTo(syncTreeViewModel, x => x.SelectedAccountId)
+            .DisposeWith(_disposables);
+
+        // Wire up: Check for unresolved conflicts when account selection changes
+        accountManagementViewModel
+            .WhenAnyValue(x => x.SelectedAccount)
+            .Subscribe(async account =>
+            {
+                if (account is not null)
+                {
+                    await UpdateConflictStatusAsync(account.AccountId);
+                }
+                else
+                {
+                    HasUnresolvedConflicts = false;
+                }
+            })
             .DisposeWith(_disposables);
 
         // Wire up: When sync completes successfully, start auto-sync monitoring
@@ -132,12 +162,20 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
                             .Subscribe(_ => CloseSyncProgressView())
                             .DisposeWith(_disposables);
 
-                        // Auto-close overlay when sync completes successfully
+                        // Auto-close overlay when sync completes successfully without conflicts
                         syncProgressVm.WhenAnyValue(x => x.CurrentProgress)
-                            .Where(progress => progress is not null && progress.Status == SyncStatus.Completed)
+                            .Where(progress => progress is not null &&
+                                   progress.Status == SyncStatus.Completed &&
+                                   progress.ConflictsDetected == 0)
                             .Delay(TimeSpan.FromSeconds(2)) // Show completion message briefly
                             .ObserveOn(RxApp.MainThreadScheduler)
                             .Subscribe(_ => CloseSyncProgressView())
+                            .DisposeWith(_disposables);
+
+                        // Update conflict status when sync completes
+                        syncProgressVm.WhenAnyValue(x => x.CurrentProgress)
+                            .Where(progress => progress is not null && progress.Status == SyncStatus.Completed)
+                            .Subscribe(async _ => await UpdateConflictStatusAsync(state.AccountId))
                             .DisposeWith(_disposables);
 
                         SyncProgress = syncProgressVm;
@@ -158,6 +196,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
         OpenUpdateAccountDetailsCommand = ReactiveCommand.Create(OpenUpdateAccountDetails);
         OpenViewSyncHistoryCommand = ReactiveCommand.Create(OpenViewSyncHistory);
         OpenDebugLogViewerCommand = ReactiveCommand.Create(OpenDebugLogViewer);
+        ViewConflictsCommand = ReactiveCommand.Create(ViewConflicts, this.WhenAnyValue(x => x.HasUnresolvedConflicts));
         CloseApplicationCommand = ReactiveCommand.Create(CloseApplication);
     }
 
@@ -190,6 +229,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
     /// Gets the command to open the Debug Log Viewer window.
     /// </summary>
     public ReactiveCommand<Unit, Unit> OpenDebugLogViewerCommand { get; }
+
+    /// <summary>
+    /// Gets the command to view unresolved conflicts.
+    /// </summary>
+    public ReactiveCommand<Unit, Unit> ViewConflictsCommand { get; }
 
     /// <summary>
     /// Shows the conflict resolution view for the specified account.
@@ -238,6 +282,33 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
         if (SyncProgress is not null)
         {
             await SyncProgress.RefreshConflictCountAsync();
+        }
+
+        // Update main window conflict status
+        if (AccountManagement.SelectedAccount is not null)
+        {
+            await UpdateConflictStatusAsync(AccountManagement.SelectedAccount.AccountId);
+        }
+    }
+
+    /// <summary>
+    /// Updates the conflict status indicator for the specified account.
+    /// </summary>
+    /// <param name="accountId">The account ID to check.</param>
+    private async Task UpdateConflictStatusAsync(string accountId)
+    {
+        var conflicts = await _conflictRepository.GetUnresolvedByAccountIdAsync(accountId);
+        HasUnresolvedConflicts = conflicts.Any();
+    }
+
+    /// <summary>
+    /// Opens the conflict resolution view for the selected account.
+    /// </summary>
+    private void ViewConflicts()
+    {
+        if (AccountManagement.SelectedAccount is not null)
+        {
+            ShowConflictResolutionView(AccountManagement.SelectedAccount.AccountId);
         }
     }
 
