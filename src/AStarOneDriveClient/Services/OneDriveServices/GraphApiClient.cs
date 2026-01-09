@@ -318,14 +318,32 @@ public sealed class GraphApiClient : IGraphApiClient
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(itemId);
 
+        await DebugLog.EntryAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
+        await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", $"Attempting to delete remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
+
         var graphClient = await CreateGraphClientAsync(accountId, cancellationToken);
         var drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
         if (drive?.Id is null)
         {
+            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", "Drive ID is null. Cannot delete file.", null, cancellationToken);
+            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
             throw new InvalidOperationException("Unable to access user's drive");
         }
 
         // DELETE /drives/{driveId}/items/{itemId}
-        await graphClient.Drives[drive.Id].Items[itemId].DeleteAsync(cancellationToken: cancellationToken);
+        try
+        {
+            await graphClient.Drives[drive.Id].Items[itemId].DeleteAsync(cancellationToken: cancellationToken);
+            await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", $"Successfully deleted remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", $"Exception during remote file deletion. AccountId: {accountId}, ItemId: {itemId}", ex, cancellationToken);
+            throw;
+        }
+        finally
+        {
+            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
+        }
     }
 }

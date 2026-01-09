@@ -259,8 +259,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     // File exists in DB - check if it needs uploading
 
                     // Case 1: File has pending upload or failed status - needs (re)upload
-                    if (existingFile.SyncStatus is FileSyncStatus.PendingUpload or
-                        FileSyncStatus.Failed)
+                    if (existingFile.SyncStatus is FileSyncStatus.PendingUpload or FileSyncStatus.Failed)
                     {
                         System.Diagnostics.Debug.WriteLine($"[SyncEngine] File needs upload (status={existingFile.SyncStatus}): {localFile.Name}");
                         // Use existing DB record (preserves ID and status) but update with current local file info
@@ -489,15 +488,21 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
             }
 
-            // Save matching files to DB without transferring them
-            foreach (var file in filesToRecordWithoutTransfer)
-            {
-                await _fileMetadataRepository.AddAsync(file, cancellationToken);
-            }
-
+            // existingFiles = await _fileMetadataRepository.GetByAccountIdAsync(accountId, cancellationToken);
             // Detect files deleted from OneDrive - delete local copies to maintain sync
             // BUT exclude files that haven't been successfully synced yet (PendingUpload, PendingDownload, Failed)
             // Only delete files that were previously Synced (meaning they existed on OneDrive at some point)
+            // allLocalFiles = new List<FileMetadata>();
+            // foreach (var folder in selectedFolders)
+            // {
+            //     var localFolderPath = Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
+            //     var localFiles = await _localFileScanner.ScanFolderAsync(
+            //         accountId,
+            //         localFolderPath,
+            //         folder,
+            //         _syncCancellation.Token);
+            //     allLocalFiles.AddRange(localFiles);
+            // }
             var localPathsSet = allLocalFiles.Select(f => f.Path).ToHashSet();
             var deletedFromOneDrive = existingFiles
                 .Where(f => !remotePathsSet.Contains(f.Path) &&
@@ -531,23 +536,30 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             // 4. It has a valid OneDrive ID (can't delete without ID)
             // Note: We check SyncStatus=Synced OR remote contains it, because newly uploaded files
             // might not appear in remote scan immediately due to OneDrive propagation delays
-            var deletedLocally = existingFiles
+            var deletedLocally = allLocalFiles
                 .Where(f => !localPathsSet.Contains(f.Path) &&
                            (remotePathsSet.Contains(f.Path) || f.SyncStatus == FileSyncStatus.Synced) &&
                            !string.IsNullOrEmpty(f.Id))
                 .ToList();
 
+            System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Local deletion detection: {deletedLocally.Count} files to delete from OneDrive.");
+            foreach (var file in deletedLocally)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Candidate for remote deletion: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}, ExistsLocally={File.Exists(file.LocalPath)}, ExistsRemotely={remotePathsSet.Contains(file.Path)}");
+            }
+
             foreach (var file in deletedLocally)
             {
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] File deleted locally: {file.Path} - deleting from OneDrive (ID: {file.Id})");
+                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Deleting from OneDrive: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}");
                     await _graphApiClient.DeleteFileAsync(accountId, file.Id, cancellationToken);
+                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Deleted from OneDrive: Path={file.Path}, Id={file.Id}");
                     await _fileMetadataRepository.DeleteAsync(file.Id, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Failed to delete from OneDrive {file.Path}: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Failed to delete from OneDrive {file.Path}: {ex.Message}");
                     // Continue with other deletions even if one fails
                 }
             }
@@ -561,7 +573,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             var filesToDelete = existingFiles
                 .Where(f => !remotePathsSet.Contains(f.Path) &&
                            !localPathsSet.Contains(f.Path) &&
+                           !string.IsNullOrWhiteSpace(f.Id) &&
                            !alreadyProcessedDeletions.Contains(f.Id))
+                .Where(f => f.Id is not null)
                 .ToList();
 
             // Detect conflicts: files that appear in both upload and download lists

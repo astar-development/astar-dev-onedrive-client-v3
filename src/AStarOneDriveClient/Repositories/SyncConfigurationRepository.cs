@@ -37,8 +37,24 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
 
         return await _context.SyncConfigurations
             .Where(sc => sc.AccountId == accountId && sc.IsSelected)
-            .Select(sc => sc.FolderPath)
+            .Select(sc => CleanUpPath(sc.FolderPath))
             .ToListAsync(cancellationToken);
+    }
+
+    private static string CleanUpPath(string localFolderPath)
+    {
+        var indexOfDrives = localFolderPath.IndexOf("drives", StringComparison.OrdinalIgnoreCase);
+        if(indexOfDrives >= 0)
+        {
+            var indexOfColon = localFolderPath.IndexOf(":/", StringComparison.OrdinalIgnoreCase);
+            if(indexOfColon > 0)
+            {
+                var part1 = localFolderPath[..indexOfDrives];
+                var part2 = localFolderPath[(indexOfColon + 2)..];
+                localFolderPath = part1 + part2;
+            }
+        }
+        return localFolderPath;
     }
 
     /// <inheritdoc/>
