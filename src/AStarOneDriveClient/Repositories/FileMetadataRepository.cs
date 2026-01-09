@@ -71,6 +71,11 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
         ArgumentNullException.ThrowIfNull(fileMetadata);
 
         var entity = MapToEntity(fileMetadata);
+        if(_context.FileMetadata.Any(fm => fm.Id == entity.Id))
+        {
+            await UpdateAsync(fileMetadata, cancellationToken);
+            return;
+        }
         _context.FileMetadata.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
     }

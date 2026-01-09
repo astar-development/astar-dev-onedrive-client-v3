@@ -488,21 +488,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
             }
 
-            // existingFiles = await _fileMetadataRepository.GetByAccountIdAsync(accountId, cancellationToken);
             // Detect files deleted from OneDrive - delete local copies to maintain sync
             // BUT exclude files that haven't been successfully synced yet (PendingUpload, PendingDownload, Failed)
             // Only delete files that were previously Synced (meaning they existed on OneDrive at some point)
-            // allLocalFiles = new List<FileMetadata>();
-            // foreach (var folder in selectedFolders)
-            // {
-            //     var localFolderPath = Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
-            //     var localFiles = await _localFileScanner.ScanFolderAsync(
-            //         accountId,
-            //         localFolderPath,
-            //         folder,
-            //         _syncCancellation.Token);
-            //     allLocalFiles.AddRange(localFiles);
-            // }
             var localPathsSet = allLocalFiles.Select(f => f.Path).ToHashSet();
             var deletedFromOneDrive = existingFiles
                 .Where(f => !remotePathsSet.Contains(f.Path) &&

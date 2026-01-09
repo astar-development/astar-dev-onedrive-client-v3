@@ -164,13 +164,6 @@
                    Margin="24,0,0,0"
                    VerticalAlignment="Center"
                    IsVisible="{Binding LastSyncResult, Converter={x:Static ObjectConverters.IsNotNull}}"/>
-      </StackPanel>
-    </Border>
-
-    <!-- Loading Indicator & Error Message -->
-    <StackPanel Grid.Row="3"
-                Spacing="8"
-                Margin="16,8">
       <!-- Loading -->
       <StackPanel Orientation="Horizontal"
                   Spacing="8"
@@ -204,6 +197,13 @@
                      FontSize="12"/>
         </StackPanel>
       </Border>
+      </StackPanel>
+    </Border>
+
+    <!-- Loading Indicator & Error Message -->
+    <StackPanel Grid.Row="3"
+                Spacing="8"
+                Margin="16,8">
     </StackPanel>
   </Grid>
 </UserControl>

@@ -366,7 +366,8 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             {
                 var totalChanges = SyncState.TotalFiles + SyncState.FilesDeleted;
 
-                LastSyncResult = totalChanges == 0 ? "✓ Sync complete: No changes detected" : $"✓ Sync complete: {totalChanges} change(s) synchronized";
+                LastSyncResult = totalChanges == 0 ? "✓ Sync complete: No changes detected" :
+                totalChanges > 1 ? $"✓ Sync complete: {totalChanges} change(s) synchronized" : $"✓ Sync complete: {totalChanges} change synchronized";
             }
         }
         catch (OperationCanceledException)
