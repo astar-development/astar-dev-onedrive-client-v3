@@ -327,9 +327,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     System.Diagnostics.Debug.WriteLine($"[SyncEngine] Found file in DB: {remoteFile.Path}, DB Status={existingFile.SyncStatus}");
                     // File exists in DB - check if remote changed
                     var timeDiff = Math.Abs((existingFile.LastModifiedUtc - remoteFile.LastModifiedUtc).TotalSeconds);
-                    var remoteHasChanged = existingFile.CTag != remoteFile.CTag ||
-                                         timeDiff > 1.0 ||
-                                         existingFile.Size != remoteFile.Size;
+                    var remoteHasChanged = (!string.IsNullOrWhiteSpace(existingFile.CTag) ||
+                                         timeDiff > 3600.0 ||
+                                         existingFile.Size != remoteFile.Size) && (existingFile.CTag != remoteFile.CTag);
 
                     System.Diagnostics.Debug.WriteLine($"[SyncEngine] Remote file check: {remoteFile.Path}");
                     System.Diagnostics.Debug.WriteLine($"  DB CTag={existingFile.CTag}, Remote CTag={remoteFile.CTag}");
@@ -960,6 +960,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         };
                         await _syncSessionLogRepository.UpdateAsync(updatedSession, cancellationToken);
                     }
+
+                    await UpdateLastAccountSyncAsync(account, cancellationToken);
                 }
                 catch (Exception ex)
                 {
@@ -1022,6 +1024,16 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             // Always reset the sync-in-progress flag
             Interlocked.Exchange(ref _syncInProgress, 0);
         }
+    }
+
+    private async Task UpdateLastAccountSyncAsync(AccountInfo account, CancellationToken cancellationToken)
+    {
+        var lastSyncUpdate = account with
+        {
+            LastSyncUtc = DateTime.UtcNow
+        };
+
+        await _accountRepository.UpdateAsync(lastSyncUpdate, cancellationToken);
     }
 
     /// <inheritdoc/>

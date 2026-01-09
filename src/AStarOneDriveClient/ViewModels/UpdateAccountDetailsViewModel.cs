@@ -186,7 +186,9 @@ public sealed class UpdateAccountDetailsViewModel : ReactiveObject
             Accounts.Clear();
             foreach (var account in accounts)
             {
-                Accounts.Add(account);
+                var acc = await _accountRepository.GetByIdAsync(account.AccountId);
+                var accountWithSync = account with { LastSyncUtc = acc?.LastSyncUtc };
+                Accounts.Add(accountWithSync);
             }
         }
         catch (Exception ex)
