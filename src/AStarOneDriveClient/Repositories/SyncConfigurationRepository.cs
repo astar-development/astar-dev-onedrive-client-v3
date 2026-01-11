@@ -38,6 +38,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         return await _context.SyncConfigurations
             .Where(sc => sc.AccountId == accountId && sc.IsSelected)
             .Select(sc => CleanUpPath(sc.FolderPath))
+            .Distinct()
             .ToListAsync(cancellationToken);
     }
 

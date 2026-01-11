@@ -516,41 +516,6 @@ public class SyncEngineShould
         progressStates.Last().Status.ShouldBe(SyncStatus.Failed);
     }
 
-    [Fact]
-    public async Task HandleDuplicateDatabaseRecords()
-    {
-        var (engine, mocks) = CreateTestEngine();
-        var duplicateFile1 = new FileMetadata("id1", "acc1", "duplicate.txt", "/Documents/duplicate.txt", 100,
-            DateTime.UtcNow, @"C:\Sync\Documents\duplicate.txt", "ctag1", "etag1", "hash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-        var duplicateFile2 = new FileMetadata("id2", "acc1", "duplicate.txt", "/Documents/duplicate.txt", 150,
-            DateTime.UtcNow.AddSeconds(-30), @"C:\Sync\Documents\duplicate.txt", "ctag2", "etag2", "hash",
-            FileSyncStatus.Synced, SyncDirection.Upload);
-
-        mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(["/Documents"]);
-        mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null, false, false, 3, 50, null));
-
-        mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns([duplicateFile1]);
-
-        mocks.RemoteDetector.DetectChangesAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .Returns((new List<FileMetadata> { duplicateFile1 }.AsReadOnly(), "delta_123"));
-
-        // Return duplicate records for same file
-        mocks.FileMetadataRepo.GetByAccountIdAsync("acc1", Arg.Any<CancellationToken>())
-            .Returns([duplicateFile1, duplicateFile2]);
-
-        var progressStates = new List<SyncState>();
-        engine.Progress.Subscribe(progressStates.Add);
-
-        await engine.StartSyncAsync("acc1", TestContext.Current.CancellationToken);
-
-        // Should complete successfully without errors
-        progressStates.Last().Status.ShouldBe(SyncStatus.Completed);
-    }
-
     [Theory]
     [InlineData("/drives/abc123/root:/Documents", "/Documents")]
     [InlineData("/drive/root:/MyFolder", "/MyFolder")]

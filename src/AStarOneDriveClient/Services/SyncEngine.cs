@@ -45,25 +45,15 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
         ISyncSessionLogRepository syncSessionLogRepository,
         IFileOperationLogRepository fileOperationLogRepository)
     {
-        ArgumentNullException.ThrowIfNull(localFileScanner);
-        ArgumentNullException.ThrowIfNull(remoteChangeDetector);
-        ArgumentNullException.ThrowIfNull(fileMetadataRepository);
-        ArgumentNullException.ThrowIfNull(syncConfigurationRepository);
-        ArgumentNullException.ThrowIfNull(accountRepository);
-        ArgumentNullException.ThrowIfNull(graphApiClient);
-        ArgumentNullException.ThrowIfNull(syncConflictRepository);
-        ArgumentNullException.ThrowIfNull(syncSessionLogRepository);
-        ArgumentNullException.ThrowIfNull(fileOperationLogRepository);
-
-        _localFileScanner = localFileScanner;
-        _remoteChangeDetector = remoteChangeDetector;
-        _fileMetadataRepository = fileMetadataRepository;
-        _syncConfigurationRepository = syncConfigurationRepository;
-        _accountRepository = accountRepository;
-        _graphApiClient = graphApiClient;
-        _syncConflictRepository = syncConflictRepository;
-        _syncSessionLogRepository = syncSessionLogRepository;
-        _fileOperationLogRepository = fileOperationLogRepository;
+        _localFileScanner = localFileScanner ?? throw new ArgumentNullException(nameof(localFileScanner));
+        _remoteChangeDetector = remoteChangeDetector ?? throw new ArgumentNullException(nameof(remoteChangeDetector));
+        _fileMetadataRepository = fileMetadataRepository ?? throw new ArgumentNullException(nameof(fileMetadataRepository));
+        _syncConfigurationRepository = syncConfigurationRepository ?? throw new ArgumentNullException(nameof(syncConfigurationRepository));
+        _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
+        _graphApiClient = graphApiClient ?? throw new ArgumentNullException(nameof(graphApiClient));
+        _syncConflictRepository = syncConflictRepository ?? throw new ArgumentNullException(nameof(syncConflictRepository));
+        _syncSessionLogRepository = syncSessionLogRepository ?? throw new ArgumentNullException(nameof(syncSessionLogRepository));
+        _fileOperationLogRepository = fileOperationLogRepository ?? throw new ArgumentNullException(nameof(fileOperationLogRepository));
 
         var initialState = new SyncState(
             AccountId: string.Empty,
@@ -91,9 +81,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
     public async Task StartSyncAsync(string accountId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
+        DebugLogContext.SetAccountId(accountId);
 
-        // Prevent concurrent syncs using Interlocked for thread-safety
-        if (Interlocked.CompareExchange(ref _syncInProgress, 1, 0) != 0)
+        if (SyncIsAlreadyRunning())
         {
             await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Sync already in progress for account {accountId}, ignoring duplicate request", cancellationToken);
             await DebugLog.ExitAsync("SyncEngine.StartSyncAsync", cancellationToken);
@@ -104,23 +94,13 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
         try
         {
-            // Set debug log context for this account - flows through all async operations
-            DebugLogContext.SetAccountId(accountId);
-
-            // Reset progress tracking for new sync
-            _lastProgressUpdate = DateTime.UtcNow;
-            _lastCompletedBytes = 0;
-            _transferHistory.Clear();
+            ResetBeforeRunning();
 
             await DebugLog.EntryAsync("SyncEngine.StartSyncAsync", cancellationToken);
 
             ReportProgress(accountId, SyncStatus.Running, 0, 0, 0, 0);
 
-            // Get selected folders for this account
             var selectedFolders = await _syncConfigurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
-
-            // Deduplicate selected folders to prevent processing same folder multiple times
-            selectedFolders = [.. selectedFolders.Distinct()];
 
             await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Starting sync with {selectedFolders.Count} selected folders: {string.Join(", ", selectedFolders)}", cancellationToken);
 
@@ -130,7 +110,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 return;
             }
 
-            // Get account info for local sync path
             var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
             if (account is null)
             {
@@ -138,7 +117,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 return;
             }
 
-            // Initialize detailed sync logging if enabled
             if (account.EnableDetailedSyncLogging)
             {
                 var sessionLog = new SyncSessionLog(
@@ -160,82 +138,16 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 _currentSessionId = null;
             }
 
-            // Scan local files in selected folders
-            var allLocalFiles = new List<FileMetadata>();
-            foreach (var folder in selectedFolders)
-            {
-                if (string.IsNullOrEmpty(folder)) continue;
-                var localFolderPath = Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
-                var localFiles = await _localFileScanner.ScanFolderAsync(
-                    accountId,
-                    localFolderPath,
-                    folder,
-                    _syncCancellation.Token);
-                if (localFiles?.Count > 0)
-                {
-                    allLocalFiles.AddRange(localFiles);
-                }
-            }
-
-            // Get existing file metadata from database
+            var allLocalFiles = await GetAllLocalFiles(accountId, selectedFolders, account);
             var existingFiles = await _fileMetadataRepository.GetByAccountIdAsync(accountId, cancellationToken);
-
-            // Handle duplicate records (data corruption from previous bugs)
-            // Group by Path and keep only the most relevant record
-            var existingFilesList = new List<FileMetadata>();
-            foreach (var g in existingFiles.GroupBy(f => f.Path ?? ""))
-            {
-                if (g.Count() > 1)
-                {
-                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"WARNING: Found {g.Count()} duplicate records for path {g.Key}", cancellationToken);
-
-                    // Keep the record with the best data:
-                    // 1. Prefer Synced status over others
-                    // 2. Prefer records with OneDrive ID
-                    // 3. Prefer records with CTag/ETag
-                    // 4. Most recent LastModifiedUtc
-                    var best = g
-                        .OrderByDescending(f => f.SyncStatus == FileSyncStatus.Synced)
-                        .ThenByDescending(f => !string.IsNullOrEmpty(f.Id))
-                        .ThenByDescending(f => !string.IsNullOrEmpty(f.CTag))
-                        .ThenByDescending(f => f.LastModifiedUtc)
-                        .First();
-
-                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Keeping record with ID={best.Id}, Status={best.SyncStatus}, CTag={best.CTag}", cancellationToken);
-
-                    // Delete the duplicate records from database
-                    foreach (var duplicate in g.Where(f => f.Id != best.Id))
-                    {
-                        try
-                        {
-                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Deleting duplicate record with ID={duplicate.Id}", cancellationToken);
-                            var dupId = duplicate.Id ?? "";
-                            if (!string.IsNullOrEmpty(dupId))
-                            {
-                                _fileMetadataRepository.DeleteAsync(dupId, _syncCancellation.Token).GetAwaiter().GetResult();
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Failed to delete duplicate: {ex.Message}", cancellationToken);
-                        }
-                    }
-
-                    existingFilesList.Add(best);
-                }
-                else
-                {
-                    existingFilesList.Add(g.First());
-                }
-            }
-
-            var existingFilesDict = existingFilesList.ToDictionary(f => f.Path ?? "", f => f);
+            var existingFilesDict = existingFiles.ToDictionary(f => f.Path ?? "", f => f);
 
             // Detect remote changes in selected folders FIRST (before deciding what to upload)
             var allRemoteFiles = new List<FileMetadata>();
             foreach (var folder in selectedFolders)
             {
-                if (string.IsNullOrEmpty(folder)) continue;
+                if (string.IsNullOrEmpty(folder))
+                    continue;
                 // Report scanning progress with cleaned folder path
                 var displayFolder = FormatScanningFolderForDisplay(folder);
                 ReportProgress(accountId, SyncStatus.Running, 0, 0, 0, 0, currentScanningFolder: displayFolder);
@@ -586,9 +498,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             var uploadBytes = filesToUpload.Sum(f => f.Size);
             var downloadBytes = filesToDownload.Sum(f => f.Size);
 
-            // Log file counts for debugging
             await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Sync summary: {filesToDownload.Count} to download, {filesToUpload.Count} to upload, {filesToDelete.Count} to delete", cancellationToken);
-            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Files to download: {string.Join(", ", filesToDownload.Select(f => f.Path))}", cancellationToken);
 
             // Check for duplicates in download list
             var duplicateDownloads = filesToDownload.GroupBy(f => f.Path).Where(g => g.Count() > 1).ToList();
@@ -974,6 +884,37 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             Interlocked.Exchange(ref _syncInProgress, 0);
         }
     }
+
+    private async Task<List<FileMetadata>> GetAllLocalFiles(string accountId, IReadOnlyList<string> selectedFolders, AccountInfo account)
+    {
+        var allLocalFiles = new List<FileMetadata>();
+        foreach (var folder in selectedFolders)
+        {
+            if (string.IsNullOrEmpty(folder))
+                continue;
+            var localFolderPath = Path.Combine(account.LocalSyncPath, folder.TrimStart('/'));
+            var localFiles = await _localFileScanner.ScanFolderAsync(
+                accountId,
+                localFolderPath,
+                folder,
+                _syncCancellation?.Token ?? CancellationToken.None);
+            if (localFiles?.Count > 0)
+            {
+                allLocalFiles.AddRange(localFiles);
+            }
+        }
+
+        return allLocalFiles;
+    }
+
+    private void ResetBeforeRunning()
+    {
+        _lastProgressUpdate = DateTime.UtcNow;
+        _lastCompletedBytes = 0;
+        _transferHistory.Clear();
+    }
+
+    private bool SyncIsAlreadyRunning() => Interlocked.CompareExchange(ref _syncInProgress, 1, 0) != 0;
 
     private async Task FinalizeSyncSessionAsync(string? sessionId, int uploadCount, int downloadCount, int deleteCount, int conflictCount, long completedBytes, AccountInfo account, CancellationToken cancellationToken)
     {
