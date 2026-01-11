@@ -19,11 +19,6 @@ public sealed class SyncDbContext : DbContext
     public DbSet<SyncConfigurationEntity> SyncConfigurations { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the sync states table.
-    /// </summary>
-    public DbSet<SyncStateEntity> SyncStates { get; set; } = null!;
-
-    /// <summary>
     /// Gets or sets the file metadata table.
     /// </summary>
     public DbSet<FileMetadataEntity> FileMetadata { get; set; } = null!;
@@ -71,19 +66,6 @@ public sealed class SyncDbContext : DbContext
             entity.Property(e => e.AccountId).IsRequired();
             entity.Property(e => e.FolderPath).IsRequired();
             entity.HasIndex(e => new { e.AccountId, e.FolderPath });
-
-            // Foreign key relationship with cascade delete
-            entity.HasOne<AccountEntity>()
-                .WithMany()
-                .HasForeignKey(e => e.AccountId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // Configure SyncStateEntity
-        modelBuilder.Entity<SyncStateEntity>(entity =>
-        {
-            entity.HasKey(e => e.AccountId);
-            entity.Property(e => e.AccountId).IsRequired();
 
             // Foreign key relationship with cascade delete
             entity.HasOne<AccountEntity>()

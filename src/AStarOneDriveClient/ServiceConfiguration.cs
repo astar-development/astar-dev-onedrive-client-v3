@@ -34,7 +34,6 @@ public static class ServiceConfiguration
         // Repositories
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ISyncConfigurationRepository, SyncConfigurationRepository>();
-        services.AddScoped<ISyncStateRepository, SyncStateRepository>();
         services.AddScoped<IFileMetadataRepository, FileMetadataRepository>();
         services.AddScoped<ISyncConflictRepository, SyncConflictRepository>();
         services.AddScoped<ISyncSessionLogRepository, SyncSessionLogRepository>();

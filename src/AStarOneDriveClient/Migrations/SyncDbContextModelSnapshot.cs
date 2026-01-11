@@ -15,7 +15,7 @@ namespace AStarOneDriveClient.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.0");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.1");
 
             modelBuilder.Entity("AStarOneDriveClient.Data.Entities.AccountEntity", b =>
                 {
@@ -305,49 +305,6 @@ namespace AStarOneDriveClient.Migrations
                     b.ToTable("SyncSessionLogs");
                 });
 
-            modelBuilder.Entity("AStarOneDriveClient.Data.Entities.SyncStateEntity", b =>
-                {
-                    b.Property<string>("AccountId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<long>("CompletedBytes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("CompletedFiles")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("ConflictsDetected")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("EstimatedSecondsRemaining")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("FilesDownloading")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("FilesUploading")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime?>("LastUpdateUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<double>("MegabytesPerSecond")
-                        .HasColumnType("REAL");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("TotalBytes")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("TotalFiles")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("AccountId");
-
-                    b.ToTable("SyncStates");
-                });
-
             modelBuilder.Entity("AStarOneDriveClient.Data.Entities.WindowPreferencesEntity", b =>
                 {
                     b.Property<int>("Id")
@@ -405,15 +362,6 @@ namespace AStarOneDriveClient.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
-                });
-
-            modelBuilder.Entity("AStarOneDriveClient.Data.Entities.SyncStateEntity", b =>
-                {
-                    b.HasOne("AStarOneDriveClient.Data.Entities.AccountEntity", null)
-                        .WithMany()
-                        .HasForeignKey("AccountId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

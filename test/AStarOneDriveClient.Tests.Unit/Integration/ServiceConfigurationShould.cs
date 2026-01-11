@@ -37,17 +37,6 @@ public class ServiceConfigurationShould
     }
 
     [Fact]
-    public void ResolveSyncStateRepositorySuccessfully()
-    {
-        using var serviceProvider = ServiceConfiguration.ConfigureServices();
-
-        var repository = serviceProvider.GetService<ISyncStateRepository>();
-
-        repository.ShouldNotBeNull();
-        repository.ShouldBeOfType<SyncStateRepository>();
-    }
-
-    [Fact]
     public void ResolveFileMetadataRepositorySuccessfully()
     {
         using var serviceProvider = ServiceConfiguration.ConfigureServices();
