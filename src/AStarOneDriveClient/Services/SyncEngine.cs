@@ -95,7 +95,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
         // Prevent concurrent syncs using Interlocked for thread-safety
         if (Interlocked.CompareExchange(ref _syncInProgress, 1, 0) != 0)
         {
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Sync already in progress for account {accountId}, ignoring duplicate request");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Sync already in progress for account {accountId}, ignoring duplicate request", cancellationToken);
+            await DebugLog.ExitAsync("SyncEngine.StartSyncAsync", cancellationToken);
             return;
         }
 
@@ -181,53 +182,54 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
             // Handle duplicate records (data corruption from previous bugs)
             // Group by Path and keep only the most relevant record
-            var existingFilesDict = existingFiles
-                .GroupBy(f => f.Path ?? "")
-                .Select(g =>
+            var existingFilesList = new List<FileMetadata>();
+            foreach (var g in existingFiles.GroupBy(f => f.Path ?? ""))
+            {
+                if (g.Count() > 1)
                 {
-                    if (g.Count() > 1)
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"WARNING: Found {g.Count()} duplicate records for path {g.Key}", cancellationToken);
+
+                    // Keep the record with the best data:
+                    // 1. Prefer Synced status over others
+                    // 2. Prefer records with OneDrive ID
+                    // 3. Prefer records with CTag/ETag
+                    // 4. Most recent LastModifiedUtc
+                    var best = g
+                        .OrderByDescending(f => f.SyncStatus == FileSyncStatus.Synced)
+                        .ThenByDescending(f => !string.IsNullOrEmpty(f.Id))
+                        .ThenByDescending(f => !string.IsNullOrEmpty(f.CTag))
+                        .ThenByDescending(f => f.LastModifiedUtc)
+                        .First();
+
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Keeping record with ID={best.Id}, Status={best.SyncStatus}, CTag={best.CTag}", cancellationToken);
+
+                    // Delete the duplicate records from database
+                    foreach (var duplicate in g.Where(f => f.Id != best.Id))
                     {
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] WARNING: Found {g.Count()} duplicate records for path {g.Key}");
-
-                        // Keep the record with the best data:
-                        // 1. Prefer Synced status over others
-                        // 2. Prefer records with OneDrive ID
-                        // 3. Prefer records with CTag/ETag
-                        // 4. Most recent LastModifiedUtc
-                        var best = g
-                            .OrderByDescending(f => f.SyncStatus == FileSyncStatus.Synced)
-                            .ThenByDescending(f => !string.IsNullOrEmpty(f.Id))
-                            .ThenByDescending(f => !string.IsNullOrEmpty(f.CTag))
-                            .ThenByDescending(f => f.LastModifiedUtc)
-                            .First();
-
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] Keeping record with ID={best.Id}, Status={best.SyncStatus}, CTag={best.CTag}");
-
-                        // Delete the duplicate records from database
-                        foreach (var duplicate in g.Where(f => f.Id != best.Id))
+                        try
                         {
-                            try
+                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Deleting duplicate record with ID={duplicate.Id}", cancellationToken);
+                            var dupId = duplicate.Id ?? "";
+                            if (!string.IsNullOrEmpty(dupId))
                             {
-                                System.Diagnostics.Debug.WriteLine($"[SyncEngine] Deleting duplicate record with ID={duplicate.Id}");
-                                var dupId = duplicate.Id ?? "";
-                                if (!string.IsNullOrEmpty(dupId))
-                                {
-                                    _fileMetadataRepository.DeleteAsync(dupId, _syncCancellation.Token).GetAwaiter().GetResult();
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"[SyncEngine] Failed to delete duplicate: {ex.Message}");
+                                _fileMetadataRepository.DeleteAsync(dupId, _syncCancellation.Token).GetAwaiter().GetResult();
                             }
                         }
-
-                        return best;
+                        catch (Exception ex)
+                        {
+                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Failed to delete duplicate: {ex.Message}", cancellationToken);
+                        }
                     }
 
-                    return g.First();
-                })
-                .Where(f => f != null)
-                .ToDictionary(f => f!.Path ?? "", f => f);
+                    existingFilesList.Add(best);
+                }
+                else
+                {
+                    existingFilesList.Add(g.First());
+                }
+            }
+
+            var existingFilesDict = existingFilesList.ToDictionary(f => f.Path ?? "", f => f);
 
             // Detect remote changes in selected folders FIRST (before deciding what to upload)
             var allRemoteFiles = new List<FileMetadata>();
@@ -243,22 +245,22 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     folder,
                     previousDeltaLink: null,
                     _syncCancellation.Token);
-                System.Diagnostics.Debug.WriteLine($"[SyncEngine] Folder '{folder}' returned {remoteFiles?.Count ?? 0} remote files");
+                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Folder '{folder}' returned {remoteFiles?.Count ?? 0} remote files", cancellationToken);
                 if (remoteFiles?.Count > 0)
                 {
                     allRemoteFiles.AddRange(remoteFiles);
                 }
             }
 
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files before deduplication: {allRemoteFiles.Count}");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Total remote files before deduplication: {allRemoteFiles.Count}", cancellationToken);
 
             // Deduplicate remote files by Path (in case overlapping folder selections return same files)
             allRemoteFiles = [.. allRemoteFiles
                 .GroupBy(f => f.Path ?? "")
                 .Select(g => g.First())];
 
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Total remote files after deduplication: {allRemoteFiles.Count}");
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Remote file paths: {string.Join(", ", allRemoteFiles.Select(f => f.Path))}");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Total remote files after deduplication: {allRemoteFiles.Count}", cancellationToken);
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Remote file paths: {string.Join(", ", allRemoteFiles.Select(f => f.Path))}", cancellationToken);
 
             // Create dictionaries for fast lookup
             var remoteFilesDict = allRemoteFiles.ToDictionary(f => f.Path ?? "", f => f);
@@ -275,7 +277,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     // Case 1: File has pending upload or failed status - needs (re)upload
                     if (existingFile.SyncStatus is FileSyncStatus.PendingUpload or FileSyncStatus.Failed)
                     {
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] File needs upload (status={existingFile.SyncStatus}): {localFile.Name}");
+                        await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File needs upload (status={existingFile.SyncStatus}): {localFile.Name}", cancellationToken);
                         // Use existing DB record (preserves ID and status) but update with current local file info
                         var fileToUpload = existingFile with
                         {
@@ -298,8 +300,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                             hasChanged = existingFile.LocalHash != localFile.LocalHash;
                             if (hasChanged)
                             {
-                                System.Diagnostics.Debug.WriteLine($"[SyncEngine] File marked as changed: {localFile.Name}");
-                                System.Diagnostics.Debug.WriteLine($"  Hash changed (DB: {existingFile.LocalHash}, Local: {localFile.LocalHash})");
+                                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File marked as changed: {localFile.Name} - Hash changed (DB: {existingFile.LocalHash}, Local: {localFile.LocalHash})", cancellationToken);
                             }
                         }
                         else
@@ -307,8 +308,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                             hasChanged = existingFile.Size != localFile.Size;
                             if (hasChanged)
                             {
-                                System.Diagnostics.Debug.WriteLine($"[SyncEngine] File marked as changed: {localFile.Name}");
-                                System.Diagnostics.Debug.WriteLine($"  Size changed (DB: {existingFile.Size}, Local: {localFile.Size})");
+                                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File marked as changed: {localFile.Name} - Size changed (DB: {existingFile.Size}, Local: {localFile.Size})", cancellationToken);
                             }
                         }
 
@@ -321,7 +321,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 else if (!remoteFilesDict.ContainsKey(localFile.Path))
                 {
                     // File NOT in DB AND NOT on remote - new local file, needs upload
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] New local file to upload: {localFile.Name}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"New local file to upload: {localFile.Name}", cancellationToken);
                     filesToUpload.Add(localFile);
                 }
                 // If file NOT in DB BUT exists on remote - will be handled in conflict detection below
@@ -338,18 +338,14 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             {
                 if (existingFilesDict.TryGetValue(remoteFile.Path, out var existingFile))
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Found file in DB: {remoteFile.Path}, DB Status={existingFile.SyncStatus}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Found file in DB: {remoteFile.Path}, DB Status={existingFile.SyncStatus}", cancellationToken);
                     // File exists in DB - check if remote changed
                     var timeDiff = Math.Abs((existingFile.LastModifiedUtc - remoteFile.LastModifiedUtc).TotalSeconds);
                     var remoteHasChanged = (!string.IsNullOrWhiteSpace(existingFile.CTag) ||
                                          timeDiff > 3600.0 ||
                                          existingFile.Size != remoteFile.Size) && (existingFile.CTag != remoteFile.CTag);
 
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Remote file check: {remoteFile.Path}");
-                    System.Diagnostics.Debug.WriteLine($"  DB CTag={existingFile.CTag}, Remote CTag={remoteFile.CTag}");
-                    System.Diagnostics.Debug.WriteLine($"  DB Time={existingFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Remote Time={remoteFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Diff={timeDiff:F1}s");
-                    System.Diagnostics.Debug.WriteLine($"  DB Size={existingFile.Size}, Remote Size={remoteFile.Size}");
-                    System.Diagnostics.Debug.WriteLine($"  RemoteHasChanged={remoteHasChanged}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Remote file check: {remoteFile.Path} - DB CTag={existingFile.CTag}, Remote CTag={remoteFile.CTag}, DB Time={existingFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Remote Time={remoteFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Diff={timeDiff:F1}s, DB Size={existingFile.Size}, Remote Size={remoteFile.Size}, RemoteHasChanged={remoteHasChanged}", cancellationToken);
 
                     if (remoteHasChanged)
                     {
@@ -390,7 +386,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                             }
 
                             conflictPaths.Add(remoteFile.Path);
-                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] CONFLICT detected for {remoteFile.Path}: local and remote both changed");
+                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"CONFLICT detected for {remoteFile.Path}: local and remote both changed", cancellationToken);
 
                             // Log conflict detection if detailed logging is enabled
                             if (_currentSessionId is not null)
@@ -423,7 +419,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] File NOT in DB: {remoteFile.Path} - first sync or new file");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File NOT in DB: {remoteFile.Path} - first sync or new file", cancellationToken);
                     // No DB record - first sync or new file
                     if (localFilesDict.TryGetValue(remoteFile.Path, out var localFile))
                     {
@@ -432,15 +428,12 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         // Use 60 second tolerance - OneDrive may round timestamps to nearest minute
                         var filesMatch = localFile.Size == remoteFile.Size && timeDiff <= 60.0;
 
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] First sync compare: {remoteFile.Path}");
-                        System.Diagnostics.Debug.WriteLine($"  Local:  Size={localFile.Size}, Time={localFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}");
-                        System.Diagnostics.Debug.WriteLine($"  Remote: Size={remoteFile.Size}, Time={remoteFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}");
-                        System.Diagnostics.Debug.WriteLine($"  TimeDiff={timeDiff:F1}s, Match={filesMatch}");
+                        await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"First sync compare: {remoteFile.Path} - Local: Size={localFile.Size}, Time={localFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Remote: Size={remoteFile.Size}, Time={remoteFile.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, TimeDiff={timeDiff:F1}s, Match={filesMatch}", cancellationToken);
 
                         if (filesMatch)
                         {
                             // Files match - just record in DB, no upload/download needed
-                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] File exists both places and matches: {remoteFile.Path} - recording in DB");
+                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File exists both places and matches: {remoteFile.Path} - recording in DB", cancellationToken);
                             var matchedFile = localFile with
                             {
                                 Id = remoteFile.Id,
@@ -454,7 +447,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         else
                         {
                             // Files differ - CONFLICT on first sync!
-                            System.Diagnostics.Debug.WriteLine($"[SyncEngine] First sync CONFLICT: {remoteFile.Path} - files differ (TimeDiff={timeDiff:F1}s, SizeMatch={localFile.Size == remoteFile.Size})");
+                            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"First sync CONFLICT: {remoteFile.Path} - files differ (TimeDiff={timeDiff:F1}s, SizeMatch={localFile.Size == remoteFile.Size})", cancellationToken);
                             var conflict = new SyncConflict(
                                 Id: Guid.NewGuid().ToString(),
                                 AccountId: accountId,
@@ -498,7 +491,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         var localFilePath = Path.Combine(account.LocalSyncPath, remoteFile.Path.TrimStart('/'));
                         var fileWithLocalPath = remoteFile with { LocalPath = localFilePath };
                         filesToDownload.Add(fileWithLocalPath);
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] New remote file to download: {remoteFile.Path}");
+                        await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"New remote file to download: {remoteFile.Path}", cancellationToken);
                     }
                 }
             }
@@ -517,7 +510,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             {
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] File deleted from OneDrive: {file.Path} - deleting local copy at {file.LocalPath}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File deleted from OneDrive: {file.Path} - deleting local copy at {file.LocalPath}", cancellationToken);
                     if (File.Exists(file.LocalPath))
                     {
                         File.Delete(file.LocalPath);
@@ -527,7 +520,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Failed to delete local file {file.Path}: {ex.Message}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Failed to delete local file {file.Path}: {ex.Message}", cancellationToken);
                     // Continue with other deletions even if one fails
                 }
             }
@@ -546,24 +539,24 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                            !string.IsNullOrEmpty(f.Id))
                 .ToList();
 
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Local deletion detection: {deletedLocally.Count} files to delete from OneDrive.");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Local deletion detection: {deletedLocally.Count} files to delete from OneDrive.", cancellationToken);
             foreach (var file in deletedLocally)
             {
-                System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Candidate for remote deletion: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}, ExistsLocally={File.Exists(file.LocalPath)}, ExistsRemotely={remotePathsSet.Contains(file.Path)}");
+                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Candidate for remote deletion: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}, ExistsLocally={File.Exists(file.LocalPath)}, ExistsRemotely={remotePathsSet.Contains(file.Path)}", cancellationToken);
             }
 
             foreach (var file in deletedLocally)
             {
                 try
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Deleting from OneDrive: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Deleting from OneDrive: Path={file.Path}, Id={file.Id}, SyncStatus={file.SyncStatus}", cancellationToken);
                     await _graphApiClient.DeleteFileAsync(accountId, file.Id, cancellationToken);
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Deleted from OneDrive: Path={file.Path}, Id={file.Id}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Deleted from OneDrive: Path={file.Path}, Id={file.Id}", cancellationToken);
                     await _fileMetadataRepository.DeleteAsync(file.Id, cancellationToken);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine][DIAG] Failed to delete from OneDrive {file.Path}: {ex.Message}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Failed to delete from OneDrive {file.Path}: {ex.Message}", cancellationToken);
                     // Continue with other deletions even if one fails
                 }
             }
@@ -594,22 +587,22 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             var downloadBytes = filesToDownload.Sum(f => f.Size);
 
             // Log file counts for debugging
-            System.Diagnostics.Debug.WriteLine($"Sync summary: {filesToDownload.Count} to download, {filesToUpload.Count} to upload, {filesToDelete.Count} to delete");
-            System.Diagnostics.Debug.WriteLine($"[SyncEngine] Files to download: {string.Join(", ", filesToDownload.Select(f => f.Path))}");
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Sync summary: {filesToDownload.Count} to download, {filesToUpload.Count} to upload, {filesToDelete.Count} to delete", cancellationToken);
+            await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Files to download: {string.Join(", ", filesToDownload.Select(f => f.Path))}", cancellationToken);
 
             // Check for duplicates in download list
             var duplicateDownloads = filesToDownload.GroupBy(f => f.Path).Where(g => g.Count() > 1).ToList();
             if (duplicateDownloads.Count > 0)
             {
-                System.Diagnostics.Debug.WriteLine($"[SyncEngine] WARNING: Found {duplicateDownloads.Count} duplicate paths in download list!");
+                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"WARNING: Found {duplicateDownloads.Count} duplicate paths in download list!", cancellationToken);
                 foreach (var dup in duplicateDownloads)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine]   Duplicate: {dup.Key} appears {dup.Count()} times");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"  Duplicate: {dup.Key} appears {dup.Count()} times", cancellationToken);
                 }
 
                 // Deduplicate: Keep first occurrence of each path
                 filesToDownload = [.. filesToDownload.GroupBy(f => f.Path).Select(g => g.First())];
-                System.Diagnostics.Debug.WriteLine($"[SyncEngine] After deduplication: {filesToDownload.Count} files to download");
+                await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"After deduplication: {filesToDownload.Count} files to download", cancellationToken);
 
                 // Recalculate totals after deduplication
                 totalFiles = filesToUpload.Count + filesToDownload.Count;
@@ -644,7 +637,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                          existingFile.SyncStatus == FileSyncStatus.PendingUpload ||
                          existingFile.SyncStatus == FileSyncStatus.Failed);
 
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Uploading {file.Name}: Path={file.Path}, IsExisting={isExistingFile}, LocalPath={file.LocalPath}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Uploading {file.Name}: Path={file.Path}, IsExisting={isExistingFile}, LocalPath={file.LocalPath}", cancellationToken);
 
                     // Save file to database BEFORE upload starts (with PendingUpload status)
                     // This prevents the file from being deleted if sync is cancelled mid-upload
@@ -656,7 +649,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                             SyncStatus = FileSyncStatus.PendingUpload
                         };
                         await _fileMetadataRepository.AddAsync(pendingFile, cancellationToken);
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] Added pending upload record to database: {file.Name}");
+                        await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Added pending upload record to database: {file.Name}", cancellationToken);
                     }
 
                     // Log file operation if detailed logging is enabled
@@ -703,8 +696,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     if (uploadedItem.LastModifiedDateTime.HasValue && File.Exists(file.LocalPath))
                     {
                         File.SetLastWriteTimeUtc(file.LocalPath, uploadedItem.LastModifiedDateTime.Value.UtcDateTime);
-                        System.Diagnostics.Debug.WriteLine($"[SyncEngine] Synchronized local timestamp to OneDrive: {file.Name}, " +
-                            $"OldTime={file.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, NewTime={uploadedItem.LastModifiedDateTime.Value.UtcDateTime:yyyy-MM-dd HH:mm:ss}");
+                        await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Synchronized local timestamp to OneDrive: {file.Name}, OldTime={file.LastModifiedUtc:yyyy-MM-dd HH:mm:ss}, NewTime={uploadedItem.LastModifiedDateTime.Value.UtcDateTime:yyyy-MM-dd HH:mm:ss}", cancellationToken);
                     }
 
                     // Use OneDrive's timestamp in database to match the file system
@@ -742,7 +734,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         };
                     }
 
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Upload successful: {file.Name}, OneDrive ID={uploadedFile.Id}, CTag={uploadedFile.CTag}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Upload successful: {file.Name}, OneDrive ID={uploadedFile.Id}, CTag={uploadedFile.CTag}", cancellationToken);
 
                     // Save to database - always UPDATE because we either:
                     // 1. Saved as PendingUpload before upload started, OR
@@ -759,7 +751,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"[SyncEngine] Upload failed for {file.Name}: {ex.Message}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Upload failed for {file.Name}: {ex.Message}", cancellationToken);
 
                     // Mark file as failed in database
                     var failedFile = file with
@@ -815,7 +807,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 {
                     _syncCancellation.Token.ThrowIfCancellationRequested();
 
-                    System.Diagnostics.Debug.WriteLine($"Starting download: {file.Name} (ID: {file.Id}) to {file.LocalPath}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Starting download: {file.Name} (ID: {file.Id}) to {file.LocalPath}", cancellationToken);
                     await DebugLog.InfoAsync("SyncEngine.DownloadFile", $"Starting download: {file.Name} (ID: {file.Id}) to {file.LocalPath}", _syncCancellation.Token);
 
                     // Create directory if it doesn't exist
@@ -851,13 +843,13 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     // Download file from OneDrive using Graph API
                     await _graphApiClient.DownloadFileAsync(accountId, file.Id, file.LocalPath, _syncCancellation.Token);
 
-                    System.Diagnostics.Debug.WriteLine($"Download complete: {file.Name}, computing hash...");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Download complete: {file.Name}, computing hash...", cancellationToken);
                     await DebugLog.InfoAsync("SyncEngine.DownloadFile", $"Download complete: {file.Name}, computing hash...", _syncCancellation.Token);
 
                     // Compute hash of downloaded file
                     var downloadedHash = await _localFileScanner.ComputeFileHashAsync(file.LocalPath, _syncCancellation.Token);
 
-                    System.Diagnostics.Debug.WriteLine($"Hash computed for {file.Name}: {downloadedHash}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Hash computed for {file.Name}: {downloadedHash}", cancellationToken);
 
                     // Update file metadata with downloaded status
                     var downloadedFile = file with
@@ -899,7 +891,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         throw; // Re-throw to trigger outer catch handler
                     }
 
-                    System.Diagnostics.Debug.WriteLine($"Successfully synced: {file.Name}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Successfully synced: {file.Name}", cancellationToken);
 
                     Interlocked.Increment(ref completedFiles);
                     Interlocked.Add(ref completedBytes, file.Size);
@@ -910,8 +902,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Debug.WriteLine($"ERROR downloading {file.Name}: {ex.GetType().Name} - {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"Stack trace: {ex.StackTrace}");
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"ERROR downloading {file.Name}: {ex.GetType().Name} - {ex.Message}", cancellationToken);
+                    await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"Stack trace: {ex.StackTrace}", cancellationToken);
                     await DebugLog.ErrorAsync("SyncEngine.DownloadFile", $"ERROR downloading {file.Name}: {ex.Message}", ex, _syncCancellation.Token);
 
                     // Log download failure and mark file as failed

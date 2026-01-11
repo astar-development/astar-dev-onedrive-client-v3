@@ -1,10 +1,12 @@
 {
     "cSpell.words": [
         "appsettings",
+        "Avalonia",
         "avares",
         "DPAPI",
         "libsecret",
         "Msal",
-        "onedrive"
+        "onedrive",
+        "Testably"
     ]
 }
