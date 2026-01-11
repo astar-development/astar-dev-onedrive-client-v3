@@ -40,4 +40,78 @@ public class FileOperationLogShould
         fileOperationLog.LastModifiedUtc.ShouldBe(lastModifiedUtc);
         fileOperationLog.Reason.ShouldBe(reason);
     }
+
+    [Fact]
+    public void CreateDownloadLogCorrectly()
+    {
+        var accountId = "account-id";
+        var sessionId = "session-id";
+        var filePath = "/path/to/file.txt";
+        var localPath = "/onedrive/path/to/file.txt";
+        var oneDriveId = "onedrive-item-id";
+        var operationType = FileOperation.Download;
+        var localHash = "local-file-hash";
+        var fileSize = 2048L;
+        var lastModifiedUtc = DateTime.UtcNow.AddSeconds(-30);
+        var remoteLastModifiedUtc = DateTime.UtcNow;
+        var reason = $"Conflict: Both local and remote changed. Local modified: {lastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Remote modified: {remoteLastModifiedUtc:yyyy-MM-dd HH:mm:ss}";
+
+        var fileOperationLog = FileOperationLog.CreateDownloadLog(
+            sessionId,
+            accountId,
+            filePath,
+            localPath,
+            oneDriveId,
+            localHash,
+            fileSize,
+            lastModifiedUtc,
+            reason);
+
+        fileOperationLog.Id.ShouldNotBeNull();
+        fileOperationLog.AccountId.ShouldBe(accountId);
+        fileOperationLog.SyncSessionId.ShouldBe(sessionId);
+        fileOperationLog.FilePath.ShouldBe(filePath);
+        fileOperationLog.Operation.ShouldBe(operationType);
+        fileOperationLog.FilePath.ShouldBe(filePath);
+        fileOperationLog.FileSize.ShouldBe(fileSize);
+        fileOperationLog.LastModifiedUtc.ShouldBe(lastModifiedUtc);
+        fileOperationLog.Reason.ShouldBe(reason);
+    }
+
+    [Fact]
+    public void CreateUploadLogCorrectly()
+    {
+        var accountId = "account-id";
+        var sessionId = "session-id";
+        var filePath = "/path/to/file.txt";
+        var localPath = "/onedrive/path/to/file.txt";
+        var oneDriveId = "onedrive-item-id";
+        var operationType = FileOperation.Upload;
+        var localHash = "local-file-hash";
+        var fileSize = 2048L;
+        var lastModifiedUtc = DateTime.UtcNow.AddSeconds(-30);
+        var remoteLastModifiedUtc = DateTime.UtcNow;
+        var reason = $"Conflict: Both local and remote changed. Local modified: {lastModifiedUtc:yyyy-MM-dd HH:mm:ss}, Remote modified: {remoteLastModifiedUtc:yyyy-MM-dd HH:mm:ss}";
+
+        var fileOperationLog = FileOperationLog.CreateUploadLog(
+            sessionId,
+            accountId,
+            filePath,
+            localPath,
+            oneDriveId,
+            localHash,
+            fileSize,
+            lastModifiedUtc,
+            reason);
+
+        fileOperationLog.Id.ShouldNotBeNull();
+        fileOperationLog.AccountId.ShouldBe(accountId);
+        fileOperationLog.SyncSessionId.ShouldBe(sessionId);
+        fileOperationLog.FilePath.ShouldBe(filePath);
+        fileOperationLog.Operation.ShouldBe(operationType);
+        fileOperationLog.FilePath.ShouldBe(filePath);
+        fileOperationLog.FileSize.ShouldBe(fileSize);
+        fileOperationLog.LastModifiedUtc.ShouldBe(lastModifiedUtc);
+        fileOperationLog.Reason.ShouldBe(reason);
+    }
 }

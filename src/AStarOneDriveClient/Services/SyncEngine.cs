@@ -83,7 +83,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
             await DebugLog.EntryAsync("SyncEngine.StartSyncAsync", cancellationToken);
 
-            ReportProgress(accountId, SyncStatus.Running, 0, 0, 0, 0);
+            ReportProgress(accountId, SyncStatus.Running);
 
             var selectedFolders = await _syncConfigurationRepository.GetSelectedFoldersAsync(accountId, cancellationToken);
 
@@ -91,14 +91,14 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
             if (selectedFolders.Count == 0)
             {
-                ReportProgress(accountId, SyncStatus.Idle, 0, 0, 0, 0);
+                ReportProgress(accountId, SyncStatus.Idle);
                 return;
             }
 
             var account = await _accountRepository.GetByIdAsync(accountId, cancellationToken);
             if (account is null)
             {
-                ReportProgress(accountId, SyncStatus.Failed, 0, 0, 0, 0);
+                ReportProgress(accountId, SyncStatus.Failed);
                 return;
             }
 
@@ -388,7 +388,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             var maxParallelDownloads = Math.Max(1, account.MaxParallelUpDownloads);
             using var downloadSemaphore = new SemaphoreSlim(maxParallelDownloads, maxParallelDownloads);
             var activeDownloads = 0;
-            (activeDownloads, completedBytes, completedFiles, var downloadTasks) = GenerateDownloadTasks(accountId, existingFilesDict, filesToDownload, conflictCount, totalFiles, totalBytes, uploadBytes, downloadBytes, completedFiles, completedBytes, downloadSemaphore, activeDownloads, cancellationToken);
+            (activeDownloads, completedBytes, completedFiles, var downloadTasks) = CreateDownloadTasks(accountId, existingFilesDict, filesToDownload, conflictCount, totalFiles, totalBytes, uploadBytes, downloadBytes, completedFiles, completedBytes, downloadSemaphore, activeDownloads, cancellationToken);
 
             await Task.WhenAll(downloadTasks);
 
@@ -404,14 +404,14 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
         catch (OperationCanceledException)
         {
             await HandleSyncCancelledAsync(_currentSessionId, cancellationToken);
-            ReportProgress(accountId, SyncStatus.Paused, 0, 0, 0, 0);
+            ReportProgress(accountId, SyncStatus.Paused);
             throw;
         }
         catch (Exception ex)
         {
             await DebugLog.ErrorAsync("SyncEngine.StartSyncAsync", $"Sync failed: {ex.Message}", ex, cancellationToken);
             await HandleSyncFailedAsync(_currentSessionId, cancellationToken);
-            ReportProgress(accountId, SyncStatus.Failed, 0, 0, 0, 0);
+            ReportProgress(accountId, SyncStatus.Failed);
             throw;
         }
         finally
@@ -429,7 +429,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
         }
     }
 
-    private (int activeDownloads, long completedBytes, int completedFiles, List<Task> downloadTasks) GenerateDownloadTasks(string accountId, Dictionary<string, FileMetadata> existingFilesDict, List<FileMetadata> filesToDownload, int conflictCount, int totalFiles, long totalBytes, long uploadBytes, long downloadBytes, int completedFiles, long completedBytes, SemaphoreSlim downloadSemaphore, int activeDownloads, CancellationToken cancellationToken)
+    private (int activeDownloads, long completedBytes, int completedFiles, List<Task> downloadTasks) CreateDownloadTasks(string accountId, Dictionary<string, FileMetadata> existingFilesDict, List<FileMetadata> filesToDownload, int conflictCount, int totalFiles, long totalBytes, long uploadBytes, long downloadBytes, int completedFiles, long completedBytes, SemaphoreSlim downloadSemaphore, int activeDownloads, CancellationToken cancellationToken)
     {
         var downloadTasks = filesToDownload.Select(async file =>
         {
@@ -454,20 +454,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 {
                     var existingLocal = existingFilesDict.TryGetValue(file.Path, out var existingFile);
                     var reason = existingLocal ? "Remote file changed" : "New remote file";
-                    var operationLog = new FileOperationLog(
-                        Id: Guid.CreateVersion7().ToString(),
-                        SyncSessionId: _currentSessionId,
-                        AccountId: accountId,
-                        Timestamp: DateTime.UtcNow,
-                        Operation: FileOperation.Download,
-                        FilePath: file.Path,
-                        LocalPath: file.LocalPath,
-                        OneDriveId: file.Id,
-                        FileSize: file.Size,
-                        LocalHash: existingFile?.LocalHash,
-                        RemoteHash: null,
-                        LastModifiedUtc: file.LastModifiedUtc,
-                        Reason: reason);
+                    var operationLog = FileOperationLog.CreateDownloadLog(
+                        syncSessionId: _currentSessionId, accountId: accountId, filePath: file.Path, localPath: file.LocalPath, oneDriveId: file.Id,
+                        localHash: existingFile?.LocalHash, fileSize: file.Size, lastModifiedUtc: file.LastModifiedUtc, reason: reason);
                     await _fileOperationLogRepository.AddAsync(operationLog, cancellationToken);
                 }
 
@@ -601,20 +590,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 if (_currentSessionId is not null)
                 {
                     var reason = isExistingFile ? "File changed locally" : "New file";
-                    var operationLog = new FileOperationLog(
-                        Id: Guid.CreateVersion7().ToString(),
-                        SyncSessionId: _currentSessionId,
-                        AccountId: accountId,
-                        Timestamp: DateTime.UtcNow,
-                        Operation: FileOperation.Upload,
-                        FilePath: file.Path,
-                        LocalPath: file.LocalPath,
-                        OneDriveId: existingFile?.Id,
-                        FileSize: file.Size,
-                        LocalHash: file.LocalHash,
-                        RemoteHash: existingFile?.LocalHash,
-                        LastModifiedUtc: file.LastModifiedUtc,
-                        Reason: reason);
+                    var operationLog = FileOperationLog.CreateUploadLog(syncSessionId: _currentSessionId, accountId: accountId, filePath: file.Path, localPath: file.LocalPath, oneDriveId: existingFile?.Id,
+                        localHash: existingFile?.LocalHash, fileSize: file.Size, lastModifiedUtc: file.LastModifiedUtc, reason);
                     await _fileOperationLogRepository.AddAsync(operationLog, cancellationToken);
                 }
 
@@ -647,13 +624,13 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 {
                     uploadedFile = existingFile! with
                     {
-                        Id = uploadedItem.Id ?? existingFile.Id, // Preserve ID if upload doesn't return one
+                        Id = uploadedItem.Id ?? existingFile.Id,
                         CTag = uploadedItem.CTag,
                         ETag = uploadedItem.ETag,
                         LocalPath = file.LocalPath,
                         LocalHash = file.LocalHash,
                         Size = file.Size,
-                        LastModifiedUtc = oneDriveTimestamp, // Use OneDrive's timestamp
+                        LastModifiedUtc = oneDriveTimestamp,
                         SyncStatus = FileSyncStatus.Synced,
                         LastSyncDirection = SyncDirection.Upload
                     };
@@ -665,7 +642,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         Id = uploadedItem.Id ?? throw new InvalidOperationException($"Upload succeeded but no ID returned for {file.Name}"),
                         CTag = uploadedItem.CTag,
                         ETag = uploadedItem.ETag,
-                        LastModifiedUtc = oneDriveTimestamp, // Use OneDrive's timestamp
+                        LastModifiedUtc = oneDriveTimestamp,
                         SyncStatus = FileSyncStatus.Synced,
                         LastSyncDirection = SyncDirection.Upload
                     };
@@ -704,7 +681,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                     await _fileMetadataRepository.AddAsync(failedFile, cancellationToken);
                 }
 
-                // Continue with next file (don't fail entire sync)
                 Interlocked.Increment(ref completedFiles);
                 var finalCompleted = Interlocked.CompareExchange(ref completedFiles, 0, 0);
                 var finalBytes = Interlocked.Read(ref completedBytes);
@@ -753,15 +729,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
     private static List<FileMetadata> GetFilesDeletedLocally(List<FileMetadata> allLocalFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet)
     {
-
-        // Detect files deleted locally - these should be deleted from OneDrive
-        // A file is considered "deleted locally" if:
-        // 1. It exists in DB (existingFiles)
-        // 2. It's NOT in the local scan results (deleted from disk)
-        // 3. It has been successfully synced (meaning it exists or existed on OneDrive)
-        // 4. It has a valid OneDrive ID (can't delete without ID)
-        // Note: We check SyncStatus=Synced OR remote contains it, because newly uploaded files
-        // might not appear in remote scan immediately due to OneDrive propagation delays
         return [.. allLocalFiles
             .Where(f => !localPathsSet.Contains(f.Path) &&
                        (remotePathsSet.Contains(f.Path) || f.SyncStatus == FileSyncStatus.Synced) &&
@@ -895,10 +862,10 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
     private void ReportProgress(
         string accountId,
         SyncStatus status,
-        int totalFiles,
-        int completedFiles,
-        long totalBytes,
-        long completedBytes,
+        int totalFiles = 0,
+        int completedFiles = 0,
+        long totalBytes = 0,
+        long completedBytes = 0,
         int filesDownloading = 0,
         int filesUploading = 0,
         int filesDeleted = 0,
@@ -909,9 +876,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
         var now = DateTime.UtcNow;
         var elapsedSeconds = (now - _lastProgressUpdate).TotalSeconds;
 
-        // Calculate transfer speed (MB/s)
         double megabytesPerSecond = 0;
-        if (elapsedSeconds > 0.1) // Only calculate if meaningful time has passed
+        if (elapsedSeconds > 0.1)
         {
             var bytesDelta = completedBytes - _lastCompletedBytes;
             if (bytesDelta > 0)
@@ -919,14 +885,12 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 var megabytesDelta = bytesDelta / (1024.0 * 1024.0);
                 megabytesPerSecond = megabytesDelta / elapsedSeconds;
 
-                // Add to transfer history for smoothing (keep last 10 samples)
                 _transferHistory.Add((now, completedBytes));
                 if (_transferHistory.Count > 10)
                 {
                     _transferHistory.RemoveAt(0);
                 }
 
-                // Calculate average speed from history for smoother display
                 if (_transferHistory.Count >= 2)
                 {
                     var totalElapsed = (now - _transferHistory[0].Timestamp).TotalSeconds;
@@ -942,8 +906,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             }
         }
 
-        // Calculate ETA (Estimated Time of Arrival)
-        // Use phase-specific bytes if provided (for accurate per-phase ETA)
         int? estimatedSecondsRemaining = null;
         var bytesForEta = phaseTotalBytes ?? totalBytes;
         if (megabytesPerSecond > 0.01 && completedBytes < bytesForEta)
@@ -982,16 +944,13 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             return folderPath;
         }
 
-        // Remove /drives/{id}/root: prefix
         var cleaned = MyRegex().Replace(folderPath, string.Empty);
 
-        // Remove /drive/root: prefix
         if (cleaned.StartsWith("/drive/root:", StringComparison.OrdinalIgnoreCase))
         {
             cleaned = cleaned["/drive/root:".Length..];
         }
 
-        // Ensure starts with /
         if (!string.IsNullOrEmpty(cleaned) && !cleaned.StartsWith('/'))
         {
             cleaned = "/" + cleaned;
