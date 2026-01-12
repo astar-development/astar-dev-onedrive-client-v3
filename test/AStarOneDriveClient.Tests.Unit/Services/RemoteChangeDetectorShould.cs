@@ -19,7 +19,7 @@ public class RemoteChangeDetectorShould
         _ = mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "root", Arg.Any<CancellationToken>()).Returns([file1, file2]);
         var detector = new RemoteChangeDetector(mockClient);
 
-        (IReadOnlyList<FileMetadata>? changes, string? deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
+        (IReadOnlyList<FileMetadata>? changes, var deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
 
         changes.Count.ShouldBe(2);
         changes.ShouldAllBe(c => c.AccountId == "acc1");
@@ -42,7 +42,7 @@ public class RemoteChangeDetectorShould
         _ = mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "folder1", Arg.Any<CancellationToken>()).Returns([file2]);
         var detector = new RemoteChangeDetector(mockClient);
 
-        (IReadOnlyList<FileMetadata>? changes, string? deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
+        (IReadOnlyList<FileMetadata>? changes, var deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
 
         changes.Count.ShouldBe(2);
         changes.ShouldContain(c => c.Name == "root.txt" && c.Path == "/root.txt");
@@ -94,7 +94,7 @@ public class RemoteChangeDetectorShould
         _ = mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "root", Arg.Any<CancellationToken>()).Returns([]);
         var detector = new RemoteChangeDetector(mockClient);
 
-        (IReadOnlyList<FileMetadata>? changes, string? deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
+        (IReadOnlyList<FileMetadata>? changes, var deltaLink) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
 
         changes.ShouldBeEmpty();
         _ = deltaLink.ShouldNotBeNull();
@@ -120,9 +120,9 @@ public class RemoteChangeDetectorShould
         _ = mockClient.GetDriveItemChildrenAsync(Arg.Any<string>(), "root", Arg.Any<CancellationToken>()).Returns([]);
         var detector = new RemoteChangeDetector(mockClient);
 
-        (IReadOnlyList<FileMetadata> _, string? deltaLink1) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
+        (IReadOnlyList<FileMetadata> _, var deltaLink1) = await detector.DetectChangesAsync("acc1", "/", null, TestContext.Current.CancellationToken);
         await Task.Delay(1100, TestContext.Current.CancellationToken); // Wait for second to change in timestamp
-        (IReadOnlyList<FileMetadata> _, string? deltaLink2) = await detector.DetectChangesAsync("acc1", "/", deltaLink1, TestContext.Current.CancellationToken);
+        (IReadOnlyList<FileMetadata> _, var deltaLink2) = await detector.DetectChangesAsync("acc1", "/", deltaLink1, TestContext.Current.CancellationToken);
 
         _ = deltaLink1.ShouldNotBeNull();
         _ = deltaLink2.ShouldNotBeNull();

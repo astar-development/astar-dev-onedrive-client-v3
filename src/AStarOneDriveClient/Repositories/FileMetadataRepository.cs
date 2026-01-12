@@ -152,8 +152,8 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
         _ = await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private static FileMetadata MapToModel(FileMetadataEntity entity) =>
-        new(
+    private static FileMetadata MapToModel(FileMetadataEntity entity)
+        => new(
             entity.Id,
             entity.AccountId,
             entity.Name,
@@ -168,8 +168,8 @@ public sealed class FileMetadataRepository : IFileMetadataRepository
             entity.LastSyncDirection.HasValue ? (SyncDirection)entity.LastSyncDirection.Value : null
         );
 
-    private static FileMetadataEntity MapToEntity(FileMetadata model) =>
-        new()
+    private static FileMetadataEntity MapToEntity(FileMetadata model)
+        => new()
         {
             Id = model.Id,
             AccountId = model.AccountId,

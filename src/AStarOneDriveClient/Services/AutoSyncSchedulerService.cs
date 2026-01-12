@@ -61,7 +61,7 @@ public sealed class AutoSyncSchedulerService : IAutoSyncSchedulerService
     {
         _logger.LogInformation("Stopping auto-sync scheduler");
 
-        foreach ((string? accountId, System.Timers.Timer? timer) in _timers)
+        foreach ((var accountId, System.Timers.Timer? timer) in _timers)
         {
             timer.Stop();
             timer.Dispose();

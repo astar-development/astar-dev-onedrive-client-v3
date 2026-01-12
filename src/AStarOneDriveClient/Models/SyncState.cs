@@ -36,8 +36,8 @@ public sealed record SyncState(
     DateTime? LastUpdateUtc
 )
 {
-    public static SyncState CreateInitial(string accountId) =>
-        new(
+    public static SyncState CreateInitial(string accountId)
+        => new(
             AccountId: accountId,
             Status: SyncStatus.Idle,
             TotalFiles: 0,

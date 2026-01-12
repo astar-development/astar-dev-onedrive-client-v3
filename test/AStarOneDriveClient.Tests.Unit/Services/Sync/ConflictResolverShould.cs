@@ -330,11 +330,11 @@ public sealed class ConflictResolverShould
             Arg.Any<CancellationToken>());
     }
 
-    private ConflictResolver CreateResolver() =>
-        new(_graphApiClient, _metadataRepo, _accountRepo, _conflictRepo, _localFileScanner, _logger);
+    private ConflictResolver CreateResolver()
+        => new(_graphApiClient, _metadataRepo, _accountRepo, _conflictRepo, _localFileScanner, _logger);
 
-    private static SyncConflict CreateTestConflict() =>
-        new(
+    private static SyncConflict CreateTestConflict()
+        => new(
             Id: "conflict-123",
             AccountId: "account-456",
             FilePath: "Documents/test.txt",
@@ -346,8 +346,8 @@ public sealed class ConflictResolverShould
             ResolutionStrategy: ConflictResolutionStrategy.None,
             IsResolved: false);
 
-    private static AccountInfo CreateTestAccount() =>
-        new(
+    private static AccountInfo CreateTestAccount()
+        => new(
             AccountId: "account-456",
             DisplayName: "Test User",
             LocalSyncPath: Path.Combine(Path.GetTempPath(), Guid.CreateVersion7().ToString()),
@@ -360,8 +360,8 @@ public sealed class ConflictResolverShould
             MaxItemsInBatch: 50,
             AutoSyncIntervalMinutes: null);
 
-    private static FileMetadata CreateTestMetadata(string accountId, string filePath) =>
-        new(
+    private static FileMetadata CreateTestMetadata(string accountId, string filePath)
+        => new(
             Id: "file-789",
             AccountId: accountId,
             Name: Path.GetFileName(filePath),

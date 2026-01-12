@@ -58,8 +58,8 @@ public sealed class WindowPreferencesService : IWindowPreferencesService
         _ = await _context.SaveChangesAsync(cancellationToken);
     }
 
-    private static WindowPreferences MapToModel(WindowPreferencesEntity entity) =>
-        new(
+    private static WindowPreferences MapToModel(WindowPreferencesEntity entity)
+        => new(
             entity.Id,
             entity.X,
             entity.Y,

@@ -91,7 +91,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
             .Where(tuple => tuple.Item1 && !string.IsNullOrEmpty(tuple.Item2))
             .Subscribe(tuple =>
             {
-                var (isOpen, accountId) = tuple;
+                (var isOpen, var accountId) = tuple;
                 if (SyncProgress is null || SyncProgress.AccountId != accountId)
                 {
                     SyncProgress?.Dispose();
@@ -295,13 +295,11 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
         // Wire up ResolveAllCommand to return to sync progress after resolution
         _ = conflictResolutionVm.ResolveAllCommand
             .Subscribe(_ =>
-            {
                 // Delay closing to allow user to see the status message
                 Observable.Timer(TimeSpan.FromSeconds(2))
                     .ObserveOn(RxApp.MainThreadScheduler)
                     .Subscribe(_ => CloseConflictResolutionView())
-                    .DisposeWith(_disposables);
-            })
+                    .DisposeWith(_disposables))
             .DisposeWith(_disposables);
 
         ConflictResolution = conflictResolutionVm;

@@ -12,13 +12,13 @@ public class ResultImplicitConversionShould
     public void Implicitly_convert_success_value_to_Result_ok()
     {
         // Arrange
-        int value = 42;
+        var value = 42;
 
         // Act
         Result<int, string> result = value;
 
         // Assert
-        var matched = result.Match(
+        (bool IsOk, int Value, string? Error) matched = result.Match(
             ok => (IsOk: true, Value: ok, Error: (string?)null),
             err => (IsOk: false, Value: default(int), Error: err));
 
@@ -31,13 +31,13 @@ public class ResultImplicitConversionShould
     public void Implicitly_convert_error_value_to_Result_error()
     {
         // Arrange
-        string error = "boom";
+        var error = "boom";
 
         // Act
         Result<int, string> result = error;
 
         // Assert
-        var matched = result.Match(
+        (bool IsOk, int Value, string? Error) matched = result.Match(
             ok => (IsOk: true, Value: ok, Error: (string?)null),
             err => (IsOk: false, Value: default(int), Error: err));
 

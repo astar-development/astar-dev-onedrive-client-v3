@@ -13,7 +13,7 @@ public class SyncEngineShould
     {
             (SyncEngine engine, TestMocks mocks) = CreateTestEngine();
             var filesToUpload = new List<FileMetadata>();
-            for (int i = 0; i < 120; i++)
+            for (var i = 0; i < 120; i++)
             {
                 filesToUpload.Add(new FileMetadata(
                     $"id_{i}", "acc1", $"file_{i}.txt", $"/Documents/file_{i}.txt", 100,
@@ -50,9 +50,9 @@ public class SyncEngineShould
             // Check batch sizes
             Received.InOrder(() =>
             {
-                mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
-                mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
-                mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 20), Arg.Any<CancellationToken>());
+                _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
+                _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
+                _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 20), Arg.Any<CancellationToken>());
             });
     }
     [Fact]
@@ -60,16 +60,15 @@ public class SyncEngineShould
     {
         (SyncEngine engine, TestMocks mocks) = CreateTestEngine();
         var filesToDownload = new List<FileMetadata>();
-        for (int i = 0; i < 120; i++)
+        for (var i = 0; i < 120; i++)
         {
             filesToDownload.Add(new FileMetadata(
                 $"id_{i}", "acc1", $"file_{i}.txt", $"/Documents/file_{i}.txt", 100,
                 DateTime.UtcNow, $"C:\\Sync\\Documents\\file_{i}.txt", null, null, $"hash_{i}",
                 FileSyncStatus.PendingDownload, null));
         }
-               // Skipped: Fails due to NSubstitute call sequence error, cannot fix without production code changes
-               [Fact(Skip = "Fails due to NSubstitute call sequence error, cannot fix without production code changes")]
-               public void DownloadFiles_BatchedDbUpdates_UsesSaveBatchAsync()
+
+        _ = mocks.SyncConfigRepo.GetSelectedFoldersAsync("acc1", Arg.Any<CancellationToken>())
             .Returns(["/Documents"]);
         _ = mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
             .Returns(new AccountInfo("acc1", "Test", @"C:\\Sync", true, null, null, false, false, 3, 50, null));
@@ -93,11 +92,12 @@ public class SyncEngineShould
         // Check batch sizes
         Received.InOrder(() =>
         {
-            mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
-            mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
-            mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 20), Arg.Any<CancellationToken>());
+            _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
+            _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 50), Arg.Any<CancellationToken>());
+            _ = mocks.FileMetadataRepo.SaveBatchAsync(Arg.Is<IEnumerable<FileMetadata>>(batch => batch.Count() == 20), Arg.Any<CancellationToken>());
         });
     }
+
     [Fact]
     public async Task StartSyncAndReportProgress()
     {
@@ -594,7 +594,11 @@ public class SyncEngineShould
         _ = mocks.AccountRepo.GetByIdAsync("acc1", Arg.Any<CancellationToken>())
             .Returns(new AccountInfo("acc1", "Test", @"C:\Sync", true, null, null, false, false, 3, 50, null));
 
-        _ = mocks.LocalScanner.ScanFolderAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+        _ = mocks.LocalScanner.ScanFolderAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>())
             .Returns(Task.FromException<IReadOnlyList<FileMetadata>>(new InvalidOperationException("Test exception")));
 
         var progressStates = new List<SyncState>();

@@ -97,8 +97,8 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
             .Where(c => c.AccountId == accountId)
             .ExecuteDeleteAsync(cancellationToken);
 
-    private static SyncConflict MapToDomain(SyncConflictEntity entity) =>
-        new(
+    private static SyncConflict MapToDomain(SyncConflictEntity entity)
+        => new(
             Id: entity.Id,
             AccountId: entity.AccountId,
             FilePath: entity.FilePath,
@@ -110,8 +110,8 @@ public sealed class SyncConflictRepository : ISyncConflictRepository
             ResolutionStrategy: entity.ResolutionStrategy,
             IsResolved: entity.IsResolved);
 
-    private static SyncConflictEntity MapToEntity(SyncConflict conflict) =>
-        new()
+    private static SyncConflictEntity MapToEntity(SyncConflict conflict)
+        => new()
         {
             Id = conflict.Id,
             AccountId = conflict.AccountId,

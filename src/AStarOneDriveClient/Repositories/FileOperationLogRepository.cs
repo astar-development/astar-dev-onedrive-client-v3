@@ -82,8 +82,8 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
             .ExecuteDeleteAsync(cancellationToken);
     }
 
-    private static FileOperationLog MapToModel(FileOperationLogEntity entity) =>
-        new(
+    private static FileOperationLog MapToModel(FileOperationLogEntity entity)
+        => new(
             entity.Id,
             entity.SyncSessionId,
             entity.AccountId,
@@ -98,8 +98,8 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
             entity.LastModifiedUtc,
             entity.Reason);
 
-    private static FileOperationLogEntity MapToEntity(FileOperationLog model) =>
-        new()
+    private static FileOperationLogEntity MapToEntity(FileOperationLog model)
+        => new()
         {
             Id = model.Id,
             SyncSessionId = model.SyncSessionId,

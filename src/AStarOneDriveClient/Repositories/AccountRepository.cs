@@ -86,8 +86,8 @@ public sealed class AccountRepository : IAccountRepository
         return await _context.Accounts.AnyAsync(a => a.AccountId == accountId, cancellationToken);
     }
 
-    private static AccountInfo MapToModel(AccountEntity entity) =>
-        new(
+    private static AccountInfo MapToModel(AccountEntity entity)
+        => new(
             entity.AccountId,
             entity.DisplayName,
             entity.LocalSyncPath,
@@ -101,8 +101,8 @@ public sealed class AccountRepository : IAccountRepository
             entity.AutoSyncIntervalMinutes
         );
 
-    private static AccountEntity MapToEntity(AccountInfo model) =>
-        new()
+    private static AccountEntity MapToEntity(AccountInfo model)
+        => new()
         {
             AccountId = model.AccountId,
             DisplayName = model.DisplayName,

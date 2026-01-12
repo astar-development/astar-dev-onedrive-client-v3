@@ -5,8 +5,8 @@ namespace AStarOneDriveClient.Tests.Unit.Authentication;
 
 public class AuthServiceShould
 {
-    private static AuthConfiguration CreateTestConfiguration() =>
-        new()
+    private static AuthConfiguration CreateTestConfiguration()
+        => new()
         {
             ClientId = "test-client-id",
             RedirectUri = "http://localhost",

@@ -82,8 +82,8 @@ public sealed class SyncSessionLogRepository : ISyncSessionLogRepository
             .ExecuteDeleteAsync(cancellationToken);
     }
 
-    private static SyncSessionLog MapToModel(SyncSessionLogEntity entity) =>
-        new(
+    private static SyncSessionLog MapToModel(SyncSessionLogEntity entity)
+        => new(
             entity.Id,
             entity.AccountId,
             entity.StartedUtc,
@@ -95,8 +95,8 @@ public sealed class SyncSessionLogRepository : ISyncSessionLogRepository
             entity.ConflictsDetected,
             entity.TotalBytes);
 
-    private static SyncSessionLogEntity MapToEntity(SyncSessionLog model) =>
-        new()
+    private static SyncSessionLogEntity MapToEntity(SyncSessionLog model)
+        => new()
         {
             Id = model.Id,
             AccountId = model.AccountId,

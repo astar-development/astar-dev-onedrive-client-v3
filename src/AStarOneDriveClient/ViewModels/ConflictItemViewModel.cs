@@ -66,14 +66,14 @@ public sealed class ConflictItemViewModel : ReactiveObject
     /// <summary>
     /// Gets a UI-friendly display string for local file details.
     /// </summary>
-    public string LocalDetailsDisplay =>
-        $"{LocalModifiedUtc:yyyy-MM-dd HH:mm:ss} UTC • {FormatFileSize(LocalSize)}";
+    public string LocalDetailsDisplay
+        => $"{LocalModifiedUtc:yyyy-MM-dd HH:mm:ss} UTC • {FormatFileSize(LocalSize)}";
 
     /// <summary>
     /// Gets a UI-friendly display string for remote file details.
     /// </summary>
-    public string RemoteDetailsDisplay =>
-        $"{RemoteModifiedUtc:yyyy-MM-dd HH:mm:ss} UTC • {FormatFileSize(RemoteSize)}";
+    public string RemoteDetailsDisplay
+        => $"{RemoteModifiedUtc:yyyy-MM-dd HH:mm:ss} UTC • {FormatFileSize(RemoteSize)}";
 
     /// <summary>
     /// Initializes a new instance of <see cref="ConflictItemViewModel"/> from a <see cref="SyncConflict"/>.

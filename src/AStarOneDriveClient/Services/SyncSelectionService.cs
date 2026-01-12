@@ -264,7 +264,7 @@ public sealed partial class SyncSelectionService : ISyncSelectionService
 
         // Build a normalized path-to-node map for robust matching
         var normalizedPathToNodeMap = new Dictionary<string, OneDriveFolderNode>(StringComparer.OrdinalIgnoreCase);
-        foreach (var kvp in pathToNodeMap)
+        foreach (KeyValuePair<string, OneDriveFolderNode> kvp in pathToNodeMap)
         {
             var normalized = NormalizePathForComparison(kvp.Key);
             if (!normalizedPathToNodeMap.ContainsKey(normalized))
