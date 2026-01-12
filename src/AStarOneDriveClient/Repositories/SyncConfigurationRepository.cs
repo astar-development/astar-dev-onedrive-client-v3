@@ -1,6 +1,9 @@
+using AStar.Dev.Functional.Extensions;
+using AStar.Dev.Utilities;
 using AStarOneDriveClient.Data;
 using AStarOneDriveClient.Data.Entities;
 using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace AStarOneDriveClient.Repositories;
@@ -41,7 +44,9 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
             .Distinct()
             .ToListAsync(cancellationToken);
     }
-    public async Task<AStar.Dev.Functional.Extensions.Result<IReadOnlyList<string>, AStar.Dev.Functional.Extensions.ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default)
+
+    /// <inheritdoc/>
+    public async Task<Result<IList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default)
             => await _context.SyncConfigurations
                         .Where(sc => sc.AccountId == accountId && sc.IsSelected)
                         .Select(sc => CleanUpPath(sc.FolderPath))
@@ -66,13 +71,37 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
     }
 
     /// <inheritdoc/>
-    public async Task AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
+    public async Task<SyncConfiguration> AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
+        SyncConfigurationEntity? existingEntity = await _context.SyncConfigurations
+            .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.FolderPath == configuration.FolderPath, cancellationToken);
 
+        if (existingEntity is not null)
+        {
+            return configuration;
+        }
+
+        var lastIndexOf = configuration.FolderPath.LastIndexOf('/');
+        if (lastIndexOf > 0)
+        {
+            var parentPath = configuration.FolderPath[..lastIndexOf];
+            var test =  SyncEngine.FormatScanningFolderForDisplay(parentPath)!.Replace("OneDrive: ", string.Empty);
+            SyncConfigurationEntity? parentEntity = await _context.SyncConfigurations
+                .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && (sc.FolderPath == parentPath || sc.FolderPath == test), cancellationToken);
+
+           if(parentEntity is not null)
+           {
+            var updatedPath = SyncEngine.FormatScanningFolderForDisplay(configuration.FolderPath)!.Replace("OneDrive: ", string.Empty);
+            configuration = configuration with { FolderPath = updatedPath, IsSelected = parentEntity.IsSelected };
+           }
+        }
+        
         SyncConfigurationEntity entity = MapToEntity(configuration);
         _ = _context.SyncConfigurations.Add(entity);
         _ = await _context.SaveChangesAsync(cancellationToken);
+        
+        return configuration;
     }
 
     /// <inheritdoc/>

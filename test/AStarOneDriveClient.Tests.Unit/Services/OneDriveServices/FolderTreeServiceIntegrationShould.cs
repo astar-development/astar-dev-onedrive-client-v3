@@ -59,7 +59,7 @@ public class FolderTreeServiceIntegrationShould
         }
 
         var graphApiClient = new GraphApiClient(authService);
-        var service = new FolderTreeService(graphApiClient, authService);
+        var service = new FolderTreeService(graphApiClient, authService, null!);
 
         // Act
         IReadOnlyList<OneDriveFolderNode> folders = await service.GetRootFoldersAsync(loginResult.AccountId, TestContext.Current.CancellationToken);
@@ -87,7 +87,7 @@ public class FolderTreeServiceIntegrationShould
         }
 
         var graphApiClient = new GraphApiClient(authService);
-        var service = new FolderTreeService(graphApiClient, authService);
+        var service = new FolderTreeService(graphApiClient, authService, null!);
 
         // First get root folders to find one with children
         IReadOnlyList<OneDriveFolderNode> rootFolders = await service.GetRootFoldersAsync(loginResult.AccountId, TestContext.Current.CancellationToken);
@@ -96,7 +96,7 @@ public class FolderTreeServiceIntegrationShould
         OneDriveFolderNode parentFolder = rootFolders[0];
 
         // Act
-        IReadOnlyList<OneDriveFolderNode> childFolders = await service.GetChildFoldersAsync(loginResult.AccountId, parentFolder.Id, TestContext.Current.CancellationToken);
+        IReadOnlyList<OneDriveFolderNode> childFolders = await service.GetChildFoldersAsync(loginResult.AccountId, parentFolder.Id, Arg.Any<bool?>(), TestContext.Current.CancellationToken);
 
         // Assert - may be empty if folder has no subfolders, but should succeed
         _ = childFolders.ShouldNotBeNull();
@@ -123,7 +123,7 @@ public class FolderTreeServiceIntegrationShould
         }
 
         var graphApiClient = new GraphApiClient(authService);
-        var service = new FolderTreeService(graphApiClient, authService);
+        var service = new FolderTreeService(graphApiClient, authService, null!);
 
         // Act - limit to depth of 2 to avoid long load times
         IReadOnlyList<OneDriveFolderNode> hierarchy = await service.GetFolderHierarchyAsync(loginResult.AccountId, maxDepth: 2, TestContext.Current.CancellationToken);
@@ -162,7 +162,7 @@ public class FolderTreeServiceIntegrationShould
         _ = await authService.GetAccessTokenAsync(loginResult.AccountId, TestContext.Current.CancellationToken) ?? throw new InvalidOperationException("Failed to get access token");
 
         var graphApiClient = new GraphApiClient(authService);
-        var service = new FolderTreeService(graphApiClient, authService);
+        var service = new FolderTreeService(graphApiClient, authService, null!);
 
         // Get root folders
         IReadOnlyList<OneDriveFolderNode> rootFolders = await service.GetRootFoldersAsync(loginResult.AccountId, TestContext.Current.CancellationToken);
@@ -171,7 +171,7 @@ public class FolderTreeServiceIntegrationShould
         // Act - try to get children from each root folder
         foreach (OneDriveFolderNode folder in rootFolders)
         {
-            IReadOnlyList<OneDriveFolderNode> children = await service.GetChildFoldersAsync(loginResult.AccountId, folder.Id, TestContext.Current.CancellationToken);
+            IReadOnlyList<OneDriveFolderNode> children = await service.GetChildFoldersAsync(loginResult.AccountId, folder.Id, Arg.Any<bool?>(),TestContext.Current.CancellationToken);
 
             // Assert - should not throw, even if empty
             _ = children.ShouldNotBeNull();

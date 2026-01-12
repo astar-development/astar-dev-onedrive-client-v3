@@ -215,7 +215,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             // Convert to list to ensure we work with the same object references
             var folderList = folders.ToList();
 
-            // Apply saved selections from database BEFORE adding to observable collection
+            // Apply saved selections from database BEFORE adding to observable collection - NO this relies on reference to folderList - it should return the updated list
             await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, folderList, cancellationToken);
 
             // Now add folders to UI with correct selection states already applied
@@ -255,7 +255,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             // Clear placeholder dummy child
             folder.Children.Clear();
 
-            IReadOnlyList<OneDriveFolderNode> children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, cancellationToken);
+            IReadOnlyList<OneDriveFolderNode> children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, folder.IsSelected, cancellationToken);
             foreach (OneDriveFolderNode child in children)
             {
                 folder.Children.Add(child);
