@@ -6,7 +6,7 @@ namespace AStarOneDriveClient.Services;
 /// <summary>
 /// Service for managing folder selection state in the sync tree.
 /// </summary>
-public sealed class SyncSelectionService : ISyncSelectionService
+public sealed partial class SyncSelectionService : ISyncSelectionService
 {
     private readonly ISyncConfigurationRepository? _configurationRepository;
 
@@ -136,7 +136,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
         }
 
         // If all children are unchecked, parent is unchecked
-        if (uncheckedCount == folder.Children.Count)
+        if (uncheckedCount == folder.Children.Count && folder.IsSelected == false)
         {
             return SelectionState.Unchecked;
         }
@@ -249,7 +249,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
 
         // Normalize paths by removing Graph API prefixes for comparison
         var normalizedSavedPaths = savedFolderPaths
-            .Select(path => NormalizePathForComparison(path))
+            .Select(NormalizePathForComparison)
             .ToList();
 
         await DebugLog.InfoAsync("SyncSelectionService.LoadSelectionsFromDatabaseAsync", "Normalized paths:", cancellationToken);

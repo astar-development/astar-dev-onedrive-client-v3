@@ -24,20 +24,22 @@ public interface ISyncConfigurationRepository
     /// <returns>List of selected folder paths.</returns>
     Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default);
 
-    Task<Result<IReadOnlyList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default);
+    Task<Result<IList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Adds a new sync configuration.
     /// </summary>
     /// <param name="configuration">The configuration to add.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default);
+    /// <returns>The updated sync configuration.</returns>
+    Task<SyncConfiguration> AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Updates an existing sync configuration.
     /// </summary>
     /// <param name="configuration">The configuration to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated sync configuration.</returns>
     Task UpdateAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
