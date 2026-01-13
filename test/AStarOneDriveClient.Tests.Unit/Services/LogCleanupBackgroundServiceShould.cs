@@ -35,6 +35,7 @@ public class LogCleanupBackgroundServiceShould
                     _ = db.DebugLogs.Add(debug); break;
             }
         }
+
         _ = db.SaveChanges();
         var logger = new TestLogger();
         var service = new LogCleanupBackgroundService(provider, logger);

@@ -97,6 +97,7 @@
                     Width="120" />
             <Button Content="Close"
                     Command="{Binding CloseCommand}"
+                    ToolTip.Tip="Close Sync Progress Window - this does not affect the current syncing progress"
                     Width="120" />
         </StackPanel>
 

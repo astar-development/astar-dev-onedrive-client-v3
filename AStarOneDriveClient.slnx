@@ -8,6 +8,7 @@
     <Project Path="src/nuget-packages/AStar.Dev.Utilities/AStar.Dev.Utilities.csproj" />
   </Folder>
   <Folder Name="/test/">
+    <Project Path="test/AStarOneDriveClient.Tests.Integration/AStarOneDriveClient.Tests.Integration.csproj" />
     <Project Path="test\AStarOneDriveClient.Tests.Unit\AStarOneDriveClient.Tests.Unit.csproj" />
   </Folder>
   <Folder Name="/docs/">

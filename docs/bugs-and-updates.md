@@ -8,7 +8,7 @@
 [x] batch db updates to reduce load / wasted time
 [x] add scheduled clean-up of debug logs and sync logs - currently hardcoded to 14 days & runs every 12 hours
 [ ] sync logs doesn't include a great deal of data - investigate
-[ ] sync view overlay can be closed without affecting the current downloads / uploads so tell the user that!
+[x] sync view overlay can be closed without affecting the current downloads / uploads so tell the user that!
 [ ] also tell them that selecting additional folders when a sync is running will not affect the current sync!
 [x] there is no way to re-open the sync view overlay - as it has ETA etc. add one (especially as the files being down/uploaded could be large and therefore the x of y could sit on the same number for a while)
 [x] also add ETA to the main sync tree view

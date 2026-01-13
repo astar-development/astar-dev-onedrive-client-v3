@@ -56,7 +56,7 @@ public sealed class FolderTreeService : IFolderTreeService
                 id: item.Id,
                 name: item.Name,
                 path: $"/{item.Name}",
-                parentId: null,
+                parentId: item.ParentReference?.Id,
                 isFolder: true)
             {
                 IsSelected = false

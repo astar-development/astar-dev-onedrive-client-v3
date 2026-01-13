@@ -680,6 +680,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             _fileMetadataRepository.SaveBatchAsync(batch, CancellationToken.None).GetAwaiter().GetResult();
             batch.Clear();
         }
+
         return (activeUploads, completedBytes, completedFiles, uploadTasks);
     }
 

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions.Authentication;
 
-namespace AStarOneDriveClient.Tests.Unit.Services.OneDriveServices;
+namespace AStarOneDriveClient.Tests.Integration.Services.OneDriveServices;
 
 /// <summary>
 /// Helper class for providing bearer token authentication to GraphServiceClient.
@@ -31,7 +31,6 @@ sealed file class TokenProvider(string accessToken) : IAuthenticationProvider
 /// They are skipped by default and should be run manually during development.
 /// To run: Remove [Fact(Skip = "...")] and replace with [Fact].
 /// </remarks>
-[SuppressMessage("xUnit1004", "xUnit1004:TestMethodShouldNotBeSkipped", Justification = "Integration tests require manual setup with authenticated OneDrive account")]
 public class FolderTreeServiceIntegrationShould
 {
     private static AuthConfiguration LoadTestConfiguration()
@@ -45,7 +44,7 @@ public class FolderTreeServiceIntegrationShould
         return AuthConfiguration.LoadFromConfiguration(configuration);
     }
 
-    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
+    [Fact]
     public async Task GetRootFoldersFromRealOneDriveAccount()
     {
         // Arrange
@@ -73,7 +72,7 @@ public class FolderTreeServiceIntegrationShould
         folders.All(f => f.ParentId == null).ShouldBeTrue();
     }
 
-    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
+    [Fact]
     public async Task GetChildFoldersFromRealOneDriveFolder()
     {
         // Arrange
@@ -109,7 +108,7 @@ public class FolderTreeServiceIntegrationShould
         }
     }
 
-    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
+    [Fact]
     public async Task GetFolderHierarchyWithLimitedDepth()
     {
         // Arrange
@@ -146,7 +145,7 @@ public class FolderTreeServiceIntegrationShould
         }
     }
 
-    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
+    [Fact]
     public async Task HandleEmptyFoldersGracefully()
     {
         // Arrange
@@ -178,7 +177,7 @@ public class FolderTreeServiceIntegrationShould
         }
     }
 
-    [Fact(Skip = "Integration test - requires authenticated OneDrive account")]
+    [Fact]
     public async Task GraphApiClientCanAccessDrive()
     {
         // Arrange
