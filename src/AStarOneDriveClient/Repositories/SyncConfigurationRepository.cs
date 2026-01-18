@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AStarOneDriveClient.Repositories;
 
 /// <summary>
-/// Repository implementation for managing sync configuration data.
+///     Repository implementation for managing sync configuration data.
 /// </summary>
 public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
 {
@@ -20,7 +20,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         _context = context;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<SyncConfiguration>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -32,7 +32,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         return [.. entities.Select(MapToModel)];
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -44,48 +44,28 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
             .ToListAsync(cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<Result<IList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default)
-            => await _context.SyncConfigurations
-                        .Where(sc => sc.AccountId == accountId && sc.IsSelected)
-                        .Select(sc => CleanUpPath(sc.FolderPath))
-                        .Distinct()
-                        .ToListAsync(cancellationToken);
+        => await _context.SyncConfigurations
+            .Where(sc => sc.AccountId == accountId && sc.IsSelected)
+            .Select(sc => CleanUpPath(sc.FolderPath))
+            .Distinct()
+            .ToListAsync(cancellationToken);
 
-    private static string CleanUpPath(string localFolderPath)
-    {
-        var indexOfDrives = localFolderPath.IndexOf("drives", StringComparison.OrdinalIgnoreCase);
-        if(indexOfDrives >= 0)
-        {
-            var indexOfColon = localFolderPath.IndexOf(":/", StringComparison.OrdinalIgnoreCase);
-            if(indexOfColon > 0)
-            {
-                var part1 = localFolderPath[..indexOfDrives];
-                var part2 = localFolderPath[(indexOfColon + 2)..];
-                localFolderPath = part1 + part2;
-            }
-        }
-
-        return localFolderPath;
-    }
-
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<SyncConfiguration> AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         SyncConfigurationEntity? existingEntity = await _context.SyncConfigurations
             .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.FolderPath == configuration.FolderPath, cancellationToken);
 
-        if(existingEntity is not null)
-        {
-            return configuration;
-        }
+        if(existingEntity is not null) return configuration;
 
         var lastIndexOf = configuration.FolderPath.LastIndexOf('/');
         if(lastIndexOf > 0)
         {
             var parentPath = configuration.FolderPath[..lastIndexOf];
-            var test =  SyncEngine.FormatScanningFolderForDisplay(parentPath)!.Replace("OneDrive: ", string.Empty);
+            var test = SyncEngine.FormatScanningFolderForDisplay(parentPath)!.Replace("OneDrive: ", string.Empty);
             SyncConfigurationEntity? parentEntity = await _context.SyncConfigurations
                 .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && (sc.FolderPath == parentPath || sc.FolderPath == test), cancellationToken);
 
@@ -103,12 +83,13 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         return configuration;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task UpdateAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 
-        SyncConfigurationEntity entity = await _context.SyncConfigurations.FindAsync([configuration.Id], cancellationToken) ?? throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
+        SyncConfigurationEntity entity = await _context.SyncConfigurations.FindAsync([configuration.Id], cancellationToken) ??
+                                         throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
 
         entity.AccountId = configuration.AccountId;
         entity.FolderPath = configuration.FolderPath;
@@ -118,7 +99,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         _ = await _context.SaveChangesAsync(cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
         SyncConfigurationEntity? entity = await _context.SyncConfigurations.FindAsync([id], cancellationToken);
@@ -129,7 +110,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task DeleteByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -142,7 +123,7 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         _ = await _context.SaveChangesAsync(cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task SaveBatchAsync(string accountId, IEnumerable<SyncConfiguration> configurations, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -158,6 +139,23 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         _context.SyncConfigurations.AddRange(newEntities);
 
         _ = await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private static string CleanUpPath(string localFolderPath)
+    {
+        var indexOfDrives = localFolderPath.IndexOf("drives", StringComparison.OrdinalIgnoreCase);
+        if(indexOfDrives >= 0)
+        {
+            var indexOfColon = localFolderPath.IndexOf(":/", StringComparison.OrdinalIgnoreCase);
+            if(indexOfColon > 0)
+            {
+                var part1 = localFolderPath[..indexOfDrives];
+                var part2 = localFolderPath[(indexOfColon + 2)..];
+                localFolderPath = part1 + part2;
+            }
+        }
+
+        return localFolderPath;
     }
 
     private static SyncConfiguration MapToModel(SyncConfigurationEntity entity)

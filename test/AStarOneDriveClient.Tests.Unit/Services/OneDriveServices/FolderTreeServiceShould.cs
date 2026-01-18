@@ -61,9 +61,7 @@ public class FolderTreeServiceShould
 
         var driveItems = new List<DriveItem>
         {
-            new() { Id = "folder1", Name = "Documents", Folder = new Folder() },
-            new() { Id = "file1", Name = "File1.txt" },
-            new() { Id = "file2", Name = "File2.docx" }
+            new() { Id = "folder1", Name = "Documents", Folder = new Folder() }, new() { Id = "file1", Name = "File1.txt" }, new() { Id = "file2", Name = "File2.docx" }
         };
         _ = mockGraph.GetRootChildrenAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IEnumerable<DriveItem>>(driveItems));
 
@@ -83,19 +81,10 @@ public class FolderTreeServiceShould
         IAuthService mockAuth = Substitute.For<IAuthService>();
         _ = mockAuth.IsAuthenticatedAsync("account1", Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
-        var parentItem = new DriveItem
-        {
-            Id = "parent1",
-            Name = "Documents",
-            ParentReference = new ItemReference { Path = "/drive/root:" }
-        };
+        var parentItem = new DriveItem { Id = "parent1", Name = "Documents", ParentReference = new ItemReference { Path = "/drive/root:" } };
         _ = mockGraph.GetDriveItemAsync(Arg.Any<string>(), "parent1", Arg.Any<CancellationToken>()).Returns(Task.FromResult<DriveItem?>(parentItem));
 
-        var childItems = new List<DriveItem>
-        {
-            new() { Id = "child1", Name = "Work", Folder = new Folder() },
-            new() { Id = "child2", Name = "Personal", Folder = new Folder() }
-        };
+        var childItems = new List<DriveItem> { new() { Id = "child1", Name = "Work", Folder = new Folder() }, new() { Id = "child2", Name = "Personal", Folder = new Folder() } };
         _ = mockGraph.GetDriveItemChildrenAsync(Arg.Any<string>(), "parent1", Arg.Any<CancellationToken>()).Returns(Task.FromResult<IEnumerable<DriveItem>>(childItems));
 
         var service = new FolderTreeService(mockGraph, mockAuth, null!);
@@ -135,7 +124,7 @@ public class FolderTreeServiceShould
 
         var service = new FolderTreeService(mockGraph, mockAuth, null!);
 
-        IReadOnlyList<OneDriveFolderNode> result = await service.GetFolderHierarchyAsync("account1", maxDepth: 1, cancellationToken: TestContext.Current.CancellationToken);
+        IReadOnlyList<OneDriveFolderNode> result = await service.GetFolderHierarchyAsync("account1", 1, TestContext.Current.CancellationToken);
 
         result.ShouldBeEmpty();
     }
@@ -148,15 +137,12 @@ public class FolderTreeServiceShould
         IAuthService mockAuth = Substitute.For<IAuthService>();
         _ = mockAuth.IsAuthenticatedAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(true));
 
-        var rootItems = new List<DriveItem>
-        {
-            new() { Id = "root1", Name = "Documents", Folder = new Folder() }
-        };
+        var rootItems = new List<DriveItem> { new() { Id = "root1", Name = "Documents", Folder = new Folder() } };
         _ = mockGraph.GetRootChildrenAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<IEnumerable<DriveItem>>(rootItems));
 
         var service = new FolderTreeService(mockGraph, mockAuth, null!);
 
-        IReadOnlyList<OneDriveFolderNode> result = await service.GetFolderHierarchyAsync("account1", maxDepth: 0, cancellationToken: TestContext.Current.CancellationToken);
+        IReadOnlyList<OneDriveFolderNode> result = await service.GetFolderHierarchyAsync("account1", 0, TestContext.Current.CancellationToken);
 
         result.Count.ShouldBe(1);
         result[0].Name.ShouldBe("Documents");
@@ -169,8 +155,7 @@ public class FolderTreeServiceShould
         IAuthService mockAuth = Substitute.For<IAuthService>();
         var service = new FolderTreeService(mockGraph, mockAuth, null!);
 
-        _ = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.GetRootFoldersAsync(null!, TestContext.Current.CancellationToken));
+        _ = await Should.ThrowAsync<ArgumentNullException>(async () => await service.GetRootFoldersAsync(null!, TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -180,8 +165,7 @@ public class FolderTreeServiceShould
         IAuthService mockAuth = Substitute.For<IAuthService>();
         var service = new FolderTreeService(mockGraph, mockAuth, null!);
 
-        _ = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.GetChildFoldersAsync("account1", null!, Arg.Any<bool?>(), TestContext.Current.CancellationToken));
+        _ = await Should.ThrowAsync<ArgumentNullException>(async () => await service.GetChildFoldersAsync("account1", null!, Arg.Any<bool?>(), TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -189,8 +173,7 @@ public class FolderTreeServiceShould
     {
         IAuthService mockAuth = Substitute.For<IAuthService>();
 
-        _ = Should.Throw<ArgumentNullException>(() =>
-            new FolderTreeService(null!, mockAuth, null!));
+        _ = Should.Throw<ArgumentNullException>(() => new FolderTreeService(null!, mockAuth, null!));
     }
 
     [Fact]
@@ -198,7 +181,6 @@ public class FolderTreeServiceShould
     {
         IGraphApiClient mockGraph = Substitute.For<IGraphApiClient>();
 
-        _ = Should.Throw<ArgumentNullException>(() =>
-            new FolderTreeService(mockGraph, null!, null!));
+        _ = Should.Throw<ArgumentNullException>(() => new FolderTreeService(mockGraph, null!, null!));
     }
 }

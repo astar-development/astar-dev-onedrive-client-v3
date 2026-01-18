@@ -14,8 +14,7 @@ public class LogCleanupBackgroundServiceShould
     {
         var services = new ServiceCollection();
         _ = services.AddLogging();
-        _ = services.AddDbContext<SyncDbContext>(options =>
-            options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+        _ = services.AddDbContext<SyncDbContext>(options => options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
         ServiceProvider provider = services.BuildServiceProvider();
         SyncDbContext db = provider.GetRequiredService<SyncDbContext>();
         foreach(var entity in seedEntities)
@@ -43,8 +42,24 @@ public class LogCleanupBackgroundServiceShould
         // Arrange
         var oldSession = new SyncSessionLogEntity { Id = "1", AccountId = "A", StartedUtc = DateTime.UtcNow.AddDays(-20) };
         var newSession = new SyncSessionLogEntity { Id = "2", AccountId = "A", StartedUtc = DateTime.UtcNow };
-        var oldDebug = new DebugLogEntity { Id = 1, AccountId = "A", TimestampUtc = DateTime.UtcNow.AddDays(-20), LogLevel = "Info", Source = "Test", Message = "Old" };
-        var newDebug = new DebugLogEntity { Id = 2, AccountId = "A", TimestampUtc = DateTime.UtcNow, LogLevel = "Info", Source = "Test", Message = "New" };
+        var oldDebug = new DebugLogEntity
+        {
+            Id = 1,
+            AccountId = "A",
+            TimestampUtc = DateTime.UtcNow.AddDays(-20),
+            LogLevel = "Info",
+            Source = "Test",
+            Message = "Old"
+        };
+        var newDebug = new DebugLogEntity
+        {
+            Id = 2,
+            AccountId = "A",
+            TimestampUtc = DateTime.UtcNow,
+            LogLevel = "Info",
+            Source = "Test",
+            Message = "New"
+        };
         (LogCleanupBackgroundService? service, SyncDbContext? db, TestLogger? logger) = CreateServiceWithDb(oldSession, newSession, oldDebug, newDebug);
 
         // Act
@@ -60,7 +75,7 @@ public class LogCleanupBackgroundServiceShould
     }
 
     [Fact(Skip = "Fails due to missing service registration, cannot fix without production code changes")]
-    public async Task Handles_Exceptions_And_Logs_Error()
+    public void Handles_Exceptions_And_Logs_Error()
     {
         // Arrange
         IServiceProvider provider = Substitute.For<IServiceProvider>();
@@ -79,10 +94,11 @@ public class LogCleanupBackgroundServiceShould
     // Helper logger for assertions
     private class TestLogger : ILogger<LogCleanupBackgroundService>
     {
-        public readonly List<string> Infos = [];
         public readonly List<string> Errors = [];
+        public readonly List<string> Infos = [];
         public IDisposable BeginScope<TState>(TState state) where TState : notnull => Substitute.For<IDisposable>();
         public bool IsEnabled(LogLevel logLevel) => true;
+
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
             if(logLevel == LogLevel.Information)
@@ -107,7 +123,9 @@ public static class LogCleanupBackgroundServiceTestExtensions
             if(result is Task task)
             {
                 try
-                { await task; }
+                {
+                    await task;
+                }
                 catch { }
             }
         }

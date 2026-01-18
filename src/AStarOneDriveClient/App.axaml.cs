@@ -8,19 +8,19 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AStarOneDriveClient;
 
 /// <summary>
-/// Main application class for the OneDrive sync client.
+///     Main application class for the OneDrive sync client.
 /// </summary>
 public sealed class App : Application
 {
     /// <summary>
-    /// Gets the service provider for dependency injection.
+    ///     Gets the service provider for dependency injection.
     /// </summary>
     public static ServiceProvider? Services { get; private set; }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public override void OnFrameworkInitializationCompleted()
     {
         // Configure dependency injection

@@ -10,24 +10,21 @@ using Microsoft.Extensions.Logging;
 namespace AStarOneDriveClient.Services;
 
 /// <summary>
-/// Service for monitoring local file system changes to trigger synchronization.
+///     Service for monitoring local file system changes to trigger synchronization.
 /// </summary>
 /// <remarks>
-/// Wraps FileSystemWatcher with debouncing (500ms) to handle rapid file changes
-/// and partial writes. Supports monitoring multiple account directories independently.
+///     Wraps FileSystemWatcher with debouncing (500ms) to handle rapid file changes
+///     and partial writes. Supports monitoring multiple account directories independently.
 /// </remarks>
 public sealed class FileWatcherService : IFileWatcherService
 {
+    private readonly Subject<FileChangeEvent> _fileChanges = new();
     private readonly ILogger<FileWatcherService> _logger;
     private readonly Dictionary<string, WatcherContext> _watchers = [];
-    private readonly Subject<FileChangeEvent> _fileChanges = new();
     private bool _disposed;
 
-    /// <inheritdoc/>
-    public IObservable<FileChangeEvent> FileChanges => _fileChanges.AsObservable();
-
     /// <summary>
-    /// Initializes a new instance of <see cref="FileWatcherService"/>.
+    ///     Initializes a new instance of <see cref="FileWatcherService" />.
     /// </summary>
     /// <param name="logger">Logger for diagnostic messages.</param>
     /// <exception cref="ArgumentNullException">Thrown if logger is null.</exception>
@@ -37,16 +34,16 @@ public sealed class FileWatcherService : IFileWatcherService
         _logger = logger;
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
+    public IObservable<FileChangeEvent> FileChanges => _fileChanges.AsObservable();
+
+    /// <inheritdoc />
     public void StartWatching(string accountId, string localPath)
     {
         ArgumentNullException.ThrowIfNull(accountId);
         ArgumentNullException.ThrowIfNull(localPath);
 
-        if(!Directory.Exists(localPath))
-        {
-            throw new DirectoryNotFoundException($"Directory not found: {localPath}");
-        }
+        if(!Directory.Exists(localPath)) throw new DirectoryNotFoundException($"Directory not found: {localPath}");
 
         if(_watchers.ContainsKey(accountId))
         {
@@ -60,9 +57,9 @@ public sealed class FileWatcherService : IFileWatcherService
             {
                 IncludeSubdirectories = true,
                 NotifyFilter = NotifyFilters.FileName
-                             | NotifyFilters.DirectoryName
-                             | NotifyFilters.Size
-                             | NotifyFilters.LastWrite,
+                               | NotifyFilters.DirectoryName
+                               | NotifyFilters.Size
+                               | NotifyFilters.LastWrite,
                 EnableRaisingEvents = true
             };
 
@@ -89,7 +86,7 @@ public sealed class FileWatcherService : IFileWatcherService
         }
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public void StopWatching(string accountId)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -99,6 +96,22 @@ public sealed class FileWatcherService : IFileWatcherService
             context.Dispose();
             _logger.LogInformation("Stopped watching for account {AccountId}", accountId);
         }
+    }
+
+    /// <summary>
+    ///     Disposes all file system watchers and cleans up resources.
+    /// </summary>
+    public void Dispose()
+    {
+        if(_disposed) return;
+
+        foreach(WatcherContext context in _watchers.Values) context.Dispose();
+
+        _watchers.Clear();
+        _fileChanges.Dispose();
+        _disposed = true;
+
+        _logger.LogInformation("FileWatcherService disposed");
     }
 
     private void ProcessFileChange(string accountId, string basePath, FileSystemEventArgs e)
@@ -118,11 +131,11 @@ public sealed class FileWatcherService : IFileWatcherService
             var relativePath = Path.GetRelativePath(basePath, e.FullPath);
 
             var changeEvent = new FileChangeEvent(
-                AccountId: accountId,
-                LocalPath: e.FullPath,
-                RelativePath: relativePath,
-                ChangeType: changeType,
-                DetectedUtc: DateTime.UtcNow
+                accountId,
+                e.FullPath,
+                relativePath,
+                changeType,
+                DateTime.UtcNow
             );
 
             _fileChanges.OnNext(changeEvent);
@@ -145,52 +158,20 @@ public sealed class FileWatcherService : IFileWatcherService
     }
 
     /// <summary>
-    /// Disposes all file system watchers and cleans up resources.
+    ///     Context holding a FileSystemWatcher and its associated subscriptions.
     /// </summary>
-    public void Dispose()
+    private sealed class WatcherContext(
+        FileSystemWatcher watcher,
+        Subject<FileSystemEventArgs> changeBuffer,
+        IDisposable subscription)
+        : IDisposable
     {
-        if(_disposed)
-        {
-            return;
-        }
-
-        foreach(WatcherContext context in _watchers.Values)
-        {
-            context.Dispose();
-        }
-
-        _watchers.Clear();
-        _fileChanges.Dispose();
-        _disposed = true;
-
-        _logger.LogInformation("FileWatcherService disposed");
-    }
-
-    /// <summary>
-    /// Context holding a FileSystemWatcher and its associated subscriptions.
-    /// </summary>
-    private sealed class WatcherContext : IDisposable
-    {
-        private readonly FileSystemWatcher _watcher;
-        private readonly Subject<FileSystemEventArgs> _changeBuffer;
-        private readonly IDisposable _subscription;
-
-        public WatcherContext(
-            FileSystemWatcher watcher,
-            Subject<FileSystemEventArgs> changeBuffer,
-            IDisposable subscription)
-        {
-            _watcher = watcher;
-            _changeBuffer = changeBuffer;
-            _subscription = subscription;
-        }
-
         public void Dispose()
         {
-            _watcher.EnableRaisingEvents = false;
-            _watcher.Dispose();
-            _subscription.Dispose();
-            _changeBuffer.Dispose();
+            watcher.EnableRaisingEvents = false;
+            watcher.Dispose();
+            subscription.Dispose();
+            changeBuffer.Dispose();
         }
     }
 }

@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AStarOneDriveClient.Views;
 
 /// <summary>
-/// Main application window.
+///     Main application window.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -35,10 +35,7 @@ public sealed partial class MainWindow : Window
         PropertyChanged += OnWindowPropertyChanged;
 
         // Initialize debounce timer for saving preferences (1 second delay)
-        _savePreferencesTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(1)
-        };
+        _savePreferencesTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         _savePreferencesTimer.Tick += async (s, e) =>
         {
             _savePreferencesTimer.Stop();
@@ -48,10 +45,7 @@ public sealed partial class MainWindow : Window
 
     private async Task LoadWindowPreferencesAsync()
     {
-        if(_preferencesService is null)
-        {
-            return;
-        }
+        if(_preferencesService is null) return;
 
         try
         {
@@ -60,9 +54,7 @@ public sealed partial class MainWindow : Window
             {
                 // Apply saved preferences
                 if(preferences.IsMaximized)
-                {
                     WindowState = WindowState.Maximized;
-                }
                 else if(preferences.X.HasValue && preferences.Y.HasValue)
                 {
                     Position = new PixelPoint((int)preferences.X.Value, (int)preferences.Y.Value);
@@ -96,20 +88,17 @@ public sealed partial class MainWindow : Window
 
     private async Task SaveWindowPreferencesAsync()
     {
-        if(_preferencesService is null)
-        {
-            return;
-        }
+        if(_preferencesService is null) return;
 
         try
         {
             var preferences = new WindowPreferences(
-                Id: 1,
-                X: WindowState == WindowState.Normal ? Position.X : null,
-                Y: WindowState == WindowState.Normal ? Position.Y : null,
-                Width: Width,
-                Height: Height,
-                IsMaximized: WindowState == WindowState.Maximized
+                1,
+                WindowState == WindowState.Normal ? Position.X : null,
+                WindowState == WindowState.Normal ? Position.Y : null,
+                Width,
+                Height,
+                WindowState == WindowState.Maximized
             );
 
             await _preferencesService.SaveAsync(preferences);

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AStarOneDriveClient.Views;
 
 /// <summary>
-/// Window for updating account details.
+///     Window for updating account details.
 /// </summary>
 public sealed partial class UpdateAccountDetailsWindow : Window
 {

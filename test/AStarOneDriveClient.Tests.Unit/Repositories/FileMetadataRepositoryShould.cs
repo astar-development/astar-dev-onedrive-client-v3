@@ -78,7 +78,7 @@ public class FileMetadataRepositoryShould
     {
         using SyncDbContext context = CreateInMemoryContext();
         var repository = new FileMetadataRepository(context);
-        await repository.AddAsync(CreateFileMetadata("file1", "acc1", "/doc1.txt", FileSyncStatus.Synced), TestContext.Current.CancellationToken);
+        await repository.AddAsync(CreateFileMetadata("file1", "acc1", "/doc1.txt"), TestContext.Current.CancellationToken);
         await repository.AddAsync(CreateFileMetadata("file2", "acc1", "/doc2.txt", FileSyncStatus.PendingUpload), TestContext.Current.CancellationToken);
         await repository.AddAsync(CreateFileMetadata("file3", "acc1", "/doc3.txt", FileSyncStatus.Conflict), TestContext.Current.CancellationToken);
 
@@ -126,8 +126,7 @@ public class FileMetadataRepositoryShould
         var repository = new FileMetadataRepository(context);
         FileMetadata file = CreateFileMetadata("nonexistent", "acc1", "/doc.txt");
 
-        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
-            async () => await repository.UpdateAsync(file)
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(async () => await repository.UpdateAsync(file)
         );
 
         exception.Message.ShouldContain("not found");
@@ -168,12 +167,11 @@ public class FileMetadataRepositoryShould
     {
         using SyncDbContext context = CreateInMemoryContext();
         var repository = new FileMetadataRepository(context);
-        await repository.AddAsync(CreateFileMetadata("file1", "acc1", "/old.txt", FileSyncStatus.Synced), TestContext.Current.CancellationToken);
+        await repository.AddAsync(CreateFileMetadata("file1", "acc1", "/old.txt"), TestContext.Current.CancellationToken);
 
         FileMetadata[] batchFiles = new[]
         {
-            CreateFileMetadata("file1", "acc1", "/old.txt", FileSyncStatus.PendingUpload),
-            CreateFileMetadata("file2", "acc1", "/new.txt", FileSyncStatus.PendingDownload)
+            CreateFileMetadata("file1", "acc1", "/old.txt", FileSyncStatus.PendingUpload), CreateFileMetadata("file2", "acc1", "/new.txt", FileSyncStatus.PendingDownload)
         };
         await repository.SaveBatchAsync(batchFiles, TestContext.Current.CancellationToken);
 

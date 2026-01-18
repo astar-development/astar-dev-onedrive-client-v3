@@ -1,11 +1,12 @@
 using System.Reactive.Subjects;
 using AStarOneDriveClient.Models;
-using AStarOneDriveClient.Models.Enums;
+
 namespace AStarOneDriveClient.Services;
 
 public static class ProgressReporterService
 {
-    public static (int placeholder, BehaviorSubject<SyncState> progressSubject) ReportProgress(SyncState progress, BehaviorSubject<SyncState> progressSubject, DateTime lastProgressUpdate, long lastCompletedBytes, List<(DateTime Timestamp, long Bytes)> transferHistory)
+    public static (int placeholder, BehaviorSubject<SyncState> progressSubject) ReportProgress(SyncState progress, BehaviorSubject<SyncState> progressSubject, DateTime lastProgressUpdate,
+        long lastCompletedBytes, List<(DateTime Timestamp, long Bytes)> transferHistory)
     {
         DateTime now = DateTime.UtcNow;
         var elapsedSeconds = (now - lastProgressUpdate).TotalSeconds;
@@ -20,19 +21,13 @@ public static class ProgressReporterService
                 megabytesPerSecond = megabytesDelta / elapsedSeconds;
 
                 transferHistory.Add((now, progress.CompletedBytes));
-                if(transferHistory.Count > 10)
-                {
-                    transferHistory.RemoveAt(0);
-                }
+                if(transferHistory.Count > 10) transferHistory.RemoveAt(0);
 
                 if(transferHistory.Count >= 2)
                 {
                     var totalElapsed = (now - transferHistory[0].Timestamp).TotalSeconds;
                     var totalTransferred = progress.CompletedBytes - transferHistory[0].Bytes;
-                    if(totalElapsed > 0)
-                    {
-                        megabytesPerSecond = totalTransferred / (1024.0 * 1024.0) / totalElapsed;
-                    }
+                    if(totalElapsed > 0) megabytesPerSecond = totalTransferred / (1024.0 * 1024.0) / totalElapsed;
                 }
             }
         }
@@ -46,12 +41,7 @@ public static class ProgressReporterService
             estimatedSecondsRemaining = (int)Math.Ceiling(remainingMegabytes / megabytesPerSecond);
         }
 
-        SyncState updatedProgress = progress with
-        {
-            MegabytesPerSecond = megabytesPerSecond,
-            EstimatedSecondsRemaining = estimatedSecondsRemaining,
-            LastUpdateUtc = now
-        };
+        SyncState updatedProgress = progress with { MegabytesPerSecond = megabytesPerSecond, EstimatedSecondsRemaining = estimatedSecondsRemaining, LastUpdateUtc = now };
         progressSubject.OnNext(updatedProgress);
 
         return (0, progressSubject);

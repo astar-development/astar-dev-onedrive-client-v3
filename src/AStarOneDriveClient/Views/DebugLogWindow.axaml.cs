@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AStarOneDriveClient.Views;
 
 /// <summary>
-/// Window for viewing debug logs.
+///     Window for viewing debug logs.
 /// </summary>
 public partial class DebugLogWindow : Window
 {

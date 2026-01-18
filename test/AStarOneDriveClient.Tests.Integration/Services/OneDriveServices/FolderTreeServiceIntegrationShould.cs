@@ -3,17 +3,18 @@ using AStarOneDriveClient.Models;
 using AStarOneDriveClient.Services.OneDriveServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Graph.Models;
+using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 
 namespace AStarOneDriveClient.Tests.Integration.Services.OneDriveServices;
 
 /// <summary>
-/// Helper class for providing bearer token authentication to GraphServiceClient.
+///     Helper class for providing bearer token authentication to GraphServiceClient.
 /// </summary>
 sealed file class TokenProvider(string accessToken) : IAuthenticationProvider
 {
     public Task AuthenticateRequestAsync(
-        Microsoft.Kiota.Abstractions.RequestInformation request,
+        RequestInformation request,
         Dictionary<string, object>? additionalAuthenticationContext = null,
         CancellationToken cancellationToken = default)
     {
@@ -23,12 +24,12 @@ sealed file class TokenProvider(string accessToken) : IAuthenticationProvider
 }
 
 /// <summary>
-/// Integration tests for FolderTreeService using real Graph API calls.
+///     Integration tests for FolderTreeService using real Graph API calls.
 /// </summary>
 /// <remarks>
-/// These tests require an authenticated OneDrive account and will make real API calls.
-/// They are skipped by default and should be run manually during development.
-/// To run: Remove [Fact(Skip = "...")] and replace with [Fact].
+///     These tests require an authenticated OneDrive account and will make real API calls.
+///     They are skipped by default and should be run manually during development.
+///     To run: Remove [Fact(Skip = "...")] and replace with [Fact].
 /// </remarks>
 public class FolderTreeServiceIntegrationShould
 {
@@ -36,8 +37,8 @@ public class FolderTreeServiceIntegrationShould
     {
         IConfigurationRoot configuration = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: false)
-            .AddUserSecrets<FolderTreeServiceIntegrationShould>(optional: true)
+            .AddJsonFile("appsettings.json", false)
+            .AddUserSecrets<FolderTreeServiceIntegrationShould>(true)
             .Build();
 
         return AuthConfiguration.LoadFromConfiguration(configuration);
@@ -51,10 +52,7 @@ public class FolderTreeServiceIntegrationShould
         AuthService authService = await AuthService.CreateAsync(config, TestContext.Current.CancellationToken);
         AuthenticationResult loginResult = await authService.LoginAsync(TestContext.Current.CancellationToken);
 
-        if(!loginResult.Success || loginResult.AccountId is null)
-        {
-            throw new InvalidOperationException("Failed to authenticate with OneDrive");
-        }
+        if(!loginResult.Success || loginResult.AccountId is null) throw new InvalidOperationException("Failed to authenticate with OneDrive");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService, null!);
@@ -79,10 +77,7 @@ public class FolderTreeServiceIntegrationShould
         AuthService authService = await AuthService.CreateAsync(config, TestContext.Current.CancellationToken);
         AuthenticationResult loginResult = await authService.LoginAsync(TestContext.Current.CancellationToken);
 
-        if(!loginResult.Success || loginResult.AccountId is null)
-        {
-            throw new InvalidOperationException("Failed to authenticate with OneDrive");
-        }
+        if(!loginResult.Success || loginResult.AccountId is null) throw new InvalidOperationException("Failed to authenticate with OneDrive");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService, null!);
@@ -115,16 +110,13 @@ public class FolderTreeServiceIntegrationShould
         AuthService authService = await AuthService.CreateAsync(config, TestContext.Current.CancellationToken);
         AuthenticationResult loginResult = await authService.LoginAsync(TestContext.Current.CancellationToken);
 
-        if(!loginResult.Success || loginResult.AccountId is null)
-        {
-            throw new InvalidOperationException("Failed to authenticate with OneDrive");
-        }
+        if(!loginResult.Success || loginResult.AccountId is null) throw new InvalidOperationException("Failed to authenticate with OneDrive");
 
         var graphApiClient = new GraphApiClient(authService);
         var service = new FolderTreeService(graphApiClient, authService, null!);
 
         // Act - limit to depth of 2 to avoid long load times
-        IReadOnlyList<OneDriveFolderNode> hierarchy = await service.GetFolderHierarchyAsync(loginResult.AccountId, maxDepth: 2, TestContext.Current.CancellationToken);
+        IReadOnlyList<OneDriveFolderNode> hierarchy = await service.GetFolderHierarchyAsync(loginResult.AccountId, 2, TestContext.Current.CancellationToken);
 
         // Assert
         hierarchy.ShouldNotBeEmpty();
@@ -152,10 +144,7 @@ public class FolderTreeServiceIntegrationShould
         AuthService authService = await AuthService.CreateAsync(config, TestContext.Current.CancellationToken);
         AuthenticationResult loginResult = await authService.LoginAsync(TestContext.Current.CancellationToken);
 
-        if(!loginResult.Success || loginResult.AccountId is null)
-        {
-            throw new InvalidOperationException("Failed to authenticate with OneDrive");
-        }
+        if(!loginResult.Success || loginResult.AccountId is null) throw new InvalidOperationException("Failed to authenticate with OneDrive");
 
         _ = await authService.GetAccessTokenAsync(loginResult.AccountId, TestContext.Current.CancellationToken) ?? throw new InvalidOperationException("Failed to get access token");
 
@@ -169,7 +158,7 @@ public class FolderTreeServiceIntegrationShould
         // Act - try to get children from each root folder
         foreach(OneDriveFolderNode folder in rootFolders)
         {
-            IReadOnlyList<OneDriveFolderNode> children = await service.GetChildFoldersAsync(loginResult.AccountId, folder.Id, Arg.Any<bool?>(),TestContext.Current.CancellationToken);
+            IReadOnlyList<OneDriveFolderNode> children = await service.GetChildFoldersAsync(loginResult.AccountId, folder.Id, Arg.Any<bool?>(), TestContext.Current.CancellationToken);
 
             // Assert - should not throw, even if empty
             _ = children.ShouldNotBeNull();
@@ -184,10 +173,7 @@ public class FolderTreeServiceIntegrationShould
         AuthService authService = await AuthService.CreateAsync(config, TestContext.Current.CancellationToken);
         AuthenticationResult loginResult = await authService.LoginAsync(TestContext.Current.CancellationToken);
 
-        if(!loginResult.Success || loginResult.AccountId is null)
-        {
-            throw new InvalidOperationException("Failed to authenticate with OneDrive");
-        }
+        if(!loginResult.Success || loginResult.AccountId is null) throw new InvalidOperationException("Failed to authenticate with OneDrive");
 
         _ = await authService.GetAccessTokenAsync(loginResult.AccountId, TestContext.Current.CancellationToken) ?? throw new InvalidOperationException("Failed to get access token");
 

@@ -22,10 +22,9 @@ public class SyncSelectionServicePersistenceShould
 
         await mockRepo.Received(1).SaveBatchAsync(
             "acc-123",
-            Arg.Is<IEnumerable<SyncConfiguration>>(configs =>
-                configs.Count() == 1 &&
-                configs.First().FolderPath == "/Folder1" &&
-                configs.First().IsSelected),
+            Arg.Is<IEnumerable<SyncConfiguration>>(configs => configs.Count() == 1 &&
+                                                              configs.First().FolderPath == "/Folder1" &&
+                                                              configs.First().IsSelected),
             Arg.Any<CancellationToken>());
     }
 

@@ -344,7 +344,7 @@ public class SyncSelectionServiceShould
     {
         Id = id,
         Name = name,
-        Path = $"/{name}",  // Add Path property for tests that rely on it
+        Path = $"/{name}", // Add Path property for tests that rely on it
         ParentId = parentId,
         IsFolder = true
     };

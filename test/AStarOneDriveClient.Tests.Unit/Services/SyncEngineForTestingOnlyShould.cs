@@ -1,8 +1,8 @@
 using AStarOneDriveClient.Models;
+using AStarOneDriveClient.Models.Enums;
 using AStarOneDriveClient.Repositories;
 using AStarOneDriveClient.Services;
 using AStarOneDriveClient.Services.OneDriveServices;
-using AStarOneDriveClient.Models.Enums;
 
 namespace AStarOneDriveClient.Tests.Unit.Services;
 
@@ -16,7 +16,7 @@ public sealed class SyncEngineForTestingOnlyShould
 
         _ = syncEngine.Progress.Subscribe(progressUpdates.Add);
         await Task.Delay(100, TestContext.Current.CancellationToken); // allow time for initial progress state to be emitted
-        
+
         syncEngine.ReportProgress(string.Empty, SyncStatus.Running);
 
         SyncState finalProgress = progressUpdates.Last();
@@ -25,7 +25,7 @@ public sealed class SyncEngineForTestingOnlyShould
         finalProgress.TotalFiles.ShouldBe(0);
         finalProgress.CompletedFiles.ShouldBe(0);
         finalProgress.EstimatedSecondsRemaining.ShouldBe(null);
-        finalProgress.MegabytesPerSecond.ShouldBe(0); 
+        finalProgress.MegabytesPerSecond.ShouldBe(0);
         finalProgress.FilesDeleted.ShouldBe(0);
         finalProgress.FilesDownloading.ShouldBe(0);
         finalProgress.FilesUploading.ShouldBe(0);
@@ -41,7 +41,7 @@ public sealed class SyncEngineForTestingOnlyShould
 
         _ = syncEngine.Progress.Subscribe(progressUpdates.Add);
         await Task.Delay(100, TestContext.Current.CancellationToken); // allow time for initial progress state to be emitted
-        
+
         syncEngine.ReportProgress(string.Empty, SyncStatus.Running, 21, 2, 1361359, 869673, 3, 0, 0, 2, null, 1361359);
 
         SyncState finalProgress = progressUpdates.Last();
@@ -50,7 +50,7 @@ public sealed class SyncEngineForTestingOnlyShould
         finalProgress.TotalFiles.ShouldBe(21);
         finalProgress.CompletedFiles.ShouldBe(2);
         finalProgress.EstimatedSecondsRemaining.ShouldBe(1);
-        finalProgress.MegabytesPerSecond.ShouldBeGreaterThan(7); 
+        finalProgress.MegabytesPerSecond.ShouldBeGreaterThan(7);
         finalProgress.FilesDeleted.ShouldBe(0);
         finalProgress.FilesDownloading.ShouldBe(3);
         finalProgress.FilesUploading.ShouldBe(0);
@@ -66,7 +66,7 @@ public sealed class SyncEngineForTestingOnlyShould
 
         _ = syncEngine.Progress.Subscribe(progressUpdates.Add);
         await Task.Delay(100, TestContext.Current.CancellationToken); // allow time for initial progress state to be emitted
-        
+
         syncEngine.ReportProgress(string.Empty, SyncStatus.Running, 21, 20, 1361359, 1209570, 2, 0, 0, 2, null, 1361359);
 
         SyncState finalProgress = progressUpdates.Last();
@@ -75,7 +75,7 @@ public sealed class SyncEngineForTestingOnlyShould
         finalProgress.TotalFiles.ShouldBe(21);
         finalProgress.CompletedFiles.ShouldBe(20);
         finalProgress.EstimatedSecondsRemaining.ShouldBe(1);
-        finalProgress.MegabytesPerSecond.ShouldBeGreaterThan(0); 
+        finalProgress.MegabytesPerSecond.ShouldBeGreaterThan(0);
         finalProgress.FilesDeleted.ShouldBe(0);
         finalProgress.FilesDownloading.ShouldBe(2);
         finalProgress.FilesUploading.ShouldBe(0);
@@ -94,9 +94,10 @@ public sealed class SyncEngineForTestingOnlyShould
         ISyncConflictRepository syncConflictRepository = Substitute.For<ISyncConflictRepository>();
         ISyncSessionLogRepository syncSessionLogRepository = Substitute.For<ISyncSessionLogRepository>();
         IFileOperationLogRepository fileOperationLogRepository = Substitute.For<IFileOperationLogRepository>();
-        
-        var syncEngine = new SyncEngine(localFileScanner, remoteChangeDetector, fileMetadataRepository, syncConfigurationRepository, accountRepository, graphApiClient, syncConflictRepository, syncSessionLogRepository, fileOperationLogRepository);
-        
+
+        var syncEngine = new SyncEngine(localFileScanner, remoteChangeDetector, fileMetadataRepository, syncConfigurationRepository, accountRepository, graphApiClient, syncConflictRepository,
+            syncSessionLogRepository, fileOperationLogRepository);
+
         return syncEngine;
     }
 }

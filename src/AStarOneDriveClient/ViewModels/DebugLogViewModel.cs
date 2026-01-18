@@ -7,16 +7,16 @@ using ReactiveUI;
 namespace AStarOneDriveClient.ViewModels;
 
 /// <summary>
-/// ViewModel for the Debug Log Viewer window.
+///     ViewModel for the Debug Log Viewer window.
 /// </summary>
 public sealed class DebugLogViewModel : ReactiveObject
 {
+    private const int _pageSize = 50;
     private readonly IAccountRepository _accountRepository;
     private readonly IDebugLogRepository _debugLogRepository;
-    private const int _pageSize = 50;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DebugLogViewModel"/> class.
+    ///     Initializes a new instance of the <see cref="DebugLogViewModel" /> class.
     /// </summary>
     /// <param name="accountRepository">Repository for account data.</param>
     /// <param name="debugLogRepository">Repository for debug log entries.</param>
@@ -41,17 +41,17 @@ public sealed class DebugLogViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Gets the collection of accounts.
+    ///     Gets the collection of accounts.
     /// </summary>
     public ObservableCollection<AccountInfo> Accounts { get; }
 
     /// <summary>
-    /// Gets the collection of debug log entries.
+    ///     Gets the collection of debug log entries.
     /// </summary>
     public ObservableCollection<DebugLogEntry> DebugLogs { get; }
 
     /// <summary>
-    /// Gets or sets the selected account.
+    ///     Gets or sets the selected account.
     /// </summary>
     public AccountInfo? SelectedAccount
     {
@@ -68,7 +68,7 @@ public sealed class DebugLogViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Gets the current page number.
+    ///     Gets the current page number.
     /// </summary>
     public int CurrentPage
     {
@@ -81,7 +81,7 @@ public sealed class DebugLogViewModel : ReactiveObject
     } = 1;
 
     /// <summary>
-    /// Gets a value indicating whether there are more records to load.
+    ///     Gets a value indicating whether there are more records to load.
     /// </summary>
     public bool HasMoreRecords
     {
@@ -94,7 +94,7 @@ public sealed class DebugLogViewModel : ReactiveObject
     } = true;
 
     /// <summary>
-    /// Gets a value indicating whether data is currently loading.
+    ///     Gets a value indicating whether data is currently loading.
     /// </summary>
     public bool IsLoading
     {
@@ -108,7 +108,7 @@ public sealed class DebugLogViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Gets the total number of records available.
+    ///     Gets the total number of records available.
     /// </summary>
     public int TotalRecordCount
     {
@@ -117,27 +117,27 @@ public sealed class DebugLogViewModel : ReactiveObject
     }
 
     /// <summary>
-    /// Gets a value indicating whether the user can navigate to the next page.
+    ///     Gets a value indicating whether the user can navigate to the next page.
     /// </summary>
     public bool CanGoToNextPage => HasMoreRecords && !IsLoading;
 
     /// <summary>
-    /// Gets a value indicating whether the user can navigate to the previous page.
+    ///     Gets a value indicating whether the user can navigate to the previous page.
     /// </summary>
     public bool CanGoToPreviousPage => CurrentPage > 1 && !IsLoading;
 
     /// <summary>
-    /// Gets the command to load the next page.
+    ///     Gets the command to load the next page.
     /// </summary>
     public ReactiveCommand<Unit, Unit> LoadNextPageCommand { get; }
 
     /// <summary>
-    /// Gets the command to load the previous page.
+    ///     Gets the command to load the previous page.
     /// </summary>
     public ReactiveCommand<Unit, Unit> LoadPreviousPageCommand { get; }
 
     /// <summary>
-    /// Gets the command to clear logs for the selected account.
+    ///     Gets the command to clear logs for the selected account.
     /// </summary>
     public ReactiveCommand<Unit, Unit> ClearLogsCommand { get; }
 
@@ -147,10 +147,7 @@ public sealed class DebugLogViewModel : ReactiveObject
         {
             IReadOnlyList<AccountInfo> accounts = await _accountRepository.GetAllAsync();
             Accounts.Clear();
-            foreach(AccountInfo account in accounts)
-            {
-                Accounts.Add(account);
-            }
+            foreach(AccountInfo account in accounts) Accounts.Add(account);
         }
         catch(Exception)
         {
@@ -160,10 +157,7 @@ public sealed class DebugLogViewModel : ReactiveObject
 
     private async Task LoadDebugLogsAsync()
     {
-        if(SelectedAccount is null)
-        {
-            return;
-        }
+        if(SelectedAccount is null) return;
 
         IsLoading = true;
         try
@@ -185,10 +179,7 @@ public sealed class DebugLogViewModel : ReactiveObject
 
             // Only show PageSize records
             IEnumerable<DebugLogEntry> logsToDisplay = logs.Take(_pageSize);
-            foreach(DebugLogEntry? log in logsToDisplay)
-            {
-                DebugLogs.Add(log);
-            }
+            foreach(DebugLogEntry? log in logsToDisplay) DebugLogs.Add(log);
 
             // Update total count estimate based on current position
             if(HasMoreRecords)
@@ -218,10 +209,7 @@ public sealed class DebugLogViewModel : ReactiveObject
 
     private async Task LoadNextPageAsync()
     {
-        if(!HasMoreRecords || SelectedAccount is null)
-        {
-            return;
-        }
+        if(!HasMoreRecords || SelectedAccount is null) return;
 
         CurrentPage++;
         await LoadDebugLogsAsync();
@@ -229,10 +217,7 @@ public sealed class DebugLogViewModel : ReactiveObject
 
     private async Task LoadPreviousPageAsync()
     {
-        if(CurrentPage <= 1 || SelectedAccount is null)
-        {
-            return;
-        }
+        if(CurrentPage <= 1 || SelectedAccount is null) return;
 
         CurrentPage--;
         await LoadDebugLogsAsync();
@@ -240,10 +225,7 @@ public sealed class DebugLogViewModel : ReactiveObject
 
     private async Task ClearLogsAsync()
     {
-        if(SelectedAccount is null)
-        {
-            return;
-        }
+        if(SelectedAccount is null) return;
 
         IsLoading = true;
         try

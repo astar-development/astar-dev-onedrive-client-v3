@@ -7,20 +7,13 @@ using Microsoft.Extensions.Logging;
 namespace AStarOneDriveClient.Services;
 
 /// <summary>
-/// Background service to clean up old SyncSessionLogs and DebugLogs entries.
+///     Background service to clean up old SyncSessionLogs and DebugLogs entries.
 /// </summary>
-public sealed class LogCleanupBackgroundService : BackgroundService
+public sealed class LogCleanupBackgroundService(IServiceProvider serviceProvider, ILogger<LogCleanupBackgroundService> logger) : BackgroundService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<LogCleanupBackgroundService> _logger;
     private static readonly TimeSpan CleanupInterval = TimeSpan.FromHours(12); // Run twice a day
     private static readonly TimeSpan RetentionPeriod = TimeSpan.FromDays(14);
-
-    public LogCleanupBackgroundService(IServiceProvider serviceProvider, ILogger<LogCleanupBackgroundService> logger)
-    {
-        _scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
-        _logger = logger;
-    }
+    private readonly IServiceScopeFactory _scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -40,11 +33,11 @@ public sealed class LogCleanupBackgroundService : BackgroundService
                     .Where(x => x.TimestampUtc < cutoff)
                     .ExecuteDeleteAsync(stoppingToken);
 
-                _logger.LogInformation("LogCleanupBackgroundService: Deleted {SessionLogs} session logs and {DebugLogs} debug logs older than {Cutoff}", sessionLogsDeleted, debugLogsDeleted, cutoff);
+                logger.LogInformation("LogCleanupBackgroundService: Deleted {SessionLogs} session logs and {DebugLogs} debug logs older than {Cutoff}", sessionLogsDeleted, debugLogsDeleted, cutoff);
             }
             catch(Exception ex)
             {
-                _logger.LogError(ex, "LogCleanupBackgroundService: Error during cleanup");
+                logger.LogError(ex, "LogCleanupBackgroundService: Error during cleanup");
             }
 
             try

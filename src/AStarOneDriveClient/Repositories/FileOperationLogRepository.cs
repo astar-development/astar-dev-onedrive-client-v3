@@ -7,15 +7,13 @@ using Microsoft.EntityFrameworkCore;
 namespace AStarOneDriveClient.Repositories;
 
 /// <summary>
-/// Repository implementation for managing file operation logs.
+///     Repository implementation for managing file operation logs.
 /// </summary>
-public sealed class FileOperationLogRepository : IFileOperationLogRepository
+public sealed class FileOperationLogRepository(SyncDbContext context) : IFileOperationLogRepository
 {
-    private readonly SyncDbContext _context;
+    private readonly SyncDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
 
-    public FileOperationLogRepository(SyncDbContext context) => _context = context ?? throw new ArgumentNullException(nameof(context));
-
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FileOperationLog>> GetBySessionIdAsync(string syncSessionId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(syncSessionId);
@@ -29,7 +27,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
         return [.. entities.Select(MapToModel)];
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FileOperationLog>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -43,7 +41,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
         return [.. entities.Select(MapToModel)];
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<FileOperationLog>> GetByAccountIdAsync(string accountId, int pageSize, int skip, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);
@@ -59,7 +57,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
         return [.. entities.Select(MapToModel)];
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task AddAsync(FileOperationLog operationLog, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(operationLog);
@@ -69,7 +67,7 @@ public sealed class FileOperationLogRepository : IFileOperationLogRepository
         _ = await _context.SaveChangesAsync(cancellationToken);
     }
 
-    /// <inheritdoc/>
+    /// <inheritdoc />
     public async Task DeleteOldOperationsAsync(string accountId, DateTime olderThan, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(accountId);

@@ -1,13 +1,20 @@
 using System.Reactive.Subjects;
-using AStar.Dev.Functional.Extensions;
 using AStarOneDriveClient.Models;
-using AStarOneDriveClient.Models.Enums;
 using AStarOneDriveClient.Repositories;
 
 namespace AStarOneDriveClient.Services;
 
 public class SyncEngine2 : ISyncEngine, IDisposable
 {
+    private readonly List<(DateTime Timestamp, long Bytes)> _transferHistory = [];
+    private readonly IRemoteChangeDetector remoteChangeDetector;
+    private readonly ISyncConfigurationRepository syncConfigurationRepository;
+    private bool _disposedValue;
+    private long _lastCompletedBytes;
+    private DateTime _lastProgressUpdate = DateTime.UtcNow;
+    private BehaviorSubject<SyncState> _progressSubject;
+    private CancellationTokenSource? _syncCancellation;
+
     public SyncEngine2(ISyncConfigurationRepository syncConfigurationRepository, IRemoteChangeDetector remoteChangeDetector)
     {
         this.syncConfigurationRepository = syncConfigurationRepository;
@@ -19,14 +26,13 @@ public class SyncEngine2 : ISyncEngine, IDisposable
 
         _progressSubject = new BehaviorSubject<SyncState>(initialState);
     }
-    private bool _disposedValue;
-    private CancellationTokenSource? _syncCancellation;
-    private BehaviorSubject<SyncState> _progressSubject;
-    private readonly ISyncConfigurationRepository syncConfigurationRepository;
-    private readonly IRemoteChangeDetector remoteChangeDetector;
-    private DateTime _lastProgressUpdate = DateTime.UtcNow;
-    private long _lastCompletedBytes;
-    private readonly List<(DateTime Timestamp, long Bytes)> _transferHistory = [];
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
 
     public IObservable<SyncState> Progress => _progressSubject;
 
@@ -45,12 +51,6 @@ public class SyncEngine2 : ISyncEngine, IDisposable
 
         (var placeholder, _progressSubject) = ProgressReporterService.ReportProgress(syncState, _progressSubject, _lastProgressUpdate, _lastCompletedBytes, _transferHistory);
 
-        (IReadOnlyList<FileMetadata>, string) selectedFolders = await syncConfigurationRepository.GetSelectedFolders2Async(accountId, cancellationToken)
-        .MatchAsync(
-            async folders => await CreateDetectionTasksAsync(accountId, folders, detectionSemaphore),
-            error => Task.FromResult<(IReadOnlyList<FileMetadata>, string?)>((Array.Empty<FileMetadata>(), error.Message))
-        );
-
         await Task.Delay(5000, cancellationToken); // Simulate some work
         SyncState finalState = syncState with // this is just to simulate final state, currently the updates are not showing in the UI
         {
@@ -64,6 +64,8 @@ public class SyncEngine2 : ISyncEngine, IDisposable
         _ = ProgressReporterService.ReportProgress(finalState, _progressSubject, _lastProgressUpdate, _lastCompletedBytes, _transferHistory);
     }
 
+    public Task StopSyncAsync() => throw new NotImplementedException();
+
     private async Task<(IReadOnlyList<FileMetadata>, string?)> CreateDetectionTasksAsync(string accountId, IList<string> folders, SemaphoreSlim detectionSemaphore)
     {
         await detectionSemaphore.WaitAsync(_syncCancellation!.Token);
@@ -73,25 +75,16 @@ public class SyncEngine2 : ISyncEngine, IDisposable
             _syncCancellation!.Token.ThrowIfCancellationRequested();
 
             List<Task<(IReadOnlyList<FileMetadata> Changes, string? NewDeltaLink)>> detectTasks = [];
-            foreach(var folderPath in folders)
-            {
-                detectTasks.Add(remoteChangeDetector.DetectChangesAsync(accountId, folderPath, null, _syncCancellation?.Token ?? CancellationToken.None));
-            }
+            foreach(var folderPath in folders) detectTasks.Add(remoteChangeDetector.DetectChangesAsync(accountId, folderPath, null, _syncCancellation?.Token ?? CancellationToken.None));
 
             (IReadOnlyList<FileMetadata> Changes, string? NewDeltaLink)[] changesPerFolder = await Task.WhenAll(detectTasks);
             List<FileMetadata> allChanges = [];
             string? latestDeltaLink = null;
             foreach((IReadOnlyList<FileMetadata>? changes, var newDeltaLink) in changesPerFolder)
             {
-                if(newDeltaLink is not null)
-                {
-                    latestDeltaLink = newDeltaLink;
-                }
+                if(newDeltaLink is not null) latestDeltaLink = newDeltaLink;
 
-                if(changes is not null)
-                {
-                    allChanges.AddRange(changes);
-                }
+                if(changes is not null) allChanges.AddRange(changes);
             }
 
             return (allChanges, latestDeltaLink);
@@ -101,8 +94,6 @@ public class SyncEngine2 : ISyncEngine, IDisposable
             _ = detectionSemaphore.Release();
         }
     }
-
-    public Task StopSyncAsync() => throw new NotImplementedException();
 
     protected virtual void Dispose(bool disposing)
     {
@@ -115,12 +106,5 @@ public class SyncEngine2 : ISyncEngine, IDisposable
 
             _disposedValue = true;
         }
-    }
-
-    public void Dispose()
-    {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
     }
 }

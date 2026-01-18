@@ -11,16 +11,18 @@ using ReactiveUI;
 namespace AStarOneDriveClient.ViewModels;
 
 /// <summary>
-/// ViewModel for managing OneDrive accounts.
+///     ViewModel for managing OneDrive accounts.
 /// </summary>
 public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 {
-    private readonly CompositeDisposable _disposables = [];
-    private readonly IAuthService _authService;
     private readonly IAccountRepository _accountRepository;
+    private readonly IAuthService _authService;
+    private readonly CompositeDisposable _disposables = [];
+
+    private CancellationTokenSource? _toastCts;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="AccountManagementViewModel"/> class.
+    ///     Initializes a new instance of the <see cref="AccountManagementViewModel" /> class.
     /// </summary>
     /// <param name="authService">The authentication service.</param>
     /// <param name="accountRepository">The account repository.</param>
@@ -72,12 +74,12 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Gets the collection of accounts.
+    ///     Gets the collection of accounts.
     /// </summary>
     public ObservableCollection<AccountInfo> Accounts { get; }
 
     /// <summary>
-    /// Gets or sets the transient toast message to show to the user.
+    ///     Gets or sets the transient toast message to show to the user.
     /// </summary>
     public string? ToastMessage
     {
@@ -86,7 +88,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Gets or sets whether the toast is currently visible.
+    ///     Gets or sets whether the toast is currently visible.
     /// </summary>
     public bool ToastVisible
     {
@@ -94,9 +96,8 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
         set => this.RaiseAndSetIfChanged(ref field, value);
     }
 
-    private CancellationTokenSource? _toastCts;
     /// <summary>
-    /// Gets or sets the currently selected account.
+    ///     Gets or sets the currently selected account.
     /// </summary>
     public AccountInfo? SelectedAccount
     {
@@ -105,7 +106,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Gets or sets a value indicating whether the view is loading data.
+    ///     Gets or sets a value indicating whether the view is loading data.
     /// </summary>
     public bool IsLoading
     {
@@ -114,24 +115,27 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     }
 
     /// <summary>
-    /// Gets the command to add a new account.
+    ///     Gets the command to add a new account.
     /// </summary>
     public ReactiveCommand<Unit, Unit> AddAccountCommand { get; }
 
     /// <summary>
-    /// Gets the command to remove the selected account.
+    ///     Gets the command to remove the selected account.
     /// </summary>
     public ReactiveCommand<Unit, Unit> RemoveAccountCommand { get; }
 
     /// <summary>
-    /// Gets the command to login to the selected account.
+    ///     Gets the command to login to the selected account.
     /// </summary>
     public ReactiveCommand<Unit, Unit> LoginCommand { get; }
 
     /// <summary>
-    /// Gets the command to logout from the selected account.
+    ///     Gets the command to logout from the selected account.
     /// </summary>
     public ReactiveCommand<Unit, Unit> LogoutCommand { get; }
+
+    /// <inheritdoc />
+    public void Dispose() => _disposables.Dispose();
 
     private async Task LoadAccountsAsync()
     {
@@ -140,10 +144,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
         {
             IReadOnlyList<AccountInfo> accounts = await _accountRepository.GetAllAsync();
             Accounts.Clear();
-            foreach(AccountInfo account in accounts)
-            {
-                Accounts.Add(account);
-            }
+            foreach(AccountInfo account in accounts) Accounts.Add(account);
         }
         finally
         {
@@ -171,26 +172,23 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                     result.DisplayName.Replace("@", "_").Replace(".", "_"));
 
                 var newAccount = new AccountInfo(
-                    AccountId: result.AccountId,
-                    DisplayName: result.DisplayName,
-                    LocalSyncPath: defaultPath,
-                    IsAuthenticated: true,
-                    LastSyncUtc: null,
-                    DeltaToken: null,
-                    EnableDetailedSyncLogging: false,
-                    EnableDebugLogging: false,
-                    MaxParallelUpDownloads: 3,
-                    MaxItemsInBatch: 50,
-                    AutoSyncIntervalMinutes: null);
+                    result.AccountId,
+                    result.DisplayName,
+                    defaultPath,
+                    true,
+                    null,
+                    null,
+                    false,
+                    false,
+                    3,
+                    50,
+                    null);
 
                 await _accountRepository.AddAsync(newAccount);
                 Accounts.Add(newAccount);
                 SelectedAccount = newAccount;
             }
-            else if(!result.Success && result.ErrorMessage is not null)
-            {
-                _ = ShowToastAsync(result.ErrorMessage);
-            }
+            else if(!result.Success && result.ErrorMessage is not null) _ = ShowToastAsync(result.ErrorMessage);
         }
         finally
         {
@@ -200,10 +198,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task RemoveAccountAsync()
     {
-        if(SelectedAccount is null)
-        {
-            return;
-        }
+        if(SelectedAccount is null) return;
 
         IsLoading = true;
         try
@@ -220,10 +215,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task LoginAsync()
     {
-        if(SelectedAccount is null)
-        {
-            return;
-        }
+        if(SelectedAccount is null) return;
 
         IsLoading = true;
         try
@@ -246,10 +238,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                     SelectedAccount = updatedAccount;
                 }
             }
-            else if(!result.Success && result.ErrorMessage is not null)
-            {
-                _ = ShowToastAsync(result.ErrorMessage);
-            }
+            else if(!result.Success && result.ErrorMessage is not null) _ = ShowToastAsync(result.ErrorMessage);
         }
         finally
         {
@@ -285,10 +274,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
 
     private async Task LogoutAsync()
     {
-        if(SelectedAccount is null)
-        {
-            return;
-        }
+        if(SelectedAccount is null) return;
 
         IsLoading = true;
         try
@@ -312,7 +298,4 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
             IsLoading = false;
         }
     }
-
-    /// <inheritdoc/>
-    public void Dispose() => _disposables.Dispose();
 }

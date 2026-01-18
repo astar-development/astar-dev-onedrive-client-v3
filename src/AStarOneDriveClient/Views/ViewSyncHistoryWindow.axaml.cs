@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace AStarOneDriveClient.Views;
 
 /// <summary>
-/// Window for viewing sync history.
+///     Window for viewing sync history.
 /// </summary>
 public sealed partial class ViewSyncHistoryWindow : Window
 {
