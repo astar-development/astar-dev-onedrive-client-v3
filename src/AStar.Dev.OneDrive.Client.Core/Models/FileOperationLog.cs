@@ -1,6 +1,6 @@
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 
-namespace AStar.Dev.OneDrive.Client.Models;
+namespace AStar.Dev.OneDrive.Client.Core.Models;
 
 /// <summary>
 ///     Represents a detailed log entry for a file operation during sync.

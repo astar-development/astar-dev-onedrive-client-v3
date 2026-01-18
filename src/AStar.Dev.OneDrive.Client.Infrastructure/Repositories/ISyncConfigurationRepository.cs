@@ -1,7 +1,8 @@
 using AStar.Dev.Functional.Extensions;
-using AStar.Dev.OneDrive.Client.Models;
+using AStar.Dev.OneDrive.Client.Core.Data.Entities;
+using AStar.Dev.OneDrive.Client.Core.Models;
 
-namespace AStar.Dev.OneDrive.Client.Repositories;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 
 /// <summary>
 ///     Repository for managing sync configuration data.
@@ -63,4 +64,14 @@ public interface ISyncConfigurationRepository
     /// <param name="configurations">The configurations to save.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     Task SaveBatchAsync(string accountId, IEnumerable<SyncConfiguration> configurations, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves the parent folder configuration for a given account and parent folder path.
+    /// </summary>
+    /// <param name="accountId">The identifier of the account.</param>
+    /// <param name="parentPath">The path of the parent folder to retrieve.</param>
+    /// <param name="possibleParentPath">The possible path of the parent folder to retrieve.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The parent folder configuration entity if one exists; otherwise, null.</returns>
+    Task<SyncConfigurationEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken);
 }

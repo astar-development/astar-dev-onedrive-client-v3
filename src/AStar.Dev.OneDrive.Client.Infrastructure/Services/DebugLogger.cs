@@ -1,9 +1,9 @@
 using AStar.Dev.OneDrive.Client.Core.Data;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
-using AStar.Dev.OneDrive.Client.Models;
-using AStar.Dev.OneDrive.Client.Repositories;
+using AStar.Dev.OneDrive.Client.Core.Models;
+using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 
-namespace AStar.Dev.OneDrive.Client.Services;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Implementation of debug logging that writes to the database when enabled for an account.

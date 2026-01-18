@@ -1,4 +1,4 @@
-namespace AStar.Dev.OneDrive.Client.Models;
+namespace AStar.Dev.OneDrive.Client.Core.Models;
 
 /// <summary>
 ///     Represents folder selection configuration for synchronization.

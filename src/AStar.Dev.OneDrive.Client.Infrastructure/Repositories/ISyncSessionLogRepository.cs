@@ -1,6 +1,6 @@
-using AStar.Dev.OneDrive.Client.Models;
+using AStar.Dev.OneDrive.Client.Core.Models;
 
-namespace AStar.Dev.OneDrive.Client.Repositories;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 
 /// <summary>
 ///     Repository for managing sync session logs.

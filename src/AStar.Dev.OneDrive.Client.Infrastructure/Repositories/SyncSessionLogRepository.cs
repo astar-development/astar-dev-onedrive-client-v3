@@ -1,10 +1,10 @@
 using AStar.Dev.OneDrive.Client.Core.Data;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
+using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
-using AStar.Dev.OneDrive.Client.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace AStar.Dev.OneDrive.Client.Repositories;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 
 /// <summary>
 ///     Repository implementation for managing sync session logs.

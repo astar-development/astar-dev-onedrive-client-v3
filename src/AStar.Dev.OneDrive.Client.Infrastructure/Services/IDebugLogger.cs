@@ -1,4 +1,4 @@
-namespace AStar.Dev.OneDrive.Client.Services;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Service for logging debug information to the database when enabled for an account.

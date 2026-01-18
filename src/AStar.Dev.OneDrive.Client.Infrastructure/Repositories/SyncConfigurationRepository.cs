@@ -1,11 +1,10 @@
 using AStar.Dev.Functional.Extensions;
 using AStar.Dev.OneDrive.Client.Core.Data;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
-using AStar.Dev.OneDrive.Client.Models;
-using AStar.Dev.OneDrive.Client.Services;
+using AStar.Dev.OneDrive.Client.Core.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace AStar.Dev.OneDrive.Client.Repositories;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 
 /// <summary>
 ///     Repository implementation for managing sync configuration data.
@@ -60,21 +59,6 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
             .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.FolderPath == configuration.FolderPath, cancellationToken);
 
         if(existingEntity is not null) return configuration;
-
-        var lastIndexOf = configuration.FolderPath.LastIndexOf('/');
-        if(lastIndexOf > 0)
-        {
-            var parentPath = configuration.FolderPath[..lastIndexOf];
-            var test = SyncEngine.FormatScanningFolderForDisplay(parentPath)!.Replace("OneDrive: ", string.Empty);
-            SyncConfigurationEntity? parentEntity = await _context.SyncConfigurations
-                .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && (sc.FolderPath == parentPath || sc.FolderPath == test), cancellationToken);
-
-            if(parentEntity is not null)
-            {
-                var updatedPath = SyncEngine.FormatScanningFolderForDisplay(configuration.FolderPath)!.Replace("OneDrive: ", string.Empty);
-                configuration = configuration with { FolderPath = updatedPath, IsSelected = parentEntity.IsSelected };
-            }
-        }
 
         SyncConfigurationEntity entity = MapToEntity(configuration);
         _ = _context.SyncConfigurations.Add(entity);
@@ -139,6 +123,15 @@ public sealed class SyncConfigurationRepository : ISyncConfigurationRepository
         _context.SyncConfigurations.AddRange(newEntities);
 
         _ = await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<SyncConfigurationEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken)
+    {
+        SyncConfigurationEntity? parentEntity = await _context.SyncConfigurations
+            .FirstOrDefaultAsync(sc => sc.AccountId == accountId && (sc.FolderPath == parentPath || sc.FolderPath == possibleParentPath), cancellationToken);
+
+        return parentEntity;
     }
 
     private static string CleanUpPath(string localFolderPath)

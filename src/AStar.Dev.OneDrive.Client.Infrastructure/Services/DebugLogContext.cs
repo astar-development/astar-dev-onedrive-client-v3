@@ -1,4 +1,4 @@
-namespace AStar.Dev.OneDrive.Client.Services;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Provides ambient context for the current account being processed.
