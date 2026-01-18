@@ -1,4 +1,8 @@
 <Solution>
+    <Folder Name="/.github/"/>
+    <Folder Name="/.github/workflows/">
+        <File Path=".github\workflows\main_astar-dev.yml"/>
+    </Folder>
     <Folder Name="/docs/"/>
     <Folder Name="/src/">
         <Project Path="src\AStar.Dev.OneDrive.Client\AStar.Dev.OneDrive.Client.csproj"/>
