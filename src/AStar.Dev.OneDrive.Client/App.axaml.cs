@@ -1,6 +1,6 @@
 using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 using AStar.Dev.OneDrive.Client.Services;
-using AStar.Dev.OneDrive.Client.Views;
+using AStar.Dev.OneDrive.Client.MainWindow;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
@@ -38,7 +38,7 @@ public sealed class App : Application
 
         if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow();
+            desktop.MainWindow = new MainWindow.MainWindow();
 
             // Cleanup on exit
             desktop.Exit += (_, _) =>

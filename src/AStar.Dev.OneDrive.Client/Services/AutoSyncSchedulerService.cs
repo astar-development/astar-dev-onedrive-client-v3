@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
-using AStar.Dev.OneDrive.Client.Models;
 using Microsoft.Extensions.Logging;
 using Timer = System.Timers.Timer;
 
