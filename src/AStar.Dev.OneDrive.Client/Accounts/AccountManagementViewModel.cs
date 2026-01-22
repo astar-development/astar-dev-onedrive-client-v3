@@ -28,9 +28,6 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
     /// <param name="accountRepository">The account repository.</param>
     public AccountManagementViewModel(IAuthService authService, IAccountRepository accountRepository)
     {
-        ArgumentNullException.ThrowIfNull(authService);
-        ArgumentNullException.ThrowIfNull(accountRepository);
-
         _authService = authService;
         _accountRepository = accountRepository;
         Accounts = [];

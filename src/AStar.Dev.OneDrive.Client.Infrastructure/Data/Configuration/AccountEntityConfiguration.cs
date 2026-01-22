@@ -13,5 +13,7 @@ public class AccountEntityConfiguration : IEntityTypeConfiguration<AccountEntity
         _ = builder.Property(e => e.DisplayName).IsRequired();
         _ = builder.Property(e => e.LocalSyncPath).IsRequired();
         _ = builder.HasIndex(e => e.LocalSyncPath).IsUnique();
+
+        _ = builder.HasData(AccountEntity.CreateSystemAccount());
     }
 }

@@ -79,7 +79,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
     /// <inheritdoc />
     public async Task StartSyncAsync(string accountId, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(accountId);
+        await DebugLog.EntryAsync(DebugLogMetadata.Services.SyncEngine.StartSync, cancellationToken);
         DebugLogContext.SetAccountId(accountId);
 
         if(SyncIsAlreadyRunning())
@@ -731,8 +731,8 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
     }
 
     private static List<FileMetadata> GetFilesToDelete(IReadOnlyList<FileMetadata> existingFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet,
-        HashSet<string> alreadyProcessedDeletions) =>
-    [
+        HashSet<string> alreadyProcessedDeletions)
+    => [
         .. existingFiles
             .Where(f => !remotePathsSet.Contains(f.Path) &&
                         !localPathsSet.Contains(f.Path) &&
@@ -741,16 +741,16 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             .Where(f => f.Id is not null)
     ];
 
-    private static List<FileMetadata> GetFilesDeletedLocally(List<FileMetadata> allLocalFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet) =>
-    [
+    private static List<FileMetadata> GetFilesDeletedLocally(List<FileMetadata> allLocalFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet)
+    => [
         .. allLocalFiles
             .Where(f => !localPathsSet.Contains(f.Path) &&
                         (remotePathsSet.Contains(f.Path) || f.SyncStatus == FileSyncStatus.Synced) &&
                         !string.IsNullOrEmpty(f.Id))
     ];
 
-    private static List<FileMetadata> SelectFilesDeletedFromOneDriveButSyncedLocally(IReadOnlyList<FileMetadata> existingFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet) =>
-    [
+    private static List<FileMetadata> SelectFilesDeletedFromOneDriveButSyncedLocally(IReadOnlyList<FileMetadata> existingFiles, HashSet<string> remotePathsSet, HashSet<string> localPathsSet)
+    => [
         .. existingFiles
             .Where(f => !remotePathsSet.Contains(f.Path) &&
                         localPathsSet.Contains(f.Path) &&

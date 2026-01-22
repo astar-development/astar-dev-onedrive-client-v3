@@ -290,8 +290,6 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
 
     private GraphServiceClient CreateGraphClientAsync(string accountId)
     {
-        if(string.IsNullOrEmpty(accountId)) throw new ArgumentException("Account ID cannot be null or empty", nameof(accountId));
-
         // Create a token provider that uses the auth service
         var authProvider = new BaseBearerTokenAuthenticationProvider(
             new GraphTokenProvider(authService, accountId));

@@ -60,6 +60,21 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("Accounts");
+
+                    b.HasData(
+                        new
+                        {
+                            AccountId = "e29a2798-c836-4854-ac90-a3f2d37aae26",
+                            AutoSyncIntervalMinutes = 0,
+                            DisplayName = "System Admin",
+                            EnableDebugLogging = true,
+                            EnableDetailedSyncLogging = true,
+                            IsAuthenticated = true,
+                            LastSyncUtc = new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            LocalSyncPath = ".",
+                            MaxItemsInBatch = 1,
+                            MaxParallelUpDownloads = 1
+                        });
                 });
 
             modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DebugLogEntity", b =>
@@ -183,6 +198,10 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AccountId");
+
+                    b.HasIndex("AccountId", "Path");
+
                     b.ToTable("FileMetadata");
                 });
 
@@ -259,6 +278,8 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AccountId", "FolderPath");
+
                     b.ToTable("SyncConfigurations");
                 });
 
@@ -271,8 +292,9 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTimeOffset>("DetectedUtc")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("DetectedUtc")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("DetectedUtc_Ticks");
 
                     b.Property<string>("FilePath")
                         .IsRequired()
@@ -281,14 +303,16 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.Property<bool>("IsResolved")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("LocalModifiedUtc")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("LocalModifiedUtc")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("LocalModifiedUtc_Ticks");
 
                     b.Property<long>("LocalSize")
                         .HasColumnType("INTEGER");
 
-                    b.Property<DateTimeOffset>("RemoteModifiedUtc")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("RemoteModifiedUtc")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("RemoteModifiedUtc_Ticks");
 
                     b.Property<long>("RemoteSize")
                         .HasColumnType("INTEGER");
@@ -299,6 +323,8 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AccountId");
+
+                    b.HasIndex("AccountId", "IsResolved");
 
                     b.ToTable("SyncConflicts");
                 });
@@ -348,13 +374,17 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("Height")
-                        .HasColumnType("REAL");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(600.0);
 
                     b.Property<bool>("IsMaximized")
                         .HasColumnType("INTEGER");
 
                     b.Property<double>("Width")
-                        .HasColumnType("REAL");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(800.0);
 
                     b.Property<double?>("X")
                         .HasColumnType("REAL");
@@ -376,8 +406,9 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<DateTimeOffset>("LastSyncedUtc")
-                        .HasColumnType("TEXT");
+                    b.Property<long>("LastSyncedUtc")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("LastSyncedUtc_Ticks");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -385,10 +416,30 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("DeltaTokens");
+                    b.HasIndex("AccountId");
+
+                    b.ToTable("DeltaTokens", (string)null);
                 });
 
             modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DriveItemRecord", b =>
+                {
+                    b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.FileMetadataEntity", b =>
+                {
+                    b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.SyncConfigurationEntity", b =>
                 {
                     b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
                         .WithMany()
@@ -406,6 +457,15 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Account");
+                });
+
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Models.DeltaToken", b =>
+                {
+                    b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
+                        .WithMany()
+                        .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

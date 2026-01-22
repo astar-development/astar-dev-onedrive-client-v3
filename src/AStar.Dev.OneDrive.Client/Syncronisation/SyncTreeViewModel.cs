@@ -8,6 +8,7 @@ using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 using AStar.Dev.OneDrive.Client.Models;
 using AStar.Dev.OneDrive.Client.Services;
 using ReactiveUI;
+using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 namespace AStar.Dev.OneDrive.Client.Syncronisation;
 
@@ -358,19 +359,16 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     /// <returns>List of selected folder nodes.</returns>
     public List<OneDriveFolderNode> GetSelectedFolders() => _selectionService.GetSelectedFolders([.. RootFolders]);
 
-    /// <summary>
-    ///     Starts file synchronization for the selected account.
-    /// </summary>
     private async Task StartSyncAsync()
     {
+        await DebugLog.EntryAsync(DebugLogMetadata.UI.SyncTreeViewModel.StartSync, CancellationToken.None);
         if(string.IsNullOrEmpty(SelectedAccountId)) return;
 
         try
         {
-            LastSyncResult = null; // Clear previous result
+            LastSyncResult = null;
             await _syncEngine.StartSyncAsync(SelectedAccountId);
 
-            // Display result after sync completes
             if(SyncState.Status == SyncStatus.Completed)
             {
                 var totalChanges = SyncState.TotalFiles + SyncState.FilesDeleted;
@@ -391,9 +389,6 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         }
     }
 
-    /// <summary>
-    ///     Cancels the ongoing synchronization.
-    /// </summary>
     private async Task CancelSyncAsync()
     {
         await _syncEngine.StopSyncAsync();

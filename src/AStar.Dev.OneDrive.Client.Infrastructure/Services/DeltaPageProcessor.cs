@@ -10,6 +10,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
 {
     public async Task<(DeltaToken finalDelta, int pageCount, int totalItemsProcessed)> ProcessAllDeltaPagesAsync(string accountId, DeltaToken? deltaToken, Action<SyncState>? progressCallback, CancellationToken cancellationToken)
     {
+        await DebugLog.EntryAsync("FileProcessor.ProcessFileAsync", cancellationToken);
         logger.LogInformation("[DeltaPageProcessor] Starting delta page processing (with progress callback)");
         string? nextOrDelta = null;
         DeltaToken finalToken = deltaToken;

@@ -151,18 +151,12 @@ public static class ServiceConfiguration
     ///     Ensures the database is created and migrations are applied.
     /// </summary>
     /// <param name="serviceProvider">The service provider.</param>
-    public static void EnsureDatabaseCreated(ServiceProvider serviceProvider)
+    public static void EnsureDatabaseUpdated(ServiceProvider serviceProvider)
     {
         using IServiceScope scope = serviceProvider.CreateScope();
         SyncDbContext context = scope.ServiceProvider.GetRequiredService<SyncDbContext>();
-        try
-        {
-            context.Database.Migrate();
-        }
-        catch
-        {
-            // If EnsureCreated fails (e.g. due to existing but outdated database), apply migrations
-        }
+        
+        context.Database.Migrate();
     }
 
     /// <summary>

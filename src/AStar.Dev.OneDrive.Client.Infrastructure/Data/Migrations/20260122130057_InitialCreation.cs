@@ -51,42 +51,6 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DeltaTokens",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
-                    Token = table.Column<string>(type: "TEXT", nullable: false),
-                    LastSyncedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DeltaTokens", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "FileMetadata",
-                columns: table => new
-                {
-                    Id = table.Column<string>(type: "TEXT", nullable: false),
-                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
-                    Name = table.Column<string>(type: "TEXT", nullable: false),
-                    Path = table.Column<string>(type: "TEXT", nullable: false),
-                    Size = table.Column<long>(type: "INTEGER", nullable: false),
-                    LastModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    LocalPath = table.Column<string>(type: "TEXT", nullable: false),
-                    CTag = table.Column<string>(type: "TEXT", nullable: true),
-                    ETag = table.Column<string>(type: "TEXT", nullable: true),
-                    LocalHash = table.Column<string>(type: "TEXT", nullable: true),
-                    SyncStatus = table.Column<int>(type: "INTEGER", nullable: false),
-                    LastSyncDirection = table.Column<int>(type: "INTEGER", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FileMetadata", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "FileOperationLogs",
                 columns: table => new
                 {
@@ -107,22 +71,6 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_FileOperationLogs", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SyncConfigurations",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
-                    FolderPath = table.Column<string>(type: "TEXT", nullable: false),
-                    IsSelected = table.Column<bool>(type: "INTEGER", nullable: false),
-                    LastModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SyncConfigurations", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -153,13 +101,33 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     X = table.Column<double>(type: "REAL", nullable: true),
                     Y = table.Column<double>(type: "REAL", nullable: true),
-                    Width = table.Column<double>(type: "REAL", nullable: false),
-                    Height = table.Column<double>(type: "REAL", nullable: false),
+                    Width = table.Column<double>(type: "REAL", nullable: false, defaultValue: 800.0),
+                    Height = table.Column<double>(type: "REAL", nullable: false, defaultValue: 600.0),
                     IsMaximized = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_WindowPreferences", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "DeltaTokens",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
+                    Token = table.Column<string>(type: "TEXT", nullable: false),
+                    LastSyncedUtc_Ticks = table.Column<long>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DeltaTokens", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_DeltaTokens_Accounts_AccountId",
+                        column: x => x.AccountId,
+                        principalTable: "Accounts",
+                        principalColumn: "AccountId",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -189,17 +157,67 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "FileMetadata",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "TEXT", nullable: false),
+                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
+                    Name = table.Column<string>(type: "TEXT", nullable: false),
+                    Path = table.Column<string>(type: "TEXT", nullable: false),
+                    Size = table.Column<long>(type: "INTEGER", nullable: false),
+                    LastModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    LocalPath = table.Column<string>(type: "TEXT", nullable: false),
+                    CTag = table.Column<string>(type: "TEXT", nullable: true),
+                    ETag = table.Column<string>(type: "TEXT", nullable: true),
+                    LocalHash = table.Column<string>(type: "TEXT", nullable: true),
+                    SyncStatus = table.Column<int>(type: "INTEGER", nullable: false),
+                    LastSyncDirection = table.Column<int>(type: "INTEGER", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FileMetadata", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_FileMetadata_Accounts_AccountId",
+                        column: x => x.AccountId,
+                        principalTable: "Accounts",
+                        principalColumn: "AccountId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SyncConfigurations",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    AccountId = table.Column<string>(type: "TEXT", nullable: false),
+                    FolderPath = table.Column<string>(type: "TEXT", nullable: false),
+                    IsSelected = table.Column<bool>(type: "INTEGER", nullable: false),
+                    LastModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SyncConfigurations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SyncConfigurations_Accounts_AccountId",
+                        column: x => x.AccountId,
+                        principalTable: "Accounts",
+                        principalColumn: "AccountId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "SyncConflicts",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
                     AccountId = table.Column<string>(type: "TEXT", nullable: false),
                     FilePath = table.Column<string>(type: "TEXT", nullable: false),
-                    LocalModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
-                    RemoteModifiedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    LocalModifiedUtc_Ticks = table.Column<long>(type: "INTEGER", nullable: false),
+                    RemoteModifiedUtc_Ticks = table.Column<long>(type: "INTEGER", nullable: false),
                     LocalSize = table.Column<long>(type: "INTEGER", nullable: false),
                     RemoteSize = table.Column<long>(type: "INTEGER", nullable: false),
-                    DetectedUtc = table.Column<DateTimeOffset>(type: "TEXT", nullable: false),
+                    DetectedUtc_Ticks = table.Column<long>(type: "INTEGER", nullable: false),
                     ResolutionStrategy = table.Column<int>(type: "INTEGER", nullable: false),
                     IsResolved = table.Column<bool>(type: "INTEGER", nullable: false)
                 },
@@ -214,11 +232,21 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.InsertData(
+                table: "Accounts",
+                columns: new[] { "AccountId", "AutoSyncIntervalMinutes", "DeltaToken", "DisplayName", "EnableDebugLogging", "EnableDetailedSyncLogging", "IsAuthenticated", "LastSyncUtc", "LocalSyncPath", "MaxItemsInBatch", "MaxParallelUpDownloads" },
+                values: new object[] { "e29a2798-c836-4854-ac90-a3f2d37aae26", 0, null, "System Admin", true, true, true, new DateTimeOffset(new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), ".", 1, 1 });
+
             migrationBuilder.CreateIndex(
                 name: "IX_Accounts_LocalSyncPath",
                 table: "Accounts",
                 column: "LocalSyncPath",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DeltaTokens_AccountId",
+                table: "DeltaTokens",
+                column: "AccountId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DriveItems_AccountId",
@@ -231,9 +259,29 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                 column: "DriveItemId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_FileMetadata_AccountId",
+                table: "FileMetadata",
+                column: "AccountId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FileMetadata_AccountId_Path",
+                table: "FileMetadata",
+                columns: new[] { "AccountId", "Path" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SyncConfigurations_AccountId_FolderPath",
+                table: "SyncConfigurations",
+                columns: new[] { "AccountId", "FolderPath" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_SyncConflicts_AccountId",
                 table: "SyncConflicts",
                 column: "AccountId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SyncConflicts_AccountId_IsResolved",
+                table: "SyncConflicts",
+                columns: new[] { "AccountId", "IsResolved" });
         }
 
         /// <inheritdoc />

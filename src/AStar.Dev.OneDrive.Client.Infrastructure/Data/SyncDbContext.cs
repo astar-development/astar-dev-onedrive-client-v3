@@ -73,5 +73,7 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
         base.OnModelCreating(modelBuilder);
 
         _ = modelBuilder.ApplyConfigurationsFromAssembly(typeof(SyncDbContext).Assembly);
+
+        modelBuilder.UseSqliteFriendlyConversions();
     }
 }
