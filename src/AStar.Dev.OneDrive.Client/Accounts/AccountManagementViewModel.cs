@@ -33,9 +33,7 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
         Accounts = [];
 
         // Add Account command - always enabled
-        AddAccountCommand = ReactiveCommand.CreateFromTask(
-            AddAccountAsync,
-            outputScheduler: RxApp.MainThreadScheduler);
+        AddAccountCommand = ReactiveCommand.CreateFromTask(AddAccountAsync, outputScheduler: RxApp.MainThreadScheduler);
 
         // Remove Account command - enabled when account is selected
         IObservable<bool> canRemove = this.WhenAnyValue(x => x.SelectedAccount)

@@ -91,12 +91,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
         _syncCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        for (var i = 0; i < 500; i++)
-        {
-            ReportProgress(accountId, SyncStatus.InitialDeltaSync, i, 0, 1234543, 134141, 8,0,0,0, $"Delta Sync Page: {i}");
-            await Task.Delay(1000, cancellationToken);
-        }
-
         try
         {
             ResetTrackingDetails();

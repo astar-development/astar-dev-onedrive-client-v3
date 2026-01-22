@@ -3,6 +3,7 @@
         xmlns:vm="using:AStar.Dev.OneDrive.Client.Accounts"
         x:Class="AStar.Dev.OneDrive.Client.Accounts.UpdateAccountDetailsWindow"
         x:DataType="vm:UpdateAccountDetailsViewModel"
+        Icon="avares://AStar.Dev.OneDrive.Client/Assets/astar.png"
         Title="Update Account Details"
         Width="900"
         Height="800"

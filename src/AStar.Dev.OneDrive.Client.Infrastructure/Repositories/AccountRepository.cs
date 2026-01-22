@@ -13,7 +13,7 @@ public sealed class AccountRepository(SyncDbContext context) : IAccountRepositor
     /// <inheritdoc />
     public async Task<IReadOnlyList<AccountInfo>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        List<AccountEntity> entities = await context.Accounts.ToListAsync(cancellationToken);
+        List<AccountEntity> entities = await context.Accounts.Where(account => account.DisplayName != "System Admin").ToListAsync(cancellationToken);
         return [.. entities.Select(MapToModel)];
     }
 

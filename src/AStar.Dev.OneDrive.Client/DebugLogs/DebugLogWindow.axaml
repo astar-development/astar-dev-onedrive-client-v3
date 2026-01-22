@@ -3,6 +3,7 @@
         xmlns:vm="using:AStar.Dev.OneDrive.Client.DebugLogs"
         x:Class="AStar.Dev.OneDrive.Client.DebugLogs.DebugLogWindow"
         x:DataType="vm:DebugLogViewModel"
+        Icon="avares://AStar.Dev.OneDrive.Client/Assets/astar.png"
         Title="Debug Log Viewer"
         Width="1400"
         Height="800"
