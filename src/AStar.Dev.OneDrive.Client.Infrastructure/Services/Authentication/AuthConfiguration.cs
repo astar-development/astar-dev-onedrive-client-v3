@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Configuration;
 
-namespace AStar.Dev.OneDrive.Client.Authentication;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 
 /// <summary>
 ///     Configuration settings for MSAL authentication.

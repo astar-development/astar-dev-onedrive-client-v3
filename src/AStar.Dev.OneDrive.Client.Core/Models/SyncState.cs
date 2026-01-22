@@ -1,6 +1,6 @@
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 
-namespace AStar.Dev.OneDrive.Client.Models;
+namespace AStar.Dev.OneDrive.Client.Core.Models;
 
 /// <summary>
 ///     Represents the current state of synchronization for an account.
@@ -17,7 +17,7 @@ namespace AStar.Dev.OneDrive.Client.Models;
 /// <param name="ConflictsDetected">Number of conflicts detected.</param>
 /// <param name="MegabytesPerSecond">Current transfer speed in MB/s.</param>
 /// <param name="EstimatedSecondsRemaining">Estimated seconds until completion.</param>
-/// <param name="CurrentScanningFolder">The folder path currently being scanned (null when not scanning).</param>
+/// <param name="CurrentStatusMessage">The current Status Message (e.g. current folder - null when not scanning).</param>
 /// <param name="LastUpdateUtc">Timestamp of the last state update.</param>
 public sealed record SyncState(
     string AccountId,
@@ -31,9 +31,9 @@ public sealed record SyncState(
     int FilesDeleted,
     int ConflictsDetected,
     double MegabytesPerSecond,
-    int? EstimatedSecondsRemaining,
-    string? CurrentScanningFolder,
-    DateTime? LastUpdateUtc
+    int? EstimatedSecondsRemaining = 0,
+    string? CurrentStatusMessage= "",
+    DateTimeOffset? LastUpdateUtc = null
 )
 {
     public static SyncState CreateInitial(string accountId)
@@ -48,8 +48,5 @@ public sealed record SyncState(
             0,
             0,
             0,
-            0,
-            null,
-            null,
-            null);
+            0);
 }

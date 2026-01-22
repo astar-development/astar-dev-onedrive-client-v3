@@ -2,7 +2,7 @@ using AStar.Dev.OneDrive.Client.Core.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace AStar.Dev.OneDrive.Client.Core.Data.Configuration;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Configuration;
 
 public class AccountEntityConfiguration : IEntityTypeConfiguration<AccountEntity>
 {

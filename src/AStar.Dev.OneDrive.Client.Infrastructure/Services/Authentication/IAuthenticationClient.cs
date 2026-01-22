@@ -1,6 +1,6 @@
 using Microsoft.Identity.Client;
 
-namespace AStar.Dev.OneDrive.Client.Authentication;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 
 /// <summary>
 ///     Wrapper interface for <see cref="IPublicClientApplication" /> to enable testing.

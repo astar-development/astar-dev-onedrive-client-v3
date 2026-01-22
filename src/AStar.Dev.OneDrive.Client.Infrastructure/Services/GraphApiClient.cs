@@ -1,14 +1,18 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
-using AStar.Dev.OneDrive.Client.Authentication;
+using AStar.Dev.OneDrive.Client.Core.Data.Entities;
+using AStar.Dev.OneDrive.Client.Core.DTOs;
+using AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
+using Microsoft.Extensions.Logging;
 using Microsoft.Graph;
 using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
 
-namespace AStar.Dev.OneDrive.Client.Services.OneDriveServices;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Wrapper implementation for Microsoft Graph API client.
@@ -16,18 +20,30 @@ namespace AStar.Dev.OneDrive.Client.Services.OneDriveServices;
 /// <remarks>
 ///     Wraps GraphServiceClient to provide a testable abstraction for OneDrive operations.
 /// </remarks>
-public sealed class GraphApiClient : IGraphApiClient
+public sealed class GraphApiClient(IAuthService authService, HttpClient http, MsalConfigurationSettings msalConfigurationSettings, ILogger<GraphApiClient> logger) : IGraphApiClient
 {
-    private readonly IAuthService _authService;
-
-    /// <summary>
-    ///     Initializes a new instance of the <see cref="GraphApiClient" /> class.
-    /// </summary>
-    /// <param name="authService">The authentication service.</param>
-    public GraphApiClient(IAuthService authService)
+    public async Task<DeltaPage> GetDriveDeltaPageAsync(string accountId, string? deltaOrNextLink, CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(authService);
-        _authService = authService;
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var url = GetDeltaOrNextUrl(deltaOrNextLink);
+
+        var token = await authService.GetAccessTokenAsync(accountId, cancellationToken);
+        using var req = new HttpRequestMessage(HttpMethod.Get, url);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using HttpResponseMessage res = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        _ = res.EnsureSuccessStatusCode();
+
+        await using Stream stream = await res.Content.ReadAsStreamAsync(cancellationToken);
+        using JsonDocument doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+
+        List<DriveItemRecord> items = ParseDriveItemRecords(accountId, doc);
+
+        var next = TryGetODataProperty(doc, "@odata.nextLink");
+        var delta = TryGetODataProperty(doc, "@odata.deltaLink");
+
+        return new DeltaPage(items, next, delta);
     }
 
     public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
@@ -278,10 +294,54 @@ public sealed class GraphApiClient : IGraphApiClient
 
         // Create a token provider that uses the auth service
         var authProvider = new BaseBearerTokenAuthenticationProvider(
-            new GraphTokenProvider(_authService, accountId));
+            new GraphTokenProvider(authService, accountId));
 
         return new GraphServiceClient(authProvider);
     }
+
+    private string GetDeltaOrNextUrl(string? deltaOrNextLink)
+        => string.IsNullOrEmpty(deltaOrNextLink)
+            ? $"{msalConfigurationSettings.GraphUri}/root/delta"
+            : deltaOrNextLink;
+
+    private static List<DriveItemRecord> ParseDriveItemRecords(string accountId, JsonDocument doc)
+    {
+        var items = new List<DriveItemRecord>();
+        if(doc.RootElement.TryGetProperty("value", out JsonElement arr))
+        {
+            foreach(JsonElement el in arr.EnumerateArray())
+            {
+                items.Add(ParseDriveItemRecord(accountId, el));
+            }
+        }
+
+        return items;
+    }
+
+    private static DriveItemRecord ParseDriveItemRecord(string accountId, JsonElement jsonElement)
+    {
+        var id = jsonElement.GetProperty("id").GetString()!;
+        var isFolder = jsonElement.TryGetProperty("folder", out _);
+        var size = jsonElement.TryGetProperty("size", out JsonElement sProp) ? sProp.GetInt64() : 0L;
+        var parentPath = SetParentPath(jsonElement);
+        var name = jsonElement.TryGetProperty("name", out JsonElement n) ? n.GetString() ?? id : id;
+        var relativePath = GraphPathHelpers.BuildRelativePath(parentPath, name);
+        var eTag = jsonElement.TryGetProperty("eTag", out JsonElement et) ? et.GetString() : null;
+        var cTag = jsonElement.TryGetProperty("cTag", out JsonElement ctProp) ? ctProp.GetString() : null;
+        DateTimeOffset lastModifiedUtc = GetLastModifiedUtc(jsonElement);
+        var isDeleted = jsonElement.TryGetProperty("deleted", out _);
+
+        return new DriveItemRecord(accountId, id, id, relativePath, eTag, cTag, size, lastModifiedUtc, isFolder, isDeleted);
+    }
+
+    private static DateTimeOffset GetLastModifiedUtc(JsonElement jsonElement) => jsonElement.TryGetProperty("lastModifiedDateTime", out JsonElement lm)
+                ? DateTimeOffset.Parse(lm.GetString()!, CultureInfo.InvariantCulture)
+                : DateTimeOffset.UtcNow;
+    private static string SetParentPath(JsonElement jsonElement)
+        => jsonElement.TryGetProperty("parentReference", out JsonElement pr) && pr.TryGetProperty("path", out JsonElement p) ? p.GetString() ?? string.Empty : string.Empty;
+
+    private static string? TryGetODataProperty(JsonDocument doc, string propertyName)
+        => doc.RootElement.TryGetProperty(propertyName, out JsonElement prop) ? prop.GetString() : null;
 
     // Token provider implementation for Graph API
     private sealed class GraphTokenProvider(IAuthService authService, string accountId) : IAccessTokenProvider

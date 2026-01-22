@@ -1,4 +1,4 @@
-namespace AStar.Dev.OneDrive.Client.Authentication;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 
 /// <summary>
 ///     Result of an authentication operation.
@@ -7,9 +7,4 @@ namespace AStar.Dev.OneDrive.Client.Authentication;
 /// <param name="AccountId">The authenticated account identifier.</param>
 /// <param name="DisplayName">The display name of the authenticated user.</param>
 /// <param name="ErrorMessage">Error message if the operation failed.</param>
-public sealed record AuthenticationResult(
-    bool Success,
-    string? AccountId,
-    string? DisplayName,
-    string? ErrorMessage
-);
+public sealed record AuthenticationResult(bool Success, string? AccountId, string? DisplayName, string? ErrorMessage);

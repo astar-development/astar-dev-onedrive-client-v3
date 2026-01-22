@@ -1,7 +1,7 @@
 using Microsoft.Identity.Client;
 using Microsoft.Identity.Client.Extensions.Msal;
 
-namespace AStar.Dev.OneDrive.Client.Authentication;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 
 /// <summary>
 ///     Service for managing Microsoft authentication via MSAL.
@@ -158,7 +158,7 @@ public sealed class AuthService : IAuthService
     /// <param name="configuration">Authentication configuration.</param>
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>Configured AuthService instance.</returns>
-    public static async Task<AuthService> CreateAsync(AuthConfiguration configuration, CancellationToken cancellationToken = default)
+    public static async Task<AuthService> CreateAsync(AuthConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration);
 

@@ -3,6 +3,7 @@ using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Disposables.Fluent;
 using System.Reactive.Linq;
+using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 using AStar.Dev.OneDrive.Client.Models;
 using AStar.Dev.OneDrive.Client.Services;
@@ -26,10 +27,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     /// <param name="folderTreeService">Service for loading folder hierarchies.</param>
     /// <param name="selectionService">Service for managing selection state.</param>
     /// <param name="syncEngine">Service for file synchronization.</param>
-    public SyncTreeViewModel(
-        IFolderTreeService folderTreeService,
-        ISyncSelectionService selectionService,
-        ISyncEngine syncEngine)
+    public SyncTreeViewModel(IFolderTreeService folderTreeService, ISyncSelectionService selectionService, ISyncEngine syncEngine)
     {
         _folderTreeService = folderTreeService ?? throw new ArgumentNullException(nameof(folderTreeService));
         _selectionService = selectionService ?? throw new ArgumentNullException(nameof(selectionService));
@@ -135,26 +133,12 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
     {
         get;
         private set => this.RaiseAndSetIfChanged(ref field, value);
-    } = new(
-        string.Empty,
-        SyncStatus.Idle,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        null,
-        null,
-        null);
+    } = SyncState.CreateInitial("");
 
     /// <summary>
     ///     Gets a value indicating whether sync is currently running.
     /// </summary>
-    public bool IsSyncing => SyncState.Status == SyncStatus.Running;
+    public bool IsSyncing => IsRunning(SyncState);
 
     /// <summary>
     ///     Gets a value indicating whether sync is paused.
@@ -181,6 +165,8 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         SyncStatus.Paused => "Sync paused",
         SyncStatus.Failed => "Sync failed",
         SyncStatus.Queued => throw new NotImplementedException(),
+        SyncStatus.InitialDeltaSync => $"Starting the initial Delta Sync...processing page: {SyncState.TotalFiles}",
+        SyncStatus.IncrementalDeltaSync => "Starting the incremental Delta Sync...this could take some time...",
         _ => string.Empty
     };
 
@@ -339,6 +325,8 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             });
         }
     }
+
+    private bool IsRunning(SyncState syncState) => syncState.Status is SyncStatus.Running or SyncStatus.InitialDeltaSync or SyncStatus.IncrementalDeltaSync;
 
     /// <summary>
     ///     Clears all folder selections.

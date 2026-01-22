@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
-namespace AStar.Dev.OneDrive.Client.Core.Data;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Data;
 
 /// <summary>
 ///     Design-time factory for creating SyncDbContext instances during migrations.

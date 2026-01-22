@@ -1,6 +1,6 @@
 using Microsoft.Identity.Client;
 
-namespace AStar.Dev.OneDrive.Client.Authentication;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 
 /// <summary>
 ///     Wrapper implementation for <see cref="IPublicClientApplication" /> that delegates to MSAL.
