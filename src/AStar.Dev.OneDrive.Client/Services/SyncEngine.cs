@@ -98,7 +98,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             DeltaToken? token = await _syncRepository.GetDeltaTokenAsync(accountId, cancellationToken);
 
             (DeltaToken? finalDelta, var pageCount, var totalItemsProcessed) = await _deltaPageProcessor.ProcessAllDeltaPagesAsync(accountId, token, _progressSubject.OnNext, cancellationToken);
-            await _syncRepository.SaveOrUpdateDeltaTokenAsync(accountId,finalDelta, cancellationToken);
+            await _syncRepository.SaveOrUpdateDeltaTokenAsync(finalDelta, cancellationToken);
            
             await DebugLog.EntryAsync("SyncEngine.StartSyncAsync", cancellationToken);
 

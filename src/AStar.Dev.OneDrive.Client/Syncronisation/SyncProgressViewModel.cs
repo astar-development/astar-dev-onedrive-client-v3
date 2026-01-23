@@ -55,8 +55,7 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
             {
                 CurrentProgress = progress;
 
-                // Update IsSyncing based on sync status
-                IsSyncing = progress.Status == SyncStatus.Running;
+                IsSyncing = progress.Status is SyncStatus.Running or SyncStatus.InitialDeltaSync or SyncStatus.IncrementalDeltaSync;
 
                 UpdateStatusMessage();
                 this.RaisePropertyChanged(nameof(ProgressPercentage));
@@ -128,7 +127,7 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
 
             // Show scanning folder if currently scanning
             if(!string.IsNullOrEmpty(CurrentProgress.CurrentStatusMessage))
-                parts.Add($"Scanning: {CurrentProgress.CurrentStatusMessage}");
+                parts.Add(CurrentProgress.CurrentStatusMessage);
             else
             {
                 // Show upload/download counts during transfer
@@ -267,7 +266,7 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
                 // During scanning phase, show the folder being scanned
                 StatusMessage = string.IsNullOrEmpty(CurrentProgress.CurrentStatusMessage)
                     ? "Scanning for changes..."
-                    : $"Scanning: {CurrentProgress.CurrentStatusMessage}";
+                    : CurrentProgress.CurrentStatusMessage;
             }
             else
             {

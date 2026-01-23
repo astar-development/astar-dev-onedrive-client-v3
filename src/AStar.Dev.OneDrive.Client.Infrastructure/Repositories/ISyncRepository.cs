@@ -7,7 +7,7 @@ public interface ISyncRepository
 {
     Task<DeltaToken?> GetDeltaTokenAsync(string accountId, CancellationToken cancellationToken);
 
-    Task SaveOrUpdateDeltaTokenAsync(string accountId, DeltaToken token, CancellationToken cancellationToken);
+    Task SaveOrUpdateDeltaTokenAsync(DeltaToken token, CancellationToken cancellationToken);
     
     /// <summary>
     /// Apply a page of DriveItem metadata to the local DB.

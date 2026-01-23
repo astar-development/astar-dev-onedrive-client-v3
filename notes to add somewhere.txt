@@ -1,0 +1,37 @@
+dotnet ef migrations add AdditionalTableUpdates --startup-project .\AStar.Dev.OneDrive.Client\AStar.Dev.OneDrive.Client.csproj --project .\AStar.Dev.OneDrive.Client.Infrastructure\AStar.Dev.OneDrive.Client.Infrastructure.csproj -o Data/Migrations
+
+MUST HAVE:
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            _ = optionsBuilder.UseSqlite(@"Data Source=C:\Users\jbarden\AppData\Local\AStar.Dev.OneDrive.Client\sync.db");
+        }
+    }
+	
+	
+	dotnet nuget locals all --clear
+	dotnet tool update --global dotnet-ef
+	
+	Certainly! Here’s how you can clear the NuGet cache:
+
+**Windows (PowerShell):**
+```powershell
+dotnet nuget locals all --clear
+```
+or with the NuGet CLI:
+```powershell
+nuget locals all -clear
+```
+
+**Linux (bash):**
+```sh
+dotnet nuget locals all --clear
+```
+or with the NuGet CLI:
+```sh
+nuget locals all -clear
+```
+
+Both commands work the same way on Windows and Linux. Use the `dotnet` CLI if you have .NET SDK installed, or `nuget` CLI if you have the standalone NuGet tool.

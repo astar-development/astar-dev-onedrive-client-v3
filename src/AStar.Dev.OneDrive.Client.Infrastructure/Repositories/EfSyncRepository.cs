@@ -16,7 +16,7 @@ public sealed class EfSyncRepository(IDbContextFactory<SyncDbContext> dbContextF
         return await db.DeltaTokens.Where(token => token.AccountId == accountId).OrderByDescending(t => t.LastSyncedUtc).FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task SaveOrUpdateDeltaTokenAsync(string accountId, DeltaToken token, CancellationToken cancellationToken)
+    public async Task SaveOrUpdateDeltaTokenAsync(DeltaToken token, CancellationToken cancellationToken)
     {
         await using SyncDbContext db = dbContextFactory.CreateDbContext();
         cancellationToken.ThrowIfCancellationRequested();

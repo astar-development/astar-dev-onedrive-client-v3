@@ -13,7 +13,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
     {
         await DebugLog.EntryAsync("FileProcessor.ProcessFileAsync", cancellationToken);
         logger.LogInformation("[DeltaPageProcessor] Starting delta page processing (with progress callback)");
-        string? nextOrDelta = null;
+        var nextOrDelta = deltaToken?.Token;
         DeltaToken finalToken = deltaToken;
         int pageCount = 0, totalItemsProcessed = 0;
         progressCallback?.Invoke(CreateStartingSyncMessage(accountId, deltaToken == null));
@@ -27,7 +27,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
                 DriveItemRecord? driveItemRecord = page.Items.FirstOrDefault();
                 if(driveItemRecord is not null)
                 {
-                    deltaToken = new DeltaToken("PlaceholderAccountId", driveItemRecord.Id.Split('!')[0], page.DeltaLink ?? string.Empty, DateTimeOffset.UtcNow);
+                    deltaToken = new DeltaToken(accountId, driveItemRecord.Id.Split('!')[0], page.DeltaLink ?? string.Empty, DateTimeOffset.UtcNow);
                 }
 
                 logger.LogDebug("[DeltaPageProcessor] Received page: items={Count} nextLink={NextLink} deltaLink={DeltaLink}", page.Items.Count(), page.NextLink, page.DeltaLink);
@@ -36,7 +36,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
                 nextOrDelta = page.NextLink;
                 if(page.DeltaLink is not null)
                 {
-                    finalToken = new("PlaceholderAccountId", deltaToken!.Id, page.DeltaLink, DateTimeOffset.UtcNow);
+                    finalToken = new(accountId, deltaToken!.Id, page.DeltaLink, DateTimeOffset.UtcNow);
                 }
 
                 pageCount++;
@@ -53,6 +53,8 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
             progressCallback?.Invoke(CreateErrorSyncProgress(accountId,totalItemsProcessed, ex.GetBaseException()?.Message ?? "Unknown error"));
             throw new IOException("Error processing delta pages", ex);
         }
+
+        if(finalToken is not null) finalToken = finalToken with{ AccountId = accountId};
 
         return (finalToken!, pageCount, totalItemsProcessed);
     }
@@ -77,7 +79,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
         if(initialSync)
         {
             syncType = SyncStatus.InitialDeltaSync;
-            syncMessage = $"Initial sync processed page: {pageCount}... total files so far: {totalItemsProcessed}";
+            syncMessage = $"Initial sync processed page: {pageCount}... total items: {totalItemsProcessed} detected so far";
         }
 
         return new(accountId, syncType, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, syncMessage);
