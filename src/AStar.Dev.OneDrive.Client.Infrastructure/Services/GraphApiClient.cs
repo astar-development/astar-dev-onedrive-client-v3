@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
 using AStar.Dev.OneDrive.Client.Core.Models;
+using AStar.Dev.OneDrive.Client.Core.Models.OneDrive;
 using AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 using Microsoft.Graph;
 using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
