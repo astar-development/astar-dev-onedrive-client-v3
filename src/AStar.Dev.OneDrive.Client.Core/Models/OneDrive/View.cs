@@ -2,7 +2,7 @@
 
 public class View
 {
-    public string sortBy { get; set; }
-    public string sortOrder { get; set; }
-    public string viewType { get; set; }
+    public string? sortBy { get; set; }
+    public string? sortOrder { get; set; }
+    public string? viewType { get; set; }
 }

@@ -34,7 +34,8 @@ public sealed class FolderTreeService(IGraphApiClient graphApiClient, IAuthServi
                 item.Name,
                 $"/{item.Name}",
                 item.ParentReference?.Id,
-                true) { IsSelected = false };
+                true)
+            { IsSelected = false };
 
             // Add placeholder child so expansion toggle appears
             node.Children.Add(new OneDriveFolderNode());
@@ -86,7 +87,8 @@ public sealed class FolderTreeService(IGraphApiClient graphApiClient, IAuthServi
                 item.Name,
                 $"{parentPath}/{item.Name}",
                 parentFolderId,
-                true) { IsSelected = isSelected };
+                true)
+            { IsSelected = isSelected };
 
             // Add placeholder child so expansion toggle appears
             node.Children.Add(new OneDriveFolderNode());

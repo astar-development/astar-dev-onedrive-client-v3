@@ -2,6 +2,6 @@
 
 public class FileSystemInfo
 {
-    public string createdDateTime { get; set; }
-    public string lastModifiedDateTime { get; set; }
+    public string? createdDateTime { get; set; }
+    public string? lastModifiedDateTime { get; set; }
 }

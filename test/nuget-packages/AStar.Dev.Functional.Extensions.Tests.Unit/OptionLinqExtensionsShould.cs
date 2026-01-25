@@ -63,7 +63,7 @@ public class OptionLinqExtensionsShould
     [Fact]
     public async Task SelectAwaitProjectsAsynchronouslyWhenSome()
     {
-        var task = Task.FromResult<Option<int>>(new Option<int>.Some(4));
+        Task<Option<int>> task = Task.FromResult<Option<int>>(new Option<int>.Some(4));
 
         Option<int> projected = await task.SelectAwait(async x =>
         {
@@ -78,7 +78,7 @@ public class OptionLinqExtensionsShould
     [Fact]
     public async Task SelectAwaitPreservesNone()
     {
-        var task = Task.FromResult(Option.None<int>());
+        Task<Option<int>> task = Task.FromResult(Option.None<int>());
 
         Option<int> projected = await task.SelectAwait(async x =>
         {

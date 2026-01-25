@@ -239,7 +239,7 @@ public sealed class MainWindowViewModel : ReactiveObject, IDisposable
             .Where(tuple => tuple.Item1 && !string.IsNullOrEmpty(tuple.Item2))
             .Subscribe(tuple =>
             {
-                var (isOpen, accountId) = tuple;
+                (bool isOpen, string? accountId) = tuple;
                 if(SyncProgress is null || SyncProgress.AccountId != accountId)
                 {
                     SyncProgress?.Dispose();

@@ -265,7 +265,9 @@ public sealed class SyncSelectionService : ISyncSelectionService
             if(folder.SelectionState == SelectionState.Checked &&
                !string.IsNullOrEmpty(folder.Path) &&
                !string.IsNullOrEmpty(folder.Name))
+            {
                 result.Add(folder);
+            }
 
             CollectSelectedFolders([.. folder.Children], result);
         }

@@ -107,7 +107,7 @@ public class ResultExtensionBindShould
     [Fact]
     public async Task BindSuccessValueFromTaskResultWhenResultIsOkAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> bound = await resultTask.BindAsync(value => new Result<string, string>.Ok(value.ToString()));
 
@@ -124,7 +124,7 @@ public class ResultExtensionBindShould
     [Fact]
     public async Task BindSuccessValueFromTaskResultToErrorWhenBindFunctionReturnsErrorAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> bound = await resultTask.BindAsync(value => new Result<string, string>.Error("bound error"));
 
@@ -141,7 +141,7 @@ public class ResultExtensionBindShould
     [Fact]
     public async Task PreserveErrorWhenBindingFailedTaskResultAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Error("original error"));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Error("original error"));
 
         Result<string, string> bound = await resultTask.BindAsync(value => new Result<string, string>.Ok(value.ToString()));
 
@@ -158,7 +158,7 @@ public class ResultExtensionBindShould
     [Fact]
     public async Task BindSuccessValueFromTaskResultAsyncWhenResultIsOkAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> bound = await resultTask.BindAsync(value => Task.FromResult<Result<string, string>>(new Result<string, string>.Ok(value.ToString())));
 
@@ -175,7 +175,7 @@ public class ResultExtensionBindShould
     [Fact]
     public async Task BindSuccessValueFromTaskResultAsyncToErrorWhenBindFunctionReturnsErrorAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> bound = await resultTask.BindAsync(value => Task.FromResult<Result<string, string>>(new Result<string, string>.Error("bound error")));
 

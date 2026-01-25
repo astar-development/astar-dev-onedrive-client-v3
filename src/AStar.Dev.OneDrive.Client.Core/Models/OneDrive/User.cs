@@ -2,7 +2,7 @@
 
 public class User
 {
-    public string email { get; set; }
-    public string id { get; set; }
-    public string displayName { get; set; }
+    public string? email { get; set; }
+    public string? id { get; set; }
+    public string? displayName { get; set; }
 }

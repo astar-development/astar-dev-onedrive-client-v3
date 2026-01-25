@@ -2,6 +2,6 @@
 
 public class OneDriveFile
 {
-    public string mimeType { get; set; }
-    public Hashes hashes { get; set; }
+    public string? mimeType { get; set; }
+    public Hashes? hashes { get; set; }
 }
