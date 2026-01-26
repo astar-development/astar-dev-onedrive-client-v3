@@ -13,6 +13,8 @@ public record DriveItemEntity(
     DateTimeOffset LastModifiedUtc,
     bool IsFolder,
     bool IsDeleted,
+    bool IsSelected = false,
+    string? RemoteHash = null,
     string? Name = null,
     string? LocalPath = null,
     string? LocalHash = null,

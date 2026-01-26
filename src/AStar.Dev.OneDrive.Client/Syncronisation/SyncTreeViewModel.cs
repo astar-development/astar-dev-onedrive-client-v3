@@ -268,7 +268,7 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             // Clear placeholder dummy child
             folder.Children.Clear();
 
-            IReadOnlyList<OneDriveFolderNode> children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, folder.IsSelected, cancellationToken);
+            IReadOnlyList<OneDriveFolderNode> children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.DriveItemId, folder.IsSelected, cancellationToken);
             foreach(OneDriveFolderNode child in children)
                 folder.Children.Add(child);
 

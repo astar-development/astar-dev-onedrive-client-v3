@@ -9,7 +9,7 @@ public class OneDriveFolderNodeShould
     {
         var node = new OneDriveFolderNode();
 
-        node.Id.ShouldBe(string.Empty);
+        node.DriveItemId.ShouldBe(string.Empty);
         node.Name.ShouldBe(string.Empty);
         node.Path.ShouldBe(string.Empty);
         node.ParentId.ShouldBeNull();
@@ -26,7 +26,7 @@ public class OneDriveFolderNodeShould
     {
         var node = new OneDriveFolderNode("id123", "MyFolder", "/MyFolder", "parentId", true);
 
-        node.Id.ShouldBe("id123");
+        node.DriveItemId.ShouldBe("id123");
         node.Name.ShouldBe("MyFolder");
         node.Path.ShouldBe("/MyFolder");
         node.ParentId.ShouldBe("parentId");

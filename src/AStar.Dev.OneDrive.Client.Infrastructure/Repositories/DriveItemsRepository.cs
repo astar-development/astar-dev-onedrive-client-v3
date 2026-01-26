@@ -94,13 +94,16 @@ public sealed class DriveItemsRepository(SyncDbContext context) : IDriveItemsRep
         => new(
             driveItem.Id,
             driveItem.AccountId,
-            driveItem.Name,
+            driveItem.Name ?? string.Empty,
+            driveItem.DriveItemId,
             driveItem.RelativePath,
             driveItem.Size,
             driveItem.LastModifiedUtc,
-            driveItem.LocalPath,
+            driveItem.LocalPath ?? string.Empty,
             driveItem.IsFolder,
             driveItem.IsDeleted,
+            driveItem.IsSelected,
+            driveItem.RemoteHash,
             driveItem.CTag,
             driveItem.ETag,
             driveItem.LocalHash,
@@ -109,5 +112,5 @@ public sealed class DriveItemsRepository(SyncDbContext context) : IDriveItemsRep
         );
 
     private static DriveItemEntity MapToEntity(FileMetadata fileMetadata)
-        => new(fileMetadata.AccountId, fileMetadata.Id, fileMetadata.Id, fileMetadata.RelativePath, fileMetadata.ETag, fileMetadata.CTag, fileMetadata.Size, fileMetadata.LastModifiedUtc, fileMetadata.IsFolder, fileMetadata.IsDeleted, fileMetadata.Name, fileMetadata.LocalPath, fileMetadata.LocalHash, fileMetadata.SyncStatus, fileMetadata.LastSyncDirection ?? SyncDirection.None);
+        => new(fileMetadata.AccountId, fileMetadata.Id, fileMetadata.Id, fileMetadata.RelativePath, fileMetadata.ETag, fileMetadata.CTag, fileMetadata.Size, fileMetadata.LastModifiedUtc, fileMetadata.IsFolder, fileMetadata.IsDeleted, fileMetadata.IsSelected, fileMetadata.RemoteHash, fileMetadata.Name, fileMetadata.LocalPath, fileMetadata.LocalHash, fileMetadata.SyncStatus, fileMetadata.LastSyncDirection ?? SyncDirection.None);
 }

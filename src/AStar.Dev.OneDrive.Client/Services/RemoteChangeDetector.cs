@@ -196,15 +196,18 @@ public sealed class RemoteChangeDetector(IGraphApiClient graphApiClient) : IRemo
         item.Id ?? string.Empty,
         accountId,
         item.Name ?? string.Empty,
+        item.ParentReference?.DriveId ?? string.Empty,
         path,
         item.Size ?? 0,
         item.LastModifiedDateTime ?? DateTimeOffset.UtcNow,
         string.Empty, // Will be set during download
         false,
         false,
+        false,
         item.CTag,
         item.ETag,
         null, // Will be computed after download
+        null,
         FileSyncStatus.PendingDownload,
         SyncDirection.Download);
 

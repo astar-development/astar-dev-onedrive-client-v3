@@ -69,7 +69,7 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
     {
         // Arrange - Pre-populate database
         await _configRepository.SaveBatchAsync("acc-1", [
-            new SyncConfiguration(0, "acc-1", "/Folder2", true, DateTime.UtcNow)
+            new FileMetadata("", "acc-1", "name", "driveItemId", "/Parent/Child1", 0,DateTime.UtcNow, "")
         ], TestContext.Current.CancellationToken);
 
         List<OneDriveFolderNode> folders = CreateTestFolders();
@@ -92,7 +92,7 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
     {
         // Arrange - Pre-populate database
         await _configRepository.SaveBatchAsync("acc-1", [
-            new SyncConfiguration(0, "acc-1", "/Folder1", true, DateTime.UtcNow)
+            new FileMetadata("", "acc-1", "name", "driveItemId", "/Folder1", 0, DateTime.UtcNow, "")
         ], TestContext.Current.CancellationToken);
 
         List<OneDriveFolderNode> folders = CreateTestFolders();
@@ -117,10 +117,10 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
     {
         // Arrange - Create selections for two accounts
         await _configRepository.SaveBatchAsync("acc-1", [
-            new SyncConfiguration(0, "acc-1", "/Folder1", true, DateTime.UtcNow)
+            new FileMetadata("", "acc-1", "name", "driveItemId", "/Folder1", 0, DateTime.UtcNow, "")
         ], TestContext.Current.CancellationToken);
         await _configRepository.SaveBatchAsync("acc-2", [
-            new SyncConfiguration(0, "acc-2", "/Folder2", true, DateTime.UtcNow)
+            new FileMetadata("", "acc-2", "name", "driveItemId", "/Folder2", 0, DateTime.UtcNow, "")
         ], TestContext.Current.CancellationToken);
 
         List<OneDriveFolderNode> folders = CreateTestFolders();
@@ -167,7 +167,7 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
     {
         // Arrange - Save only one child checked
         await _configRepository.SaveBatchAsync("acc-1", [
-            new SyncConfiguration(0, "acc-1", "/Parent/Child1", true, DateTime.UtcNow)
+            new FileMetadata("", "acc-1", "name", "driveItemId", "/Parent/Child1", 0,DateTime.UtcNow, "")
         ], TestContext.Current.CancellationToken);
 
         OneDriveFolderNode child1 = CreateFolder("c1", "Child1", "/Parent/Child1");
@@ -207,7 +207,7 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
     private static OneDriveFolderNode CreateFolder(string id, string name, string path)
         => new()
         {
-            Id = id,
+            DriveItemId = id,
             Name = name,
             Path = path,
             IsFolder = true,

@@ -23,8 +23,8 @@ public class SyncSelectionServicePersistenceShould
 
         await mockRepo.Received(1).SaveBatchAsync(
             "acc-123",
-            Arg.Is<IEnumerable<SyncConfiguration>>(configs => configs.Count() == 1 &&
-                                                              configs.First().FolderPath == "/Folder1" &&
+            Arg.Is<IEnumerable<FileMetadata>>(configs => configs.Count() == 1 &&
+                                                              configs.First().RelativePath == "/Folder1" &&
                                                               configs.First().IsSelected),
             Arg.Any<CancellationToken>());
     }
@@ -46,7 +46,7 @@ public class SyncSelectionServicePersistenceShould
 
         await mockRepo.Received(1).SaveBatchAsync(
             "acc-123",
-            Arg.Is<IEnumerable<SyncConfiguration>>(configs => configs.Count() == 2),
+            Arg.Is<IEnumerable<FileMetadata>>(configs => configs.Count() == 2),
             Arg.Any<CancellationToken>());
     }
 
@@ -66,7 +66,7 @@ public class SyncSelectionServicePersistenceShould
 
         await mockRepo.Received(1).SaveBatchAsync(
             "acc-123",
-            Arg.Any<IEnumerable<SyncConfiguration>>(),
+            Arg.Any<IEnumerable<FileMetadata>>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -214,7 +214,7 @@ public class SyncSelectionServicePersistenceShould
     private static OneDriveFolderNode CreateFolder(string id, string name, string path)
         => new()
         {
-            Id = id,
+            DriveItemId = id,
             Name = name,
             Path = path,
             IsFolder = true,

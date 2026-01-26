@@ -94,7 +94,7 @@ public class DriveItemsRepositoryShould
         var repository = new DriveItemsRepository(context);
         await repository.AddAsync(CreateFileMetadata("file1", "acc1", "/doc.txt", FileSyncStatus.PendingUpload), TestContext.Current.CancellationToken);
 
-        var updated = new FileMetadata("file1", "acc1", "doc.txt", "/doc.txt", 2048, DateTime.UtcNow, @"C:\local\doc.txt", false,false, "newtag", "newetag", "newhash", FileSyncStatus.Synced, SyncDirection.Upload);
+        var updated = new FileMetadata("file1", "acc1", "doc.txt", "/doc.txt", "driveItemId",2048, DateTime.UtcNow, @"C:\local\doc.txt", false,false,false, "newtag", "newetag", "newhash", null,FileSyncStatus.Synced, SyncDirection.Upload);
         await repository.UpdateAsync(updated, TestContext.Current.CancellationToken);
 
         FileMetadata? result = await repository.GetByIdAsync("file1", TestContext.Current.CancellationToken);
@@ -163,7 +163,7 @@ public class DriveItemsRepositoryShould
     }
 
     private static FileMetadata CreateFileMetadata(string id, string accountId, string path, FileSyncStatus status = FileSyncStatus.Synced)
-        => new(id, accountId, Path.GetFileName(path), path, 1024, DateTime.UtcNow, $@"C:\local{path}", false, false, "ctag", "etag", "hash", status, null);
+        => new(id, accountId, Path.GetFileName(path), "driveItemId", path, 1024, DateTime.UtcNow, $@"C:\local{path}", false, false, false, "ctag", "etag", "hash",null, status, null);
 
     private static SyncDbContext CreateInMemoryContext()
     {

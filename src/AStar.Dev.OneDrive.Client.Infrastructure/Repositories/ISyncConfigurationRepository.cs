@@ -15,7 +15,7 @@ public interface ISyncConfigurationRepository
     /// <param name="accountId">The account identifier.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>List of sync configurations for the account.</returns>
-    Task<IReadOnlyList<SyncConfiguration>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<FileMetadata>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Gets all selected folder paths for a specific account.
@@ -33,7 +33,7 @@ public interface ISyncConfigurationRepository
     /// <param name="configuration">The configuration to add.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated sync configuration.</returns>
-    Task<SyncConfiguration> AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default);
+    Task<FileMetadata> AddAsync(FileMetadata configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Updates an existing sync configuration.
@@ -41,7 +41,7 @@ public interface ISyncConfigurationRepository
     /// <param name="configuration">The configuration to update.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated sync configuration.</returns>
-    Task UpdateAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default);
+    Task UpdateAsync(FileMetadata configuration, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Deletes a sync configuration by its ID.
@@ -63,7 +63,7 @@ public interface ISyncConfigurationRepository
     /// <param name="accountId">The account identifier.</param>
     /// <param name="configurations">The configurations to save.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task SaveBatchAsync(string accountId, IEnumerable<SyncConfiguration> configurations, CancellationToken cancellationToken = default);
+    Task SaveBatchAsync(string accountId, IEnumerable<FileMetadata> configurations, CancellationToken cancellationToken = default);
 
     /// <summary>
     ///     Retrieves the parent folder configuration for a given account and parent folder path.
@@ -73,5 +73,5 @@ public interface ISyncConfigurationRepository
     /// <param name="possibleParentPath">The possible path of the parent folder to retrieve.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The parent folder configuration entity if one exists; otherwise, null.</returns>
-    Task<SyncConfigurationEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken);
+    Task<DriveItemEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken);
 }

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
@@ -36,11 +37,14 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         _ = response.EnsureSuccessStatusCode();
 
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        OneDriveResponse items = (await JsonSerializer.DeserializeAsync<OneDriveResponse>(stream, JsonSerializerOptions.Web, cancellationToken))!;
+        using JsonDocument doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
 
-        List<DriveItemEntity> driveItems = ParseDriveItemRecords(accountId, items);
+        List<DriveItemEntity> items = ParseDriveItemRecords(accountId, doc);
 
-        return new DeltaPage(driveItems, items._odata_nextLink, items._odata_deltaLink);
+        var next = TryGetODataProperty(doc, "@odata.nextLink");
+        var delta = TryGetODataProperty(doc, "@odata.deltaLink");
+
+        return new DeltaPage(items, next, delta);
     }
 
     public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
@@ -308,6 +312,42 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         }
     }
 
-    private List<DriveItemEntity>? ParseDriveItemRecords(string accountId, OneDriveResponse? items)
-        => items?.value.Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.parentReference.driveId, oneDriveItem.parentReference.id, oneDriveItem.parentReference.path, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), false, false, oneDriveItem.name, null, null, Core.Models.Enums.FileSyncStatus.SyncOnly, Core.Models.Enums.SyncDirection.None)).ToList();
+    private static List<DriveItemEntity> ParseDriveItemRecords(string accountId, JsonDocument doc)
+    {
+        var items = new List<DriveItemEntity>();
+        if(doc.RootElement.TryGetProperty("value", out JsonElement arr))
+        {
+            foreach(JsonElement el in arr.EnumerateArray())
+            {
+                items.Add(ParseDriveItemRecord(accountId, el));
+            }
+        }
+
+        return items;
+    }
+
+    private static DriveItemEntity ParseDriveItemRecord(string accountId, JsonElement jsonElement)
+    {
+        var id = jsonElement.GetProperty("id").GetString()!;
+        var isFolder = jsonElement.TryGetProperty("folder", out _);
+        var size = jsonElement.TryGetProperty("size", out JsonElement sProp) ? sProp.GetInt64() : 0L;
+        var parentPath = SetParentPath(jsonElement);
+        var name = jsonElement.TryGetProperty("name", out JsonElement n) ? n.GetString() ?? id : id;
+        var relativePath = GraphPathHelpers.BuildRelativePath(parentPath, name);
+        var eTag = jsonElement.TryGetProperty("eTag", out JsonElement et) ? et.GetString() : null;
+        var cTag = jsonElement.TryGetProperty("cTag", out JsonElement ctProp) ? ctProp.GetString() : null;
+        DateTimeOffset lastModifiedUtc = GetLastModifiedUtc(jsonElement);
+        var isDeleted = jsonElement.TryGetProperty("deleted", out _);
+
+        return new DriveItemEntity(accountId, id, id, relativePath, eTag, cTag, size, lastModifiedUtc, isFolder, isDeleted);
+    }
+
+    private static DateTimeOffset GetLastModifiedUtc(JsonElement jsonElement) => jsonElement.TryGetProperty("lastModifiedDateTime", out JsonElement lm)
+                ? DateTimeOffset.Parse(lm.GetString()!, CultureInfo.InvariantCulture)
+                : DateTimeOffset.UtcNow;
+    private static string SetParentPath(JsonElement jsonElement)
+        => jsonElement.TryGetProperty("parentReference", out JsonElement pr) && pr.TryGetProperty("path", out JsonElement p) ? p.GetString() ?? string.Empty : string.Empty;
+
+    private static string? TryGetODataProperty(JsonDocument doc, string propertyName)
+        => doc.RootElement.TryGetProperty(propertyName, out JsonElement prop) ? prop.GetString() : null;
 }

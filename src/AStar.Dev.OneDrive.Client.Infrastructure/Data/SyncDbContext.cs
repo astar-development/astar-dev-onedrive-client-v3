@@ -15,11 +15,6 @@ public sealed class SyncDbContext(DbContextOptions<SyncDbContext> options) : DbC
     public DbSet<AccountEntity> Accounts { get; set; } = null!;
 
     /// <summary>
-    ///     Gets or sets the sync configurations.
-    /// </summary>
-    public DbSet<SyncConfigurationEntity> SyncConfigurations { get; set; } = null!;
-
-    /// <summary>
     ///     Gets or sets the window preferences.
     /// </summary>
     public DbSet<WindowPreferencesEntity> WindowPreferences { get; set; } = null!;

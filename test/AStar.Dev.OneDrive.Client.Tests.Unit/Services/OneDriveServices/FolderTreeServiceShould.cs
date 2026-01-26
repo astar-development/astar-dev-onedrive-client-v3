@@ -44,7 +44,7 @@ public class FolderTreeServiceShould
         IReadOnlyList<OneDriveFolderNode> result = await service.GetRootFoldersAsync("account1", TestContext.Current.CancellationToken);
 
         result.Count.ShouldBe(2);
-        result[0].Id.ShouldBe("folder1");
+        result[0].DriveItemId.ShouldBe("folder1");
         result[0].Name.ShouldBe("Documents");
         result[0].Path.ShouldBe("/Documents");
         result[0].ParentId.ShouldBeNull();
@@ -93,7 +93,7 @@ public class FolderTreeServiceShould
         IReadOnlyList<OneDriveFolderNode> result = await service.GetChildFoldersAsync("account1", "parent1", Arg.Any<bool?>(), TestContext.Current.CancellationToken);
 
         result.Count.ShouldBe(2);
-        result[0].Id.ShouldBe("child1");
+        result[0].DriveItemId.ShouldBe("child1");
         result[0].Name.ShouldBe("Work");
         result[0].ParentId.ShouldBe("parent1");
         result[0].Path.ShouldBe("/drive/root:/Documents/Work");

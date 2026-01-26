@@ -127,7 +127,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
 
         List<OneDriveFolderNode> selectedFolders = GetSelectedFolders(rootFolders);
 
-        IEnumerable<SyncConfiguration> configurations = selectedFolders.Select(folder => new SyncConfiguration(0, accountId, folder.Path, true, DateTime.UtcNow));
+        IEnumerable<FileMetadata> configurations = selectedFolders.Select(folder => new FileMetadata("", accountId, folder.Name, folder.DriveItemId, folder.Path, 0, DateTime.UtcNow, "", true, false, true));
 
         await _configurationRepository.SaveBatchAsync(accountId, configurations, cancellationToken);
     }
@@ -277,7 +277,7 @@ public sealed class SyncSelectionService : ISyncSelectionService
     {
         foreach(OneDriveFolderNode folder in folders)
         {
-            if(folder.Id == nodeId)
+            if(folder.DriveItemId == nodeId)
                 return folder;
 
             OneDriveFolderNode? foundInChildren = FindNodeById([.. folder.Children], nodeId);

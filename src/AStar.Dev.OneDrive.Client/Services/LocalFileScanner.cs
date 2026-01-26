@@ -77,12 +77,15 @@ public sealed class LocalFileScanner(IFileSystem fileSystem) : ILocalFileScanner
                         string.Empty, // Will be populated from OneDrive after upload
                         accountId,
                         fileInfo.Name,
+                        string.Empty, // Will be populated from OneDrive after upload
                         oneDrivePath,
                         fileInfo.Length,
                         fileInfo.LastWriteTimeUtc,
                         filePath,
                         false,
                         false,
+                        false,
+                        null,
                         null,
                         null,
                         hash,
