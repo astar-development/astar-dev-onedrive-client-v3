@@ -25,6 +25,15 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<DriveItemEntity>> GetSelectedItemsByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
+    {
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        return await context.DriveItems
+                .Where(sc => sc.AccountId == accountId && (sc.IsSelected ?? false))
+                .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default)
     {
         await using SyncDbContext context = _contextFactory.CreateDbContext();
