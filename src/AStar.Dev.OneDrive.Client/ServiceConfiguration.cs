@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using AStar.Dev.OneDrive.Client.Accounts;
 using AStar.Dev.OneDrive.Client.Authentication;
 using AStar.Dev.OneDrive.Client.Core.Data;
 using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
@@ -6,7 +7,9 @@ using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 using AStar.Dev.OneDrive.Client.Services;
 using AStar.Dev.OneDrive.Client.Services.OneDriveServices;
 using AStar.Dev.OneDrive.Client.Services.Sync;
-using AStar.Dev.OneDrive.Client.ViewModels;
+using AStar.Dev.OneDrive.Client.Syncronisation;
+using AStar.Dev.OneDrive.Client.SyncronisationConflicts;
+using AStar.Dev.OneDrive.Client.MainWindow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,6 +34,7 @@ public static class ServiceConfiguration
         // Database
         _ = services.AddDbContext<SyncDbContext>(options => options.UseSqlite(DatabaseConfiguration.ConnectionString));
 
+        _ = services.AddAnnotatedServices(); // as noted in the DebugLogger, this currently isn't working
         // Repositories
         _ = services.AddScoped<IAccountRepository, AccountRepository>();
         _ = services.AddScoped<ISyncConfigurationRepository, SyncConfigurationRepository>();

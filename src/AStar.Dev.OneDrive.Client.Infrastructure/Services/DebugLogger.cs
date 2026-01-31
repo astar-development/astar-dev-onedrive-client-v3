@@ -2,12 +2,15 @@ using AStar.Dev.OneDrive.Client.Core.Data;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
 using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
+using AStar.Dev.Source.Generators.Attributes;
 
 namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Implementation of debug logging that writes to the database when enabled for an account.
+///     Seems the AutoRegisterService still isn't working correctly but, as it doesn't break anything, I am leaving here for now 
 /// </summary>
+[AutoRegisterService(ServiceLifetime.Scoped)]
 public sealed class DebugLogger : IDebugLogger
 {
     private readonly IAccountRepository _accountRepository;
