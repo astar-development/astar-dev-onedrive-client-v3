@@ -3,6 +3,7 @@ using System;
 using AStar.Dev.OneDrive.Client.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(SyncDbContext))]
-    partial class SyncDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260128090750_RemoveDuplicateDriveItemId")]
+    partial class RemoveDuplicateDriveItemId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -22,7 +25,7 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.Property<string>("AccountId")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("AutoSyncIntervalMinutes")
+                    b.Property<int?>("AutoSyncIntervalMinutes")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("DeltaToken")
@@ -116,7 +119,7 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DriveItemEntity", b =>
                 {
-                    b.Property<string>("DriveItemId")
+                    b.Property<string>("Id")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("AccountId")
@@ -167,7 +170,7 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 
-                    b.HasKey("DriveItemId");
+                    b.HasKey("Id");
 
                     b.HasIndex("IsFolder");
 

@@ -3,12 +3,13 @@ using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 using AStar.Dev.OneDrive.Client.Infrastructure.Services;
+using AStar.Dev.OneDrive.Client.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Models;
 
 #pragma warning disable CA1848 // Use LoggerMessage delegates - Using IsEnabled checks for performance
 
-namespace AStar.Dev.OneDrive.Client.Services.Sync;
+namespace AStar.Dev.OneDrive.Client.SyncronisationConflicts;
 
 /// <summary>
 ///     Implements conflict resolution strategies for sync conflicts.
@@ -138,7 +139,7 @@ public sealed class ConflictResolver(
             conflict.FilePath,
             cancellationToken) ?? throw new InvalidOperationException($"File metadata not found for {conflict.FilePath}");
 
-        var fileId = metadata.Id;
+        var fileId = metadata.DriveItemId;
 
         // Download remote file from OneDrive (overwrite local)
         var localDirectory = Path.GetDirectoryName(localPath);
@@ -193,7 +194,7 @@ public sealed class ConflictResolver(
             conflict.FilePath,
             cancellationToken) ?? throw new InvalidOperationException($"File metadata not found for {conflict.FilePath}");
 
-        var fileId = metadata.Id;
+        var fileId = metadata.DriveItemId;
 
         // Rename local file with conflict suffix
         var directory = Path.GetDirectoryName(localPath) ?? string.Empty;

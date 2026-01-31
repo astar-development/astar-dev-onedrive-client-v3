@@ -25,6 +25,15 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<DriveItemEntity>> GetSelectedItemsByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
+    {
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        return await context.DriveItems
+                .Where(sc => sc.AccountId == accountId && (sc.IsSelected ?? false))
+                .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default)
     {
         await using SyncDbContext context = _contextFactory.CreateDbContext();
@@ -69,7 +78,7 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     {
         await using SyncDbContext context = _contextFactory.CreateDbContext();
         DriveItemEntity? existingEntity = await context.DriveItems
-            .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.Id == configuration.Id, cancellationToken);
+            .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.DriveItemId == configuration.DriveItemId, cancellationToken);
 
         if(existingEntity is not null)
             return configuration;
@@ -85,8 +94,8 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     public async Task UpdateAsync(FileMetadata configuration, CancellationToken cancellationToken = default)
     {
         await using SyncDbContext context = _contextFactory.CreateDbContext();
-        DriveItemEntity syncConfiguration = await context.DriveItems.FindAsync([configuration.Id], cancellationToken) ??
-                                         throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
+        DriveItemEntity syncConfiguration = await context.DriveItems.FindAsync([configuration.DriveItemId], cancellationToken) ??
+                                         throw new InvalidOperationException($"Sync configuration with ID '{configuration.DriveItemId}' not found.");
 
         DriveItemEntity syncConfiguration1 = syncConfiguration.WithUpdatedDetails(configuration.IsSelected, configuration.RelativePath, configuration.LastModifiedUtc);
 
@@ -122,7 +131,7 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     /// <inheritdoc />
     public async Task SaveBatchAsync(string accountId, IEnumerable<FileMetadata> configurations, CancellationToken cancellationToken = default)
     {
-        var configDict = configurations.ToDictionary(c => c.Id);
+        var configDict = configurations.ToDictionary(c => c.DriveItemId);
 
         await using SyncDbContext context = _contextFactory.CreateDbContext();
         List<DriveItemEntity> existingEntities = await context.DriveItems
@@ -131,7 +140,7 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
 
         foreach(DriveItemEntity entity in existingEntities)
         {
-            var isSelected = configDict.TryGetValue(entity.Id, out FileMetadata? config)
+            var isSelected = configDict.TryGetValue(entity.DriveItemId, out FileMetadata? config)
                 ? config.IsSelected
                 : entity.IsSelected;
 
@@ -173,10 +182,9 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
 
     private static FileMetadata MapToModel(DriveItemEntity driveItemEntity)
         => new(
-            driveItemEntity.Id,
+            driveItemEntity.DriveItemId,
             driveItemEntity.AccountId,
             driveItemEntity.Name ?? string.Empty,
-             driveItemEntity.DriveItemId,
              driveItemEntity.RelativePath,
             driveItemEntity.Size,
             driveItemEntity.LastModifiedUtc,
@@ -192,7 +200,6 @@ public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext>
     private static DriveItemEntity MapToEntity(FileMetadata model)
         => new(
             model.AccountId,
-            model.Id,
             model.DriveItemId,
             model.RelativePath,
             model.ETag,

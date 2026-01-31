@@ -74,10 +74,9 @@ public sealed class LocalFileScanner(IFileSystem fileSystem) : ILocalFileScanner
                     var hash = await ComputeFileHashAsync(filePath, cancellationToken);
 
                     var metadata = new FileMetadata(
-                        string.Empty, // Will be populated from OneDrive after upload
+                        Guid.CreateVersion7().ToString(), // Will be populated from OneDrive after upload
                         accountId,
                         fileInfo.Name,
-                        string.Empty, // Will be populated from OneDrive after upload
                         oneDrivePath,
                         fileInfo.Length,
                         fileInfo.LastWriteTimeUtc,

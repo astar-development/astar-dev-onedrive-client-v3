@@ -17,6 +17,8 @@ public interface ISyncConfigurationRepository
     /// <returns>List of sync configurations for the account.</returns>
     Task<IReadOnlyList<FileMetadata>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<DriveItemEntity>> GetSelectedItemsByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
+
     /// <summary>
     ///     Gets all selected folder paths for a specific account.
     /// </summary>
