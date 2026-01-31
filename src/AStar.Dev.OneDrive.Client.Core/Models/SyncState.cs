@@ -37,16 +37,11 @@ public sealed record SyncState(
 )
 {
     public static SyncState CreateInitial(string accountId)
-        => new(
-            accountId,
-            SyncStatus.Idle,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0);
+        => new(accountId, SyncStatus.Idle, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+
+    public static SyncState Create(string accountId, SyncStatus syncStatus, string message)
+        => new(accountId, syncStatus, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, message, DateTimeOffset.UtcNow);
+
+    public static SyncState CreateFailed(string accountId, int totalItemsProcessed, string message)
+        => new(accountId, SyncStatus.Failed, totalItemsProcessed, 0, 0, 0, 0, 0, 0, 0, 0, 0, message, DateTimeOffset.UtcNow);
 }

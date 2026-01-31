@@ -8,5 +8,7 @@
         "Msal",
         "onedrive",
         "Testably"
-    ]
+    ],
+    "editor.formatOnSave": true,
+    "files.autoSave": "afterDelay"
 }

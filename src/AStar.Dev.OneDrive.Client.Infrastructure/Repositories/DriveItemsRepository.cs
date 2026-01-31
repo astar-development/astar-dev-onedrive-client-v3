@@ -109,5 +109,5 @@ public sealed class DriveItemsRepository(SyncDbContext context) : IDriveItemsRep
         );
 
     private static DriveItemEntity MapToEntity(FileMetadata fileMetadata)
-        => new(fileMetadata.AccountId, fileMetadata.Id, fileMetadata.Id,fileMetadata.RelativePath,fileMetadata.ETag,fileMetadata.CTag,fileMetadata.Size,fileMetadata.LastModifiedUtc,fileMetadata.IsFolder, fileMetadata.IsDeleted, fileMetadata.Name, fileMetadata.LocalPath, fileMetadata.LocalHash, fileMetadata.SyncStatus, fileMetadata.LastSyncDirection??SyncDirection.None);
+        => new(fileMetadata.AccountId, fileMetadata.Id, fileMetadata.Id, fileMetadata.RelativePath, fileMetadata.ETag, fileMetadata.CTag, fileMetadata.Size, fileMetadata.LastModifiedUtc, fileMetadata.IsFolder, fileMetadata.IsDeleted, fileMetadata.Name, fileMetadata.LocalPath, fileMetadata.LocalHash, fileMetadata.SyncStatus, fileMetadata.LastSyncDirection ?? SyncDirection.None);
 }

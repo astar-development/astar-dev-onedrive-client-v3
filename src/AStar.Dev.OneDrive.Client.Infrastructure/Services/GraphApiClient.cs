@@ -1,4 +1,4 @@
-using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -308,9 +308,6 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         }
     }
 
-#pragma warning disable IDE0060 // Remove unused parameter
-    private List<DriveItemEntity> ParseDriveItemRecords(string accountId, OneDriveResponse? items)
-#pragma warning restore IDE0060 // Remove unused parameter
-        => [];
-    
+    private List<DriveItemEntity>? ParseDriveItemRecords(string accountId, OneDriveResponse? items)
+        => items?.value.Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.parentReference.driveId, oneDriveItem.parentReference.id, oneDriveItem.parentReference.path, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), false, false, oneDriveItem.name, null, null, Core.Models.Enums.FileSyncStatus.SyncOnly, Core.Models.Enums.SyncDirection.None)).ToList();
 }

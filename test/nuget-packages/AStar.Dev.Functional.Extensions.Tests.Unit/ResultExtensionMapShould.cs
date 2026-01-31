@@ -73,7 +73,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task MapSuccessValueFromTaskResultWhenResultIsOkAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> mapped = await resultTask.MapAsync(value => value.ToString());
 
@@ -90,7 +90,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task PreserveErrorWhenMappingFailedTaskResultAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Error("error message"));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Error("error message"));
 
         Result<string, string> mapped = await resultTask.MapAsync(value => value.ToString());
 
@@ -107,7 +107,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task MapSuccessValueAsyncFromTaskResultWhenResultIsOkAsync()
     {
-        var resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
+        Task<Result<int, string>> resultTask = Task.FromResult<Result<int, string>>(new Result<int, string>.Ok(42));
 
         Result<string, string> mapped = await resultTask.MapAsync(value => Task.FromResult(value.ToString()));
 
@@ -192,7 +192,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task MapErrorValueFromTaskResultWhenResultIsErrorAsync()
     {
-        var resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Error(42));
+        Task<Result<string, int>> resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Error(42));
 
         Result<string, string> mapped = await resultTask.MapFailureAsync(error => error.ToString());
 
@@ -209,7 +209,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task PreserveSuccessWhenMapFailureOnSuccessTaskResult()
     {
-        var resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Ok("success"));
+        Task<Result<string, int>> resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Ok("success"));
 
         Result<string, string> mapped = await resultTask.MapFailureAsync(error => error.ToString());
 
@@ -226,7 +226,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task MapErrorValueAsyncFromTaskResultWhenResultIsErrorAsync()
     {
-        var resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Error(42));
+        Task<Result<string, int>> resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Error(42));
 
         Result<string, string> mapped = await resultTask.MapFailureAsync(error => Task.FromResult(error.ToString()));
 
@@ -243,7 +243,7 @@ public class ResultExtensionMapShould
     [Fact]
     public async Task PreserveSuccessWhenMapFailureAsyncOnSuccessTaskResult()
     {
-        var resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Ok("success"));
+        Task<Result<string, int>> resultTask = Task.FromResult<Result<string, int>>(new Result<string, int>.Ok("success"));
 
         Result<string, string> mapped = await resultTask.MapFailureAsync(error => Task.FromResult(error.ToString()));
 

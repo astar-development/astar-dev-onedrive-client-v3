@@ -85,7 +85,9 @@ public static class ServiceConfiguration
             var msalConfigurationSettings = new MsalConfigurationSettings(entraId.ClientId, appSettings.RedirectUri, appSettings.GraphUri, entraId.Scopes ?? [], appSettings.CachePrefix);
 
             _ = services.AddSingleton(msalConfigurationSettings);
-        };
+        }
+
+        ;
 
         var authConfig = AuthConfiguration.LoadFromConfiguration(configuration);
 

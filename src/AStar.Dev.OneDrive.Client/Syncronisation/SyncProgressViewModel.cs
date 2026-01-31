@@ -128,7 +128,9 @@ public sealed class SyncProgressViewModel : ReactiveObject, IDisposable
 
             // Show scanning folder if currently scanning
             if(!string.IsNullOrEmpty(CurrentProgress.CurrentStatusMessage))
+            {
                 parts.Add(CurrentProgress.CurrentStatusMessage);
+            }
             else
             {
                 // Show upload/download counts during transfer

@@ -96,7 +96,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
             DeltaToken? token = await _syncRepository.GetDeltaTokenAsync(accountId, cancellationToken);
 
-            (DeltaToken? finalDelta, var pageCount, var totalItemsProcessed) = await _deltaPageProcessor.ProcessAllDeltaPagesAsync(accountId, token??new(accountId, "", "", DateTimeOffset.UtcNow), _progressSubject.OnNext, cancellationToken);
+            (DeltaToken? finalDelta, var pageCount, var totalItemsProcessed) = await _deltaPageProcessor.ProcessAllDeltaPagesAsync(accountId, token ?? new(accountId, "", "", DateTimeOffset.UtcNow), _progressSubject.OnNext, cancellationToken);
             await _syncRepository.SaveOrUpdateDeltaTokenAsync(finalDelta, cancellationToken);
 
             await DebugLog.EntryAsync("SyncEngine.StartSyncAsync", cancellationToken);
@@ -125,7 +125,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                 _currentSessionId = sessionLog.Id;
             }
             else
+            {
                 _currentSessionId = null;
+            }
 
             List<FileMetadata> allLocalFiles = await GetAllLocalFiles(accountId, selectedFolders, account);
             IReadOnlyList<FileMetadata> existingFiles = await _fileMetadataRepository.GetByAccountIdAsync(accountId, cancellationToken);
@@ -171,7 +173,10 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                         await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"File needs upload (status={existingFile.SyncStatus}): {localFile.Name}", cancellationToken);
                         FileMetadata fileToUpload = existingFile with
                         {
-                            LocalPath = localFile.LocalPath, LocalHash = localFile.LocalHash, Size = localFile.Size, LastModifiedUtc = localFile.LastModifiedUtc
+                            LocalPath = localFile.LocalPath,
+                            LocalHash = localFile.LocalHash,
+                            Size = localFile.Size,
+                            LastModifiedUtc = localFile.LastModifiedUtc
                         };
                         filesToUpload.Add(fileToUpload);
                     }
@@ -253,7 +258,9 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
                                 conflictCount++;
                             }
                             else
+                            {
                                 conflictCount++;
+                            }
 
                             _ = conflictPaths.Add(remoteFile.RelativePath);
                             await DebugLog.InfoAsync("SyncEngine.StartSyncAsync", $"CONFLICT detected for {remoteFile.RelativePath}: local and remote both changed", cancellationToken);

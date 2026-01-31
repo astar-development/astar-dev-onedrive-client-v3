@@ -115,7 +115,10 @@ public sealed class ConflictResolver(
         var fileInfo = new FileInfo(localPath);
         FileMetadata updatedMetadata = metadata with
         {
-            Size = fileInfo.Length, LastModifiedUtc = fileInfo.LastWriteTimeUtc, SyncStatus = FileSyncStatus.Synced, LastSyncDirection = SyncDirection.Upload
+            Size = fileInfo.Length,
+            LastModifiedUtc = fileInfo.LastWriteTimeUtc,
+            SyncStatus = FileSyncStatus.Synced,
+            LastSyncDirection = SyncDirection.Upload
         };
         await _metadataRepo.UpdateAsync(updatedMetadata, cancellationToken);
     }

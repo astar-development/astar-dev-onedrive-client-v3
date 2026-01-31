@@ -54,7 +54,9 @@ public sealed partial class MainWindow : Window
             {
                 // Apply saved preferences
                 if(preferences.IsMaximized)
+                {
                     WindowState = WindowState.Maximized;
+                }
                 else if(preferences.X.HasValue && preferences.Y.HasValue)
                 {
                     Position = new PixelPoint((int)preferences.X.Value, (int)preferences.Y.Value);

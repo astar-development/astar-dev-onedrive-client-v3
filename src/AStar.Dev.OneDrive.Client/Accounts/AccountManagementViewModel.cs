@@ -184,7 +184,10 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                 Accounts.Add(newAccount);
                 SelectedAccount = newAccount;
             }
-            else if(!result.Success && result.ErrorMessage is not null) _ = ShowToastAsync(result.ErrorMessage);
+            else if(!result.Success && result.ErrorMessage is not null)
+            {
+                _ = ShowToastAsync(result.ErrorMessage);
+            }
         }
         finally
         {
@@ -236,7 +239,10 @@ public sealed class AccountManagementViewModel : ReactiveObject, IDisposable
                     SelectedAccount = updatedAccount;
                 }
             }
-            else if(!result.Success && result.ErrorMessage is not null) _ = ShowToastAsync(result.ErrorMessage);
+            else if(!result.Success && result.ErrorMessage is not null)
+            {
+                _ = ShowToastAsync(result.ErrorMessage);
+            }
         }
         finally
         {
