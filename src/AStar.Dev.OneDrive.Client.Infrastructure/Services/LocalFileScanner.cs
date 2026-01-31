@@ -2,9 +2,8 @@ using System.IO.Abstractions;
 using System.Security.Cryptography;
 using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
-using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
-namespace AStar.Dev.OneDrive.Client.Services;
+namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
 /// <summary>
 ///     Service for scanning local file system and detecting file changes.
