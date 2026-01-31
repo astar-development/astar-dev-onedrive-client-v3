@@ -28,7 +28,7 @@ public sealed class AccountEntity
                     EnableDebugLogging = true,
                     EnableDetailedSyncLogging = true,
                     IsAuthenticated = true,
-                    LastSyncUtc = DateTimeOffset.MinValue,
+                    LastSyncUtc = null,
                     MaxItemsInBatch = 1,
                     MaxParallelUpDownloads = 1
                 };

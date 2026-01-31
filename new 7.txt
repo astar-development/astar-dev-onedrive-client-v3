@@ -1,0 +1,14 @@
+AStar.Dev.OneDrive.Client.Infrastructure.Services;
+
+DebugLogContext.SetAccountId(account.AccountId);
+
+await DebugLog.EntryAsync("FileProcessor.ProcessFileAsync", cancellationToken);
+await DebugLog.InfoAsync("FileProcessor.ProcessFileAsync", $"Processing file: {filePath}", cancellationToken);
+await DebugLog.ErrorAsync("FileProcessor.ProcessFileAsync", $"Failed to process file: {filePath}", ex, cancellationToken);
+await DebugLog.ExitAsync("FileProcessor.ProcessFileAsync", cancellationToken);
+
+
+ArgumentNullException.ThrowIfNull
+ArgumentException.ThrowIfNull
+
+features/delta-crawl-part-

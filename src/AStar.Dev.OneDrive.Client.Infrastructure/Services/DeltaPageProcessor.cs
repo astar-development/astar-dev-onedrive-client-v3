@@ -1,6 +1,7 @@
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
 using AStar.Dev.OneDrive.Client.Core.DTOs;
 using AStar.Dev.OneDrive.Client.Core.Models;
+using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 using AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
 
@@ -12,9 +13,11 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
     {
         await DebugLog.EntryAsync("FileProcessor.ProcessFileAsync", cancellationToken);
         logger.LogInformation("[DeltaPageProcessor] Starting delta page processing (with progress callback)");
-        string? nextOrDelta = null;
+        var nextOrDelta = deltaToken?.Token;
         DeltaToken finalToken = deltaToken;
         int pageCount = 0, totalItemsProcessed = 0;
+        progressCallback?.Invoke(CreateStartingSyncMessage(accountId, deltaToken == null));
+
         try
         {
             do
@@ -24,7 +27,7 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
                 DriveItemRecord? driveItemRecord = page.Items.FirstOrDefault();
                 if(driveItemRecord is not null)
                 {
-                    deltaToken = new DeltaToken("PlaceholderAccountId", driveItemRecord.Id.Split('!')[0], page.DeltaLink ?? string.Empty, DateTimeOffset.UtcNow);
+                    deltaToken = new DeltaToken(accountId, driveItemRecord.Id.Split('!')[0], page.DeltaLink ?? string.Empty, DateTimeOffset.UtcNow);
                 }
 
                 logger.LogDebug("[DeltaPageProcessor] Received page: items={Count} nextLink={NextLink} deltaLink={DeltaLink}", page.Items.Count(), page.NextLink, page.DeltaLink);
@@ -33,19 +36,15 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
                 nextOrDelta = page.NextLink;
                 if(page.DeltaLink is not null)
                 {
-                    finalToken = new("PlaceholderAccountId", deltaToken!.Id, page.DeltaLink, DateTimeOffset.UtcNow);
+                    finalToken = new(accountId, deltaToken!.Id, page.DeltaLink, DateTimeOffset.UtcNow);
                 }
 
                 pageCount++;
                 logger.LogInformation("[DeltaPageProcessor] Applied page {PageNum}: items={Count} totalItems={Total} next={Next}",
                     pageCount, page.Items.Count(), totalItemsProcessed, page.NextLink is not null);
-                progressCallback?.Invoke(CreateSyncProgressMessage(accountId,pageCount, totalItemsProcessed, page));
-                if(pageCount > 10000)
-                {
-                    logger.LogWarning("[DeltaPageProcessor] Exceeded max page count (10000), aborting to prevent infinite loop.");
-                    break;
-                }
-            } while(!string.IsNullOrEmpty(nextOrDelta) && !cancellationToken.IsCancellationRequested);
+                progressCallback?.Invoke(CreateSyncProgressMessage(accountId,pageCount, totalItemsProcessed, page.NextLink is not null));
+            }
+            while(!string.IsNullOrEmpty(nextOrDelta) && !cancellationToken.IsCancellationRequested);
             logger.LogInformation("[DeltaPageProcessor] Delta processing complete: finalToken={FinalToken} pageCount={PageCount} totalItems={TotalItems}", finalToken, pageCount, totalItemsProcessed);
         }
         catch(Exception ex)
@@ -55,11 +54,37 @@ public sealed class DeltaPageProcessor(IGraphApiClient graphApiClient, ISyncRepo
             throw new IOException("Error processing delta pages", ex);
         }
 
+        if(finalToken is not null) finalToken = finalToken with{ AccountId = accountId};
+
         return (finalToken!, pageCount, totalItemsProcessed);
     }
 
-    private static SyncState CreateSyncProgressMessage(string accountId,int pageCount, int totalItemsProcessed, DeltaPage page) => new(accountId, Core.Models.Enums.SyncStatus.Running, totalItemsProcessed, 0, 0, 0, 0, 0, 0, 0, 0, 0, $"Delta page {pageCount} applied ({page.Items.Count()} items)");
-    
+    private static SyncState CreateStartingSyncMessage(string accountId, bool initialSync)
+    {
+        SyncStatus syncType = SyncStatus.IncrementalDeltaSync;
+        var syncMessage = "Starting incremental sync, please wait...";
+        if(initialSync)
+        {
+            syncType = SyncStatus.InitialDeltaSync;
+            syncMessage = "Starting initial sync, please wait...";
+        }
 
-    private static SyncState CreateErrorSyncProgress(string accountId,int totalItemsProcessed, string errorMessage) => new(accountId, Core.Models.Enums.SyncStatus.Failed, totalItemsProcessed, 0, 0, 0, 0, 0, 0, 0, 0, 0,$"Delta sync failed: {errorMessage}", DateTimeOffset.UtcNow);
+        return new(accountId, syncType, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, syncMessage);
+    }
+
+    private static SyncState CreateSyncProgressMessage(string accountId, int pageCount, int totalItemsProcessed, bool initialSync)
+    {
+        SyncStatus syncType = SyncStatus.IncrementalDeltaSync;
+        var syncMessage = $"Incremental sync processed page: {pageCount}... total items: {totalItemsProcessed} detected so far";
+        if(initialSync)
+        {
+            syncType = SyncStatus.InitialDeltaSync;
+            syncMessage = $"Initial sync processed page: {pageCount}... total items: {totalItemsProcessed} detected so far";
+        }
+
+        return new(accountId, syncType, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, syncMessage);
+    }
+
+    private static SyncState CreateErrorSyncProgress(string accountId,int totalItemsProcessed, string errorMessage)
+        => new(accountId, SyncStatus.Failed, totalItemsProcessed, 0, 0, 0, 0, 0, 0, 0, 0, 0,$"Delta sync failed: {errorMessage}", DateTimeOffset.UtcNow);
 }

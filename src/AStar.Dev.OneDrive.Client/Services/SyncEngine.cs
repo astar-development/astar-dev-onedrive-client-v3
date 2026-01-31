@@ -91,12 +91,6 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
 
         _syncCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-        for (var i = 0; i < 500; i++)
-        {
-            ReportProgress(accountId, SyncStatus.InitialDeltaSync, i, 0, 1234543, 134141, 8,0,0,0, $"Delta Sync Page: {i}");
-            await Task.Delay(1000, cancellationToken);
-        }
-
         try
         {
             ResetTrackingDetails();
@@ -104,7 +98,7 @@ public sealed partial class SyncEngine : ISyncEngine, IDisposable
             DeltaToken? token = await _syncRepository.GetDeltaTokenAsync(accountId, cancellationToken);
 
             (DeltaToken? finalDelta, var pageCount, var totalItemsProcessed) = await _deltaPageProcessor.ProcessAllDeltaPagesAsync(accountId, token, _progressSubject.OnNext, cancellationToken);
-            await _syncRepository.SaveOrUpdateDeltaTokenAsync(accountId,finalDelta, cancellationToken);
+            await _syncRepository.SaveOrUpdateDeltaTokenAsync(finalDelta, cancellationToken);
            
             await DebugLog.EntryAsync("SyncEngine.StartSyncAsync", cancellationToken);
 
