@@ -12,3 +12,6 @@ ArgumentNullException.ThrowIfNull
 ArgumentException.ThrowIfNull
 
 features/delta-crawl-part-
+
+
+/home/jason/.local/share/AStar.Dev.OneDrive.Client

@@ -1,10 +1,9 @@
-using System.Linq;
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using AStar.Dev.OneDrive.Client.Core.Data.Entities;
 using AStar.Dev.OneDrive.Client.Core.Models;
-using AStar.Dev.OneDrive.Client.Core.Models.OneDrive;
 using AStar.Dev.OneDrive.Client.Infrastructure.Services.Authentication;
 using Microsoft.Graph;
 using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
@@ -36,11 +35,14 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         _ = response.EnsureSuccessStatusCode();
 
         await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        OneDriveResponse items = (await JsonSerializer.DeserializeAsync<OneDriveResponse>(stream, JsonSerializerOptions.Web, cancellationToken))!;
+        using JsonDocument doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
 
-        List<DriveItemEntity> driveItems = ParseDriveItemRecords(accountId, items);
+        List<DriveItemEntity> items = ParseDriveItemRecords(accountId, doc);
 
-        return new DeltaPage(driveItems, items._odata_nextLink, items._odata_deltaLink);
+        var next = TryGetODataProperty(doc, "@odata.nextLink");
+        var delta = TryGetODataProperty(doc, "@odata.deltaLink");
+
+        return new DeltaPage(items, next, delta);
     }
 
     public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
@@ -49,19 +51,19 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
     /// <inheritdoc />
     public async Task<IEnumerable<DriveItem>> GetDriveItemChildrenAsync(string accountId, string itemId, int maxItemsInBatch = 200, CancellationToken cancellationToken = default)
     {
-        await DebugLog.EntryAsync("GraphApiClient.GetDriveItemChildrenAsync", cancellationToken);
-        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Fetching children for item ID: {itemId}", cancellationToken);
+        await DebugLog.EntryAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, cancellationToken);
+        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, $"Fetching children for item ID: {itemId}", cancellationToken);
 
         GraphServiceClient graphClient = CreateGraphClientAsync(accountId);
         Drive? drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
         if(drive?.Id is null)
         {
-            await DebugLog.ErrorAsync("GraphApiClient.GetDriveItemChildrenAsync", "Drive ID is null", null, cancellationToken);
-            await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", cancellationToken);
+            await DebugLog.ErrorAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, "Drive ID is null", null, cancellationToken);
+            await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, cancellationToken);
             return [];
         }
 
-        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Using drive ID: {drive.Id}", cancellationToken);
+        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, $"Using drive ID: {drive.Id}", cancellationToken);
 
         var itemsList = new List<DriveItem>();
         string? nextLink = null;
@@ -75,7 +77,7 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
                     null,
                     cancellationToken);
 
-            await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"Response received - Value count: {response?.Value?.Count ?? 0}, NextLink: {response?.OdataNextLink}",
+            await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, $"Response received - Value count: {response?.Value?.Count ?? 0}, NextLink: {response?.OdataNextLink}",
                 cancellationToken);
 
             IEnumerable<DriveItem> items = response?.Value?.Where(item => item.Deleted is null) ?? [];
@@ -84,8 +86,8 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
             nextLink = response?.OdataNextLink;
         } while(!string.IsNullOrEmpty(nextLink));
 
-        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"After filtering deleted items: {itemsList.Count} items", cancellationToken);
-        await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", cancellationToken);
+        await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, $"After filtering deleted items: {itemsList.Count} items", cancellationToken);
+        await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", accountId, cancellationToken);
         return itemsList;
     }
 
@@ -251,15 +253,15 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
     /// <inheritdoc />
     public async Task DeleteFileAsync(string accountId, string itemId, CancellationToken cancellationToken = default)
     {
-        await DebugLog.EntryAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
-        await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", $"Attempting to delete remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
+        await DebugLog.EntryAsync("GraphApiClient.DeleteFileAsync", accountId, cancellationToken);
+        await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", accountId, $"Attempting to delete remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
 
         GraphServiceClient graphClient = CreateGraphClientAsync(accountId);
         Drive? drive = await graphClient.Me.Drive.GetAsync(cancellationToken: cancellationToken);
         if(drive?.Id is null)
         {
-            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", "Drive ID is null. Cannot delete file.", null, cancellationToken);
-            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
+            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", accountId, "Drive ID is null. Cannot delete file.", null, cancellationToken);
+            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", accountId, cancellationToken);
             throw new InvalidOperationException("Unable to access user's drive");
         }
 
@@ -267,16 +269,16 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         try
         {
             await graphClient.Drives[drive.Id].Items[itemId].DeleteAsync(cancellationToken: cancellationToken);
-            await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", $"Successfully deleted remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
+            await DebugLog.InfoAsync("GraphApiClient.DeleteFileAsync", accountId, $"Successfully deleted remote file. AccountId: {accountId}, ItemId: {itemId}", cancellationToken);
         }
         catch(Exception ex)
         {
-            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", $"Exception during remote file deletion. AccountId: {accountId}, ItemId: {itemId}", ex, cancellationToken);
+            await DebugLog.ErrorAsync("GraphApiClient.DeleteFileAsync", accountId, $"Exception during remote file deletion. AccountId: {accountId}, ItemId: {itemId}", ex, cancellationToken);
             throw;
         }
         finally
         {
-            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", cancellationToken);
+            await DebugLog.ExitAsync("GraphApiClient.DeleteFileAsync", accountId, cancellationToken);
         }
     }
 
@@ -308,6 +310,42 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         }
     }
 
-    private List<DriveItemEntity>? ParseDriveItemRecords(string accountId, OneDriveResponse? items)
-        => items?.value.Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.parentReference.driveId, oneDriveItem.parentReference.id, oneDriveItem.parentReference.path, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), false, false, oneDriveItem.name, null, null, Core.Models.Enums.FileSyncStatus.SyncOnly, Core.Models.Enums.SyncDirection.None)).ToList();
+    private static List<DriveItemEntity> ParseDriveItemRecords(string accountId, JsonDocument doc)
+    {
+        var items = new List<DriveItemEntity>();
+        if(doc.RootElement.TryGetProperty("value", out JsonElement arr))
+        {
+            foreach(JsonElement el in arr.EnumerateArray())
+            {
+                items.Add(ParseDriveItemRecord(accountId, el));
+            }
+        }
+
+        return items;
+    }
+
+    private static DriveItemEntity ParseDriveItemRecord(string accountId, JsonElement jsonElement)
+    {
+        var id = jsonElement.GetProperty("id").GetString()!;
+        var isFolder = jsonElement.TryGetProperty("folder", out _);
+        var size = jsonElement.TryGetProperty("size", out JsonElement sProp) ? sProp.GetInt64() : 0L;
+        var parentPath = SetParentPath(jsonElement);
+        var name = jsonElement.TryGetProperty("name", out JsonElement n) ? n.GetString() ?? id : id;
+        var relativePath = GraphPathHelpers.BuildRelativePath(parentPath, name);
+        var eTag = jsonElement.TryGetProperty("eTag", out JsonElement et) ? et.GetString() : null;
+        var cTag = jsonElement.TryGetProperty("cTag", out JsonElement ctProp) ? ctProp.GetString() : null;
+        DateTimeOffset lastModifiedUtc = GetLastModifiedUtc(jsonElement);
+        var isDeleted = jsonElement.TryGetProperty("deleted", out _);
+
+        return new DriveItemEntity(accountId, id, id, relativePath, eTag, cTag, size, lastModifiedUtc, isFolder, isDeleted);
+    }
+
+    private static DateTimeOffset GetLastModifiedUtc(JsonElement jsonElement) => jsonElement.TryGetProperty("lastModifiedDateTime", out JsonElement lm)
+                ? DateTimeOffset.Parse(lm.GetString()!, CultureInfo.InvariantCulture)
+                : DateTimeOffset.UtcNow;
+    private static string SetParentPath(JsonElement jsonElement)
+        => jsonElement.TryGetProperty("parentReference", out JsonElement pr) && pr.TryGetProperty("path", out JsonElement p) ? p.GetString() ?? string.Empty : string.Empty;
+
+    private static string? TryGetODataProperty(JsonDocument doc, string propertyName)
+        => doc.RootElement.TryGetProperty(propertyName, out JsonElement prop) ? prop.GetString() : null;
 }

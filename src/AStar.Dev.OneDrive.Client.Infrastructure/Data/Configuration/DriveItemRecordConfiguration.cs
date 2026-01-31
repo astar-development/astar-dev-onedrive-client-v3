@@ -14,6 +14,9 @@ public sealed class DriveItemRecordConfiguration : IEntityTypeConfiguration<Driv
         _ = builder.Property("RelativePath").IsRequired();
 
         _ = builder.HasIndex("DriveItemId");
+        _ = builder.HasIndex(e => e.IsFolder);
+        _ = builder.HasIndex(e => e.IsSelected);
+        _ = builder.HasIndex(e => new { e.AccountId, e.RelativePath });
 
         _ = builder.HasOne<AccountEntity>()
             .WithMany()

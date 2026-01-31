@@ -342,7 +342,7 @@ public class SyncSelectionServiceShould
 
     private static OneDriveFolderNode CreateFolder(string id, string name, string? parentId = null) => new()
     {
-        Id = id,
+        DriveItemId = id,
         Name = name,
         Path = $"/{name}", // Add Path property for tests that rely on it
         ParentId = parentId,

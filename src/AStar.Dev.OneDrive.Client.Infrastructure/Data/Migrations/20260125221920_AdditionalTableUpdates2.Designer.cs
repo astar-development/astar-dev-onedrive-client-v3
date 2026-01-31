@@ -3,6 +3,7 @@ using System;
 using AStar.Dev.OneDrive.Client.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(SyncDbContext))]
-    partial class SyncDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260125221920_AdditionalTableUpdates2")]
+    partial class AdditionalTableUpdates2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
@@ -101,17 +104,12 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<long>("TimestampUtc")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("TimestampUtc_Ticks");
+                    b.Property<DateTimeOffset>("TimestampUtc")
+                        .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AccountId");
-
-                    b.HasIndex("TimestampUtc");
-
-                    b.ToTable("DebugLogs", (string)null);
+                    b.ToTable("DebugLogs");
                 });
 
             modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DriveItemEntity", b =>
@@ -139,12 +137,8 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.Property<bool>("IsFolder")
                         .HasColumnType("INTEGER");
 
-                    b.Property<bool>("IsSelected")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<long>("LastModifiedUtc")
-                        .HasColumnType("INTEGER")
-                        .HasColumnName("LastModifiedUtc_Ticks");
+                    b.Property<DateTimeOffset>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("LastSyncDirection")
                         .HasColumnType("INTEGER");
@@ -173,13 +167,9 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AccountId");
+
                     b.HasIndex("DriveItemId");
-
-                    b.HasIndex("IsFolder");
-
-                    b.HasIndex("IsSelected");
-
-                    b.HasIndex("AccountId", "RelativePath");
 
                     b.ToTable("DriveItems", (string)null);
                 });
@@ -233,6 +223,33 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("FileOperationLogs");
+                });
+
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.SyncConfigurationEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AccountId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("FolderPath")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsSelected")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("LastModifiedUtc")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AccountId", "FolderPath");
+
+                    b.ToTable("SyncConfigurations");
                 });
 
             modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.SyncConflictEntity", b =>
@@ -373,7 +390,7 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                     b.ToTable("DeltaTokens", (string)null);
                 });
 
-            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DebugLogEntity", b =>
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DriveItemEntity", b =>
                 {
                     b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
                         .WithMany()
@@ -382,7 +399,7 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.DriveItemEntity", b =>
+            modelBuilder.Entity("AStar.Dev.OneDrive.Client.Core.Data.Entities.SyncConfigurationEntity", b =>
                 {
                     b.HasOne("AStar.Dev.OneDrive.Client.Core.Data.Entities.AccountEntity", null)
                         .WithMany()

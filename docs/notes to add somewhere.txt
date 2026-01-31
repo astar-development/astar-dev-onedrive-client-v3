@@ -1,4 +1,6 @@
 dotnet ef migrations add AdditionalTableUpdates --startup-project .\AStar.Dev.OneDrive.Client\AStar.Dev.OneDrive.Client.csproj --project .\AStar.Dev.OneDrive.Client.Infrastructure\AStar.Dev.OneDrive.Client.Infrastructure.csproj -o Data/Migrations
+or
+dotnet ef migrations add AdditionalTableUpdates --startup-project ./AStar.Dev.OneDrive.Client/AStar.Dev.OneDrive.Client.csproj --project ./AStar.Dev.OneDrive.Client.Infrastructure/AStar.Dev.OneDrive.Client.Infrastructure.csproj -o Data/Migrations
 
 MUST HAVE:
 

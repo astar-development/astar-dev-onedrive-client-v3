@@ -1,6 +1,7 @@
 using System.Reactive.Subjects;
 using AStar.Dev.OneDrive.Client.Core.Models;
 using AStar.Dev.OneDrive.Client.Core.Models.Enums;
+using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 using AStar.Dev.OneDrive.Client.Models;
 using AStar.Dev.OneDrive.Client.Services;
 using AStar.Dev.OneDrive.Client.Syncronisation;
@@ -14,17 +15,19 @@ public class SyncTreeViewModelShould : IDisposable
     private readonly ISyncEngine _mockSyncEngine;
     private readonly Subject<SyncState> _progressSubject;
     private readonly SyncTreeViewModel _viewModel;
+    private readonly IDebugLogger _mockDebugLogger;
 
     public SyncTreeViewModelShould()
     {
         _mockFolderService = Substitute.For<IFolderTreeService>();
         _mockSelectionService = Substitute.For<ISyncSelectionService>();
         _mockSyncEngine = Substitute.For<ISyncEngine>();
+        _mockDebugLogger = Substitute.For<IDebugLogger>();
 
         _progressSubject = new Subject<SyncState>();
         _ = _mockSyncEngine.Progress.Returns(_progressSubject);
 
-        _viewModel = new SyncTreeViewModel(_mockFolderService, _mockSelectionService, _mockSyncEngine);
+        _viewModel = new SyncTreeViewModel(_mockFolderService, _mockSelectionService, _mockSyncEngine, _mockDebugLogger);
     }
 
     public void Dispose()
@@ -88,7 +91,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public async Task LoadRootFoldersWhenAccountIdIsSet()
     {
-        var folders = new List<OneDriveFolderNode> { new() { Id = "folder1", Name = "Folder 1", IsFolder = true }, new() { Id = "folder2", Name = "Folder 2", IsFolder = true } };
+        var folders = new List<OneDriveFolderNode> { new() { DriveItemId = "folder1", Name = "Folder 1", IsFolder = true }, new() { DriveItemId = "folder2", Name = "Folder 2", IsFolder = true } };
 
         _ = _mockFolderService.GetRootFoldersAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(folders);
@@ -105,7 +108,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ClearRootFoldersWhenAccountIdIsNull()
     {
-        _viewModel.RootFolders.Add(new OneDriveFolderNode { Id = "test", Name = "Test" });
+        _viewModel.RootFolders.Add(new OneDriveFolderNode { DriveItemId = "test", Name = "Test" });
 
         _viewModel.SelectedAccountId = null;
         _ = _viewModel.LoadFoldersCommand.Execute().Subscribe();
@@ -155,8 +158,8 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public async Task LoadChildrenWhenCommandExecuted()
     {
-        var parent = new OneDriveFolderNode { Id = "parent", Name = "Parent", IsFolder = true };
-        var children = new List<OneDriveFolderNode> { new() { Id = "child1", Name = "Child 1", ParentId = "parent", IsFolder = true } };
+        var parent = new OneDriveFolderNode { DriveItemId = "parent", Name = "Parent", IsFolder = true };
+        var children = new List<OneDriveFolderNode> { new() { DriveItemId = "child1", Name = "Child 1", ParentId = "parent", IsFolder = true } };
 
         _ = _mockFolderService.GetChildFoldersAsync("account123", "parent", Arg.Any<bool?>(), Arg.Any<CancellationToken>())
             .Returns(children);
@@ -174,7 +177,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public async Task NotLoadChildrenIfAlreadyLoaded()
     {
-        var parent = new OneDriveFolderNode { Id = "parent", Name = "Parent", IsFolder = true, ChildrenLoaded = true };
+        var parent = new OneDriveFolderNode { DriveItemId = "parent", Name = "Parent", IsFolder = true, ChildrenLoaded = true };
 
         _viewModel.SelectedAccountId = "account123";
 
@@ -187,9 +190,9 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public async Task InheritParentSelectionStateForNewChildren()
     {
-        var parent = new OneDriveFolderNode { Id = "parent", Name = "Parent", IsFolder = true, SelectionState = SelectionState.Checked };
+        var parent = new OneDriveFolderNode { DriveItemId = "parent", Name = "Parent", IsFolder = true, SelectionState = SelectionState.Checked };
 
-        var children = new List<OneDriveFolderNode> { new() { Id = "child1", Name = "Child 1", ParentId = "parent", IsFolder = true } };
+        var children = new List<OneDriveFolderNode> { new() { DriveItemId = "child1", Name = "Child 1", ParentId = "parent", IsFolder = true } };
 
         _ = _mockFolderService.GetChildFoldersAsync("account123", "parent", Arg.Any<bool?>(), Arg.Any<CancellationToken>())
             .Returns(children);
@@ -206,7 +209,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ToggleSelectionFromUncheckedToChecked()
     {
-        var folder = new OneDriveFolderNode { Id = "folder1", Name = "Folder 1", SelectionState = SelectionState.Unchecked };
+        var folder = new OneDriveFolderNode { DriveItemId = "folder1", Name = "Folder 1", SelectionState = SelectionState.Unchecked };
 
         _ = _viewModel.ToggleSelectionCommand.Execute(folder).Subscribe();
 
@@ -217,7 +220,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ToggleSelectionFromCheckedToUnchecked()
     {
-        var folder = new OneDriveFolderNode { Id = "folder1", Name = "Folder 1", SelectionState = SelectionState.Checked };
+        var folder = new OneDriveFolderNode { DriveItemId = "folder1", Name = "Folder 1", SelectionState = SelectionState.Checked };
 
         _ = _viewModel.ToggleSelectionCommand.Execute(folder).Subscribe();
 
@@ -227,7 +230,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ToggleSelectionFromIndeterminateToChecked()
     {
-        var folder = new OneDriveFolderNode { Id = "folder1", Name = "Folder 1", SelectionState = SelectionState.Indeterminate };
+        var folder = new OneDriveFolderNode { DriveItemId = "folder1", Name = "Folder 1", SelectionState = SelectionState.Indeterminate };
 
         _ = _viewModel.ToggleSelectionCommand.Execute(folder).Subscribe();
 
@@ -237,7 +240,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ClearAllSelectionsWhenCommandExecuted()
     {
-        _viewModel.RootFolders.Add(new OneDriveFolderNode { Id = "folder1", Name = "Folder 1" });
+        _viewModel.RootFolders.Add(new OneDriveFolderNode { DriveItemId = "folder1", Name = "Folder 1" });
 
         _ = _viewModel.ClearSelectionsCommand.Execute().Subscribe();
 
@@ -247,7 +250,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void GetSelectedFoldersFromSelectionService()
     {
-        var selectedFolders = new List<OneDriveFolderNode> { new() { Id = "selected1", Name = "Selected 1", SelectionState = SelectionState.Checked } };
+        var selectedFolders = new List<OneDriveFolderNode> { new() { DriveItemId = "selected1", Name = "Selected 1", SelectionState = SelectionState.Checked } };
 
         _ = _mockSelectionService.GetSelectedFolders(Arg.Any<List<OneDriveFolderNode>>())
             .Returns(selectedFolders);
@@ -287,7 +290,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ThrowArgumentNullExceptionWhenFolderServiceIsNull()
     {
-        Exception? exception = Record.Exception(() => new SyncTreeViewModel(null!, _mockSelectionService, _mockSyncEngine));
+        Exception? exception = Record.Exception(() => new SyncTreeViewModel(null!, _mockSelectionService, _mockSyncEngine, _mockDebugLogger));
 
         _ = exception.ShouldNotBeNull();
         _ = exception.ShouldBeOfType<ArgumentNullException>();
@@ -296,7 +299,7 @@ public class SyncTreeViewModelShould : IDisposable
     [Fact(Skip = "Runs on it's own but not when run with other tests - or is flaky and works sometimes when run with others")]
     public void ThrowArgumentNullExceptionWhenSelectionServiceIsNull()
     {
-        Exception? exception = Record.Exception(() => new SyncTreeViewModel(_mockFolderService, null!, _mockSyncEngine));
+        Exception? exception = Record.Exception(() => new SyncTreeViewModel(_mockFolderService, null!, _mockSyncEngine, _mockDebugLogger));
 
         _ = exception.ShouldNotBeNull();
         _ = exception.ShouldBeOfType<ArgumentNullException>();

@@ -9,12 +9,15 @@ namespace AStar.Dev.OneDrive.Client.Infrastructure.Repositories;
 /// <summary>
 ///     Repository implementation for managing sync configuration data.
 /// </summary>
-public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncConfigurationRepository
+public sealed class SyncConfigurationRepository(IDbContextFactory<SyncDbContext> contextFactory) : ISyncConfigurationRepository
 {
+    private readonly IDbContextFactory<SyncDbContext> _contextFactory = contextFactory ?? throw new ArgumentNullException(nameof(contextFactory));
+
     /// <inheritdoc />
-    public async Task<IReadOnlyList<SyncConfiguration>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<FileMetadata>> GetByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
-        List<SyncConfigurationEntity> entities = await context.SyncConfigurations
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        List<DriveItemEntity> entities = await context.DriveItems
             .Where(sc => sc.AccountId == accountId)
             .ToListAsync(cancellationToken);
 
@@ -23,46 +26,53 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default)
-        => await context.SyncConfigurations
-            .Where(sc => sc.AccountId == accountId && sc.IsSelected)
-            .Select(sc => CleanUpPath(sc.FolderPath))
-            .Distinct()
-            .ToListAsync(cancellationToken);
+    {
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        return await context.DriveItems
+                .Where(sc => sc.AccountId == accountId && sc.IsSelected)
+                .Select(sc => CleanUpPath(sc.RelativePath))
+                .Distinct()
+                .ToListAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
     public async Task<Result<IList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default)
-        => await context.SyncConfigurations
-            .Where(sc => sc.AccountId == accountId && sc.IsSelected)
-            .Select(sc => CleanUpPath(sc.FolderPath))
-            .Distinct()
-            .ToListAsync(cancellationToken);
+    {
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        return await context.DriveItems
+                .Where(sc => sc.AccountId == accountId && sc.IsSelected)
+                .Select(sc => CleanUpPath(sc.RelativePath))
+                .Distinct()
+                .ToListAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
-    public async Task<SyncConfiguration> AddAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
+    public async Task<FileMetadata> AddAsync(FileMetadata configuration, CancellationToken cancellationToken = default)
     {
-        SyncConfigurationEntity? existingEntity = await context.SyncConfigurations
-            .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.FolderPath == configuration.FolderPath, cancellationToken);
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        DriveItemEntity? existingEntity = await context.DriveItems
+            .FirstOrDefaultAsync(sc => sc.AccountId == configuration.AccountId && sc.RelativePath == configuration.RelativePath, cancellationToken);
 
         if(existingEntity is not null)
             return configuration;
 
-        SyncConfigurationEntity entity = MapToEntity(configuration);
-        _ = context.SyncConfigurations.Add(entity);
+        DriveItemEntity entity = MapToEntity(configuration);
+        _ = context.DriveItems.Add(entity);
         _ = await context.SaveChangesAsync(cancellationToken);
 
         return configuration;
     }
 
     /// <inheritdoc />
-    public async Task UpdateAsync(SyncConfiguration configuration, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(FileMetadata configuration, CancellationToken cancellationToken = default)
     {
-        SyncConfigurationEntity syncConfiguration = await context.SyncConfigurations.FindAsync([configuration.Id], cancellationToken) ??
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        DriveItemEntity syncConfiguration = await context.DriveItems.FindAsync([configuration.Id], cancellationToken) ??
                                          throw new InvalidOperationException($"Sync configuration with ID '{configuration.Id}' not found.");
 
-        syncConfiguration.AccountId = configuration.AccountId;
-        syncConfiguration.FolderPath = configuration.FolderPath;
-        syncConfiguration.IsSelected = configuration.IsSelected;
-        syncConfiguration.LastModifiedUtc = configuration.LastModifiedUtc;
+        DriveItemEntity syncConfiguration1 = syncConfiguration.WithUpdatedDetails(configuration.IsSelected, configuration.RelativePath, configuration.LastModifiedUtc);
+
+        context.Entry(syncConfiguration1).CurrentValues.SetValues(syncConfiguration1);
 
         _ = await context.SaveChangesAsync(cancellationToken);
     }
@@ -70,10 +80,11 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
     /// <inheritdoc />
     public async Task DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        SyncConfigurationEntity? entity = await context.SyncConfigurations.FindAsync([id], cancellationToken);
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        DriveItemEntity? entity = await context.DriveItems.FindAsync([id], cancellationToken);
         if(entity is not null)
         {
-            _ = context.SyncConfigurations.Remove(entity);
+            _ = context.DriveItems.Remove(entity);
             _ = await context.SaveChangesAsync(cancellationToken);
         }
     }
@@ -81,35 +92,47 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
     /// <inheritdoc />
     public async Task DeleteByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
     {
-        List<SyncConfigurationEntity> entities = await context.SyncConfigurations
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        List<DriveItemEntity> entities = await context.DriveItems
             .Where(sc => sc.AccountId == accountId)
             .ToListAsync(cancellationToken);
 
-        context.SyncConfigurations.RemoveRange(entities);
+        context.DriveItems.RemoveRange(entities);
         _ = await context.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task SaveBatchAsync(string accountId, IEnumerable<SyncConfiguration> configurations, CancellationToken cancellationToken = default)
+    public async Task SaveBatchAsync(string accountId, IEnumerable<FileMetadata> configurations, CancellationToken cancellationToken = default)
     {
-        List<SyncConfigurationEntity> existingEntities = await context.SyncConfigurations
-            .Where(sc => sc.AccountId == accountId)
+        var configDict = configurations.ToDictionary(c => c.Id);
+
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        List<DriveItemEntity> existingEntities = await context.DriveItems
+            .Where(sc => sc.AccountId == accountId && sc.IsFolder)
             .ToListAsync(cancellationToken);
 
-        context.SyncConfigurations.RemoveRange(existingEntities);
+        foreach(DriveItemEntity entity in existingEntities)
+        {
+            var isSelected = configDict.TryGetValue(entity.Id, out FileMetadata? config)
+                ? config.IsSelected
+                : entity.IsSelected;
 
-        var newEntities = configurations.Select(MapToEntity).ToList();
-        context.SyncConfigurations.AddRange(newEntities);
+            if(entity.IsSelected != isSelected)
+            {
+                DriveItemEntity updatedEntity = entity.WithUpdatedSelection(isSelected);
+                context.Entry(entity).CurrentValues.SetValues(updatedEntity);
+            }
+        }
 
         _ = await context.SaveChangesAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<SyncConfigurationEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken)
+    public async Task<DriveItemEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken)
     {
-        SyncConfigurationEntity? parentEntity = await context.SyncConfigurations
-            .FirstOrDefaultAsync(sc => sc.AccountId == accountId && (sc.FolderPath == parentPath || sc.FolderPath == possibleParentPath), cancellationToken);
-
+        await using SyncDbContext context = _contextFactory.CreateDbContext();
+        DriveItemEntity? parentEntity = await context.DriveItems
+            .FirstOrDefaultAsync(sc => sc.AccountId == accountId && (sc.RelativePath == parentPath || sc.RelativePath == possibleParentPath), cancellationToken);
         return parentEntity;
     }
 
@@ -130,22 +153,36 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
         return localFolderPath;
     }
 
-    private static SyncConfiguration MapToModel(SyncConfigurationEntity syncConfiguration)
+    private static FileMetadata MapToModel(DriveItemEntity driveItemEntity)
         => new(
-            syncConfiguration.Id,
-            syncConfiguration.AccountId,
-            syncConfiguration.FolderPath,
-            syncConfiguration.IsSelected,
-            syncConfiguration.LastModifiedUtc
+            driveItemEntity.Id,
+            driveItemEntity.AccountId,
+            driveItemEntity.Name ?? string.Empty,
+             driveItemEntity.DriveItemId,
+             driveItemEntity.RelativePath,
+            driveItemEntity.Size,
+            driveItemEntity.LastModifiedUtc,
+             driveItemEntity.LocalPath ?? string.Empty,
+            driveItemEntity.IsFolder,
+            driveItemEntity.IsDeleted,
+            driveItemEntity.IsSelected,
+             driveItemEntity.RelativePath ?? string.Empty,
+            driveItemEntity.ETag,
+            driveItemEntity.CTag
         );
 
-    private static SyncConfigurationEntity MapToEntity(SyncConfiguration model)
-        => new()
-        {
-            Id = model.Id,
-            AccountId = model.AccountId,
-            FolderPath = model.FolderPath,
-            IsSelected = model.IsSelected,
-            LastModifiedUtc = model.LastModifiedUtc
-        };
+    private static DriveItemEntity MapToEntity(FileMetadata model)
+        => new(
+            model.AccountId,
+            model.Id,
+            model.DriveItemId,
+            model.RelativePath,
+            model.ETag,
+            model.CTag,
+            model.Size,
+            model.LastModifiedUtc,
+            model.IsFolder,
+            model.IsDeleted,
+            model.IsSelected
+        );
 }

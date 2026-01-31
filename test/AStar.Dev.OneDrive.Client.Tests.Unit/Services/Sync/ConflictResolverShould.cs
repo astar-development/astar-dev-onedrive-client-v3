@@ -358,13 +358,13 @@ public sealed class ConflictResolverShould
             "file-789",
             accountId,
             Path.GetFileName(filePath),
-            filePath,
+            filePath, "",
             100,
             DateTime.UtcNow,
-            filePath, false, false,
+            filePath, false, false,false, 
             "ctag-123",
             "etag-456",
-            "hash-789",
+            "hash-789",null,
             FileSyncStatus.Synced,
             SyncDirection.Download);
 }

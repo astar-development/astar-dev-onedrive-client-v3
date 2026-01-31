@@ -5,13 +5,13 @@ namespace AStar.Dev.OneDrive.Client.Core.Models.OneDrive;
 public class OneDriveResponse
 {
     [JsonPropertyName("@odata.context")]
-    public string? _odata_context { get; set; }
+    public string? OdataContext { get; set; }
 
     [JsonPropertyName("@odata.nextLink")]
-    public string? _odata_nextLink { get; set; }
+    public string? OdataNextLink { get; set; }
 
     [JsonPropertyName("@odata.deltaLink")]
-    public string? _odata_deltaLink { get; set; }
+    public string? OdataDeltaLink { get; set; }
 
-    public Value[]? value { get; set; }
+    public Value[]? Value { get; set; }
 }
