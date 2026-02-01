@@ -161,13 +161,17 @@ public sealed class DebugLogViewModel : ReactiveObject
         var logDir = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             applicationFolder, "logs");
-        IEnumerable<string> files = SerilogLogFileLocator.GetAllLogFiles(logDir);
+        IEnumerable<string> allFiles = SerilogLogFileLocator.GetAllLogFiles(logDir);
 
         DebugLogs.Clear();
 
         var id = 1;
 
-        foreach (var file in files)
+        var accountHash = SelectedAccount is not null
+            ? AccountIdHasher.Hash(SelectedAccount.AccountId)
+            : string.Empty;
+            
+        foreach (var file in allFiles.Where(f => f.Contains(accountHash)))
         {
             var lines = await File.ReadAllLinesAsync(file);
 

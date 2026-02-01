@@ -31,7 +31,7 @@ public static class SerilogLogParser
                 : "";
 
             // AccountId (if you enrich it)
-            var accountId = props.TryGetProperty("AccountId", out JsonElement acc)
+            var accountId = props.TryGetProperty("AccountHash", out JsonElement acc)
                 ? acc.GetString() ?? ""
                 : "";
 
