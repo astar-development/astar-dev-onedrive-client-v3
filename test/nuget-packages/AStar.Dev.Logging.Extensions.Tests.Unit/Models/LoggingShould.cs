@@ -1,6 +1,4 @@
 using AStar.Dev.Logging.Extensions.Models;
-using Console = AStar.Dev.Logging.Extensions.Models.Console;
-using LogLevel = AStar.Dev.Logging.Extensions.Models.LogLevel;
 
 namespace AStar.Dev.Logging.Extensions.Tests.Unit.Models;
 
@@ -34,7 +32,7 @@ public class LoggingShould
     [Fact]
     public void Logging_Console_ShouldAllowAssignment()
     {
-        var newConsole = new Console { FormatterName = "CustomFormatter" };
+        var newConsole = new Extensions.Models.Console { FormatterName = "CustomFormatter" };
 
         var logging = new Extensions.Models.Logging { Console = newConsole };
 
@@ -46,7 +44,7 @@ public class LoggingShould
     [Fact]
     public void Logging_ApplicationInsights_ShouldAllowAssignment()
     {
-        var newAppInsights = new ApplicationInsights { LogLevel = new LogLevel { Default = "Warning", MicrosoftAspNetCore = "Information", AStar = "Error" } };
+        var newAppInsights = new ApplicationInsights { LogLevel = new() { Default = "Warning", MicrosoftAspNetCore = "Information", AStar = "Error" } };
 
         var logging = new Extensions.Models.Logging { ApplicationInsights = newAppInsights };
 

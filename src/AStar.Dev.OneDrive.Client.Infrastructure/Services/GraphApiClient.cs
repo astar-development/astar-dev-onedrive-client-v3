@@ -11,6 +11,7 @@ using Microsoft.Graph.Drives.Item.Items.Item.CreateUploadSession;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
 using Microsoft.Kiota.Abstractions.Authentication;
+using System.Linq;
 
 namespace AStar.Dev.OneDrive.Client.Infrastructure.Services;
 
@@ -308,9 +309,7 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
         }
     }
 
-#pragma warning disable IDE0060 // Remove unused parameter
-    private List<DriveItemEntity> ParseDriveItemRecords(string accountId, OneDriveResponse? items)
-#pragma warning restore IDE0060 // Remove unused parameter
-        => [];
+    private List<DriveItemEntity> ParseDriveItemRecords(string accountId, OneDriveResponse items)
+        => items.value.ToList().Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.id, oneDriveItem.id, oneDriveItem.name, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), false, false, oneDriveItem.name)).ToList();
     
 }

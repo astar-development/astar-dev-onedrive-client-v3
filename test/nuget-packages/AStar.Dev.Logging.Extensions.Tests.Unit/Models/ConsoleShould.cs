@@ -1,15 +1,14 @@
 using AStar.Dev.Logging.Extensions.Models;
-using Console = AStar.Dev.Logging.Extensions.Models.Console;
 
 namespace AStar.Dev.Logging.Extensions.Tests.Unit.Models;
 
-[TestSubject(typeof(Console))]
+[TestSubject(typeof(Extensions.Models.Console))]
 public class ConsoleShould
 {
     [Fact]
     public void Console_DefaultValues_ShouldInitializeCorrectly()
     {
-        var console = new Console();
+        var console = new Extensions.Models.Console();
 
         console.ShouldNotBeNull();
         console.FormatterName.ShouldNotBeNull();
@@ -21,7 +20,7 @@ public class ConsoleShould
     [Fact]
     public void Console_SetFormatterName_ShouldUpdateValue()
     {
-        var console = new Console();
+        var console               = new Extensions.Models.Console();
         var expectedFormatterName = "CustomFormatter";
 
         console.FormatterName = expectedFormatterName;
@@ -32,15 +31,15 @@ public class ConsoleShould
     [Fact]
     public void Console_SetFormatterOptions_ShouldUpdateValue()
     {
-        var console = new Console();
+        var console = new Extensions.Models.Console();
 
         var customFormatterOptions = new FormatterOptions
         {
-            SingleLine = true,
-            IncludeScopes = false,
-            TimestampFormat = "yyyy-MM-dd",
-            UseUtcTimestamp = false,
-            JsonWriterOptions = new JsonWriterOptions { Indented = true }
+            SingleLine        = true,
+            IncludeScopes     = false,
+            TimestampFormat   = "yyyy-MM-dd",
+            UseUtcTimestamp   = false,
+            JsonWriterOptions = new() { Indented = true }
         };
 
         console.FormatterOptions = customFormatterOptions;
@@ -73,11 +72,11 @@ public class ConsoleShould
     {
         var formatterOptions = new FormatterOptions
         {
-            SingleLine = true,
-            IncludeScopes = true,
-            TimestampFormat = "yyyy-MM-dd HH:mm",
-            UseUtcTimestamp = false,
-            JsonWriterOptions = new JsonWriterOptions { Indented = true }
+            SingleLine        = true,
+            IncludeScopes     = true,
+            TimestampFormat   = "yyyy-MM-dd HH:mm",
+            UseUtcTimestamp   = false,
+            JsonWriterOptions = new() { Indented = true }
         };
 
         formatterOptions.SingleLine.ShouldBeTrue();

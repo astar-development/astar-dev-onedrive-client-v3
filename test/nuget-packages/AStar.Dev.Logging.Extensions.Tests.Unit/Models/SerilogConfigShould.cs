@@ -1,6 +1,4 @@
 using AStar.Dev.Logging.Extensions.Models;
-using Console = AStar.Dev.Logging.Extensions.Models.Console;
-using LogLevel = AStar.Dev.Logging.Extensions.Models.LogLevel;
 
 namespace AStar.Dev.Logging.Extensions.Tests.Unit.Models;
 
@@ -23,26 +21,26 @@ public class SerilogConfigShould
 
         var serilog = new Extensions.Models.Serilog
         {
-            Enrich = ["ThreadId", "MachineName"],
-            WriteTo = [new WriteTo { Name = "File", Args = new Args { ServerUrl = "http://localhost" } }],
-            MinimumLevel = new MinimumLevel { Default = "Information", Override = new Override { MicrosoftAspNetCore = "Warning", SystemNetHttp = "Error", AStar = "Debug" } }
+            Enrich       = ["ThreadId", "MachineName"],
+            WriteTo      = [new WriteTo { Name                                              = "File", Args             = new() { ServerUrl = "http://localhost" } }],
+            MinimumLevel = new() { Default = "Information", Override = new() { MicrosoftAspNetCore = "Warning", SystemNetHttp = "Error", AStar = "Debug" } }
         };
 
         var logging = new Extensions.Models.Logging
         {
-            Console = new Console
+            Console = new()
             {
                 FormatterName = "default",
-                FormatterOptions = new FormatterOptions
+                FormatterOptions = new()
                 {
-                    SingleLine = true,
-                    IncludeScopes = false,
-                    TimestampFormat = "yyyy-MM-dd",
-                    UseUtcTimestamp = false,
-                    JsonWriterOptions = new JsonWriterOptions()
+                    SingleLine        = true,
+                    IncludeScopes     = false,
+                    TimestampFormat   = "yyyy-MM-dd",
+                    UseUtcTimestamp   = false,
+                    JsonWriterOptions = new()
                 }
             },
-            ApplicationInsights = new ApplicationInsights { LogLevel = new LogLevel { Default = "Debug", MicrosoftAspNetCore = "Trace", AStar = "Error" } }
+            ApplicationInsights = new() { LogLevel = new() { Default = "Debug", MicrosoftAspNetCore = "Trace", AStar = "Error" } }
         };
 
         serilogConfig.Serilog = serilog;
@@ -98,7 +96,7 @@ public class SerilogConfigShould
     [Fact]
     public void Console_ShouldInitializeWithDefaultValues()
     {
-        var console = new Console();
+        var console = new Extensions.Models.Console();
 
         console.FormatterName.ShouldBeEmpty();
         console.FormatterOptions.ShouldNotBeNull();
