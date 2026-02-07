@@ -28,7 +28,8 @@ public class SyncTreeViewModelPersistenceIntegrationShould : IDisposable
             .Options;
         _context = new SyncDbContext(options);
         _configRepository = new SyncConfigurationRepository(_context);
-        _selectionService = new SyncSelectionService(_configRepository);
+        IFolderTreeService folderTreeService = Substitute.For<IFolderTreeService>();
+        _selectionService = new SyncSelectionService(_configRepository, folderTreeService);
         _mockFolderTreeService = Substitute.For<IFolderTreeService>();
         _mockSyncEngine = Substitute.For<ISyncEngine>();
 

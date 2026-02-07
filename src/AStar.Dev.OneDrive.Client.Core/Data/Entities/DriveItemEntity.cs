@@ -17,4 +17,5 @@ public record DriveItemEntity(
     string? LocalPath = null,
     string? LocalHash = null,
     FileSyncStatus SyncStatus = FileSyncStatus.SyncOnly,
-    SyncDirection LastSyncDirection = SyncDirection.None);
+    SyncDirection LastSyncDirection = SyncDirection.None,
+    bool IsSelected = false);

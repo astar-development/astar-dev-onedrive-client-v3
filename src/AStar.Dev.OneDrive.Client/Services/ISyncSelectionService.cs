@@ -98,5 +98,13 @@ public interface ISyncSelectionService
     /// <remarks>
     ///     After loading, parent states are automatically recalculated to reflect indeterminate states.
     /// </remarks>
-    Task LoadSelectionsFromDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default);
+    Task<List<OneDriveFolderNode>> LoadSelectionsFromDatabaseAsync(string accountId, List<OneDriveFolderNode> rootFolders, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    ///    Gets the count of folders for a given account ID.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The number of folders for the given account ID.</returns>
+    Task<int> GetCountOfFoldersByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
 }

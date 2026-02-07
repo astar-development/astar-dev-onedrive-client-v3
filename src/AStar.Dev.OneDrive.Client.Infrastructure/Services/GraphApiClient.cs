@@ -87,6 +87,7 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
 
         await DebugLog.InfoAsync("GraphApiClient.GetDriveItemChildrenAsync", $"After filtering deleted items: {itemsList.Count} items", cancellationToken);
         await DebugLog.ExitAsync("GraphApiClient.GetDriveItemChildrenAsync", cancellationToken);
+        
         return itemsList;
     }
 
@@ -310,6 +311,6 @@ public sealed class GraphApiClient(IAuthService authService, HttpClient http, Ms
     }
 
     private List<DriveItemEntity> ParseDriveItemRecords(string accountId, OneDriveResponse items)
-        => items.value.ToList().Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.id, oneDriveItem.id, oneDriveItem.name, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), false, false, oneDriveItem.name)).ToList();
+        => items.value.ToList().Select(oneDriveItem => new DriveItemEntity(accountId, oneDriveItem.id, oneDriveItem.id, oneDriveItem.name, oneDriveItem.eTag, oneDriveItem.cTag, oneDriveItem.size, DateTimeOffset.Parse(oneDriveItem.lastModifiedDateTime), oneDriveItem.folder != null, false, oneDriveItem.name)).ToList();
     
 }

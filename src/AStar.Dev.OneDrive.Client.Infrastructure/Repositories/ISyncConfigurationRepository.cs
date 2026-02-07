@@ -25,6 +25,8 @@ public interface ISyncConfigurationRepository
     /// <returns>List of selected folder paths.</returns>
     Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<string>> GetAllFoldersByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
+
     Task<Result<IList<string>, ErrorResponse>> GetSelectedFolders2Async(string accountId, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -74,4 +76,12 @@ public interface ISyncConfigurationRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The parent folder configuration entity if one exists; otherwise, null.</returns>
     Task<SyncConfigurationEntity?> GetParentFolderAsync(string accountId, string parentPath, string possibleParentPath, CancellationToken cancellationToken);
+    
+    /// <summary>
+    ///    Gets the count of folders for a given account ID.
+    /// </summary>
+    /// <param name="accountId">The account identifier.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The number of folders for the given account ID.</returns>
+    Task<int> GetCountOfFoldersByAccountIdAsync(string accountId, CancellationToken cancellationToken = default);
 }

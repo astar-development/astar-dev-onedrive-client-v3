@@ -8,6 +8,7 @@ using AStar.Dev.OneDrive.Client.MainWindow;
 using AStar.Dev.OneDrive.Client.Models;
 using AStar.Dev.OneDrive.Client.Services;
 using AStar.Dev.OneDrive.Client.Syncronisation;
+using Castle.Core.Configuration;
 using Microsoft.EntityFrameworkCore;
 
 namespace AStar.Dev.OneDrive.Client.Tests.Unit.MainWindow;
@@ -31,10 +32,11 @@ public class MainWindowViewModelIntegrationShould : IDisposable
             .UseInMemoryDatabase($"TestDb_{Guid.CreateVersion7()}")
             .Options;
         _context = new SyncDbContext(options);
+        ISyncConfigurationRepository syncConfigurationRepository = Substitute.For<ISyncConfigurationRepository>();     
         _accountRepository = new AccountRepository(_context);
         _mockAuthService = Substitute.For<IAuthService>();
         _mockFolderTreeService = Substitute.For<IFolderTreeService>();
-        _syncSelectionService = new SyncSelectionService();
+        _syncSelectionService = new SyncSelectionService(syncConfigurationRepository, _mockFolderTreeService);
         _mockSyncEngine = Substitute.For<ISyncEngine>();
 
         _progressSubject = new Subject<SyncState>();

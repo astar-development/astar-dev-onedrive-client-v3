@@ -8,6 +8,7 @@ using AStar.Dev.OneDrive.Client.Core.Models.Enums;
 using AStar.Dev.OneDrive.Client.Infrastructure.Services;
 using AStar.Dev.OneDrive.Client.Models;
 using AStar.Dev.OneDrive.Client.Services;
+using Microsoft.Graph.Models;
 using ReactiveUI;
 
 namespace AStar.Dev.OneDrive.Client.Syncronisation;
@@ -229,15 +230,16 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
             IsLoading = true;
             ErrorMessage = null;
 
-            IReadOnlyList<OneDriveFolderNode> folders = await _folderTreeService.GetRootFoldersAsync(SelectedAccountId, cancellationToken);
-
-            // Convert to list to ensure we work with the same object references
+            IReadOnlyList<OneDriveFolderNode> folders = [];
+            var countOfFolders = await _selectionService.GetCountOfFoldersByAccountIdAsync(SelectedAccountId, cancellationToken);
+            folders = countOfFolders == 0
+                ? await _folderTreeService.GetRootFoldersAsync(SelectedAccountId, cancellationToken)
+                : await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, [], cancellationToken);
+            
             var folderList = folders.ToList();
 
-            // Apply saved selections from database BEFORE adding to observable collection - NO this relies on reference to folderList - it should return the updated list
-            await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, folderList, cancellationToken);
+            folderList = await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, folderList, cancellationToken);
 
-            // Now add folders to UI with correct selection states already applied
             RootFolders.Clear();
             foreach(OneDriveFolderNode? folder in folderList)
                 RootFolders.Add(folder);
@@ -264,20 +266,14 @@ public sealed class SyncTreeViewModel : ReactiveObject, IDisposable
         try
         {
             folder.IsLoading = true;
-
-            // Clear placeholder dummy child
             folder.Children.Clear();
 
             IReadOnlyList<OneDriveFolderNode> children = await _folderTreeService.GetChildFoldersAsync(SelectedAccountId, folder.Id, folder.IsSelected, cancellationToken);
             foreach(OneDriveFolderNode child in children)
                 folder.Children.Add(child);
 
-            // Apply saved selections from database to the newly loaded children
-            // This ensures that sub-folder selections persist correctly
-            await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, [.. folder.Children], cancellationToken);
+            _ = await _selectionService.LoadSelectionsFromDatabaseAsync(SelectedAccountId, [.. folder.Children], cancellationToken);
 
-            // After applying database selections, recalculate parent state
-            // This will set parent to indeterminate if some (but not all) children are selected
             _selectionService.UpdateParentState(folder);
 
             folder.ChildrenLoaded = true;

@@ -23,9 +23,17 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<string>> GetSelectedFoldersAsync(string accountId, CancellationToken cancellationToken = default)
-        => await context.SyncConfigurations
+        => await context.DriveItems
             .Where(sc => sc.AccountId == accountId && sc.IsSelected)
-            .Select(sc => CleanUpPath(sc.FolderPath))
+            .Select(sc => CleanUpPath(sc.RelativePath))
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<string>> GetAllFoldersByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
+        => await context.DriveItems
+            .Where(sc => sc.AccountId == accountId)
+            .Select(sc => CleanUpPath(sc.RelativePath))
             .Distinct()
             .ToListAsync(cancellationToken);
 
@@ -112,6 +120,12 @@ public sealed class SyncConfigurationRepository(SyncDbContext context) : ISyncCo
 
         return parentEntity;
     }
+
+    /// <inheritdoc />
+    public async Task<int> GetCountOfFoldersByAccountIdAsync(string accountId, CancellationToken cancellationToken = default)
+        => await context.DriveItems
+            .Where(sc => sc.AccountId == accountId && sc.IsFolder)
+            .CountAsync(cancellationToken);
 
     private static string CleanUpPath(string localFolderPath)
     {
